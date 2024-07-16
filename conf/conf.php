@@ -24,10 +24,10 @@ $dolibarr_main_authentication='dolibarr';
 
 //$dolibarr_main_demo='autologin,autopass';
 // Security settings
-$dolibarr_main_prod='0';
+$dolibarr_main_prod='1';
 $dolibarr_main_force_https='0';
 $dolibarr_main_restrict_os_commands='mariadb-dump, mariadb, mysqldump, mysql, pg_dump, pgrestore, clamdscan, clamscan.exe';
-$dolibarr_nocsrfcheck='0';
+$dolibarr_nocsrfcheck='1';
 $dolibarr_main_instance_unique_id='3b63e14895eebc72624adfd9eca28001';
 $dolibarr_mailing_limit_sendbyweb='0';
 $dolibarr_mailing_limit_sendbycli='0';

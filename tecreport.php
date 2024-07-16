@@ -683,11 +683,16 @@ dol_include_once('/stores/compress.php');
     ];
     array_push($imagesList, $node);
     $list = json_encode($imagesList);
-    if($result[1]){
+    if($result){
          $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
          $db->query($sql,0,'ddl');
+         print '<script>window.location.href = window.location.href;
+         </script>';
     } else {
-
+         $sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("'.$ticketId.'", "'.$user->id.'", "'.$object->fk_soc.'", "'.$storeid.'", "'.base64_encode($list).'")';
+         $db->query($sql,0,'ddl');
+         print '<script>window.location.href = window.location.href;
+         </script>';
     }
  }
 
@@ -763,6 +768,14 @@ dol_include_once('/stores/compress.php');
 
    }
    print '<script>';
+
+   print '
+         $("#close-btn").on("click", function() {
+         
+            window.location.href = "index.php";   
+         
+         });
+   ';
     
    print '
          function showImageFull(src){
@@ -1012,9 +1025,11 @@ dol_include_once('/stores/compress.php');
                   contentType: false,
                   success: function(response) {
                         console.log(response);
+                        window.location.href = "index.php";
                   },
                   error: function(xhr, status, error) {
                         console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+                        window.location.href = "index.php";
                   }
                });
             }';
