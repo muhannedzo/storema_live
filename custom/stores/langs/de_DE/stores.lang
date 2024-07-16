@@ -1,0 +1,118 @@
+# Copyright (C) 2023 SuperAdmin
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#
+# Generic
+#
+
+# Module label 'ModuleStoresName'
+ModuleStoresName = Filialen
+# Module description 'ModuleStoresDesc'
+ModuleStoresDesc = Beschreibung des Filialens
+
+#
+# Admin page
+#
+StoresSetup = Einrichtung von Geschäften
+Settings = Einstellungen
+StoresSetupPage = Seite zur Einrichtung von Geschäften
+STORES_MYPARAM1 = Mein Param 1
+STORES_MYPARAM1Tooltip = Mein Param 1 Tooltip
+STORES_MYPARAM2=Mein Param 2
+STORES_MYPARAM2Tooltip=My Mein Param 2 Tooltip
+
+
+#
+# About page
+#
+About = über
+StoresAbout = Über Filialen
+StoresAboutPage = Shops über Seite
+
+#
+# Sample page
+#
+StoresArea = HeimatFilialen
+MyPageName = Mein Seitenname
+
+#
+# Sample widget
+#
+MyWidget = Mein Widget
+MyWidgetDescription = Meine Widget-Beschreibung
+
+
+#
+# Tabs
+#
+POSHardware = POS-Hardware
+MediaHardware = Medien-Hardware
+
+
+#
+# Normal
+#
+BranchesNumber = Filialen Nummer
+Street = Straße
+City = Stadt
+HouseNumber = Hausnummer
+ThirdParty = Geschäftspartner
+StoreImages = Bilder speichern
+Images = Bilder
+Copyadressfromstoredetails = Adresse aus den Geschäftsdetails kopieren
+StoreContact = Filialen Kontakt
+Storemanager = Filialleiter
+Districtmanager = Bezirksleiter
+UniqueStores = Gesamtzahl der Filialen
+Branchs = Filialen
+ZipCity = PLZ / Stadt
+StreetHouse = Straße / Hausnummer 
+State = Stand
+Country = Land
+AllTickets = Alle Tickets
+Opening = Eröffnung
+Closing = Schliessung
+Casher = Kassenplätze
+Storesize = Filialgröße in qm
+Salesarea = Verkaufsfläche
+Warehousearea = Lager
+Branchheight =  Filialhöhe in m
+submit = Einreichen
+sunday = Sonntag
+monday = Montag
+tuesday = Dienstag
+wednesday = Mittwoch
+thursday = Donnerstag
+friday = Freitag
+saturday = Samstag
+edit = Warenlieferzeiten bearbeiten
+goodsDelivery = Warenlieferung
+secondShiftClose = zu
+secondShiftOpen = Pause von
+firstShiftClose = zu
+firstShiftOpen = öffnet sich von
+editHours = Stunden bearbeiten
+SecondShift = Pausenzeit
+FirstShift = Öffnungszeiten
+Day = Tag
+addWorkingHours = Arbeitsstunden hinzufügen
+from = von
+to = bis
+closed = Geschlossen
+Start = Start
+End = Ende
+nobreak = keine Pause
+ExcelImported = Aus Excel importiert
+CustomerName = Kundenname

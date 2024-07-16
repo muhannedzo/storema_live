@@ -1,0 +1,115 @@
+# Copyright (C) 2023 SuperAdmin
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#
+# Generic
+#
+
+# Module label 'ModuleStoresName'
+ModuleStoresName = Stores
+# Module description 'ModuleStoresDesc'
+ModuleStoresDesc = Stores description
+
+#
+# Admin page
+#
+StoresSetup = Stores setup
+Settings = Settings
+StoresSetupPage = Stores setup page
+STORES_MYPARAM1 = My param 1
+STORES_MYPARAM1Tooltip = My param 1 tooltip
+STORES_MYPARAM2=My param 2
+STORES_MYPARAM2Tooltip=My param 2 tooltip
+
+
+#
+# About page
+#
+About = About
+StoresAbout = About Stores
+StoresAboutPage = Stores about page
+
+#
+# Sample page
+#
+StoresArea = Home Stores
+MyPageName = My page name
+
+#
+# Sample widget
+#
+MyWidget = My widget
+MyWidgetDescription = My widget description
+
+
+#
+# Tabs
+#
+POSHardware = POS-Hardware
+MediaHardware = Media-Hardware
+
+
+#
+# Normal
+#
+BranchesNumber = Store Number
+Street = Street
+City = City
+HouseNumber = House Number
+ThirdParty = Third Party
+StoreImages = Store Images
+Images = Images
+Copyadressfromstoredetails = Copy adress from store details
+StoreContact = Store Contact
+Storemanager = Store Manager
+Districtmanager = District Manager
+UniqueStores = Total Number of Stores
+Branchs = Branches
+ZipCity = Zip code / City
+StreetHouse = Street / House number
+State = State
+Country = Country
+AllTickets = All Tickets
+Opening = Opened in
+Closing = Closed in
+Casher = Cashers' desks
+Storesize = Store area in qm
+Salesarea = Sales area
+Warehousearea = Warehouse
+Branchheight =  Store height in m
+submit = Submit
+sunday = Sunday
+monday = Monday
+tuesday = Tuesday
+wednesday = Wednesday
+thursday = Thursday
+friday = Friday
+saturday = Saturday
+edit = Edit Shipment Times
+goodsDelivery = Shipment
+secondShiftClose = Second shift close
+secondShiftOpen = Second shift open
+firstShiftClose = First shift close
+firstShiftOpen = First shift open
+editHours = Edit hours
+SecondShift = Second shift
+FirstShift = First shift
+Day = Day
+addWorkingHours = Add working hours
+from = from
+to = to
+closed = Closed
+Start = Start
+End = End
