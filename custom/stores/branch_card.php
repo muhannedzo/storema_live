@@ -888,8 +888,8 @@ confirmButton:hover {
 				$skippedRowArr = array();
 				//Run through the rows and store the data in an array 
 				// var_dump($db);
-				$insertBranchQuery = $db->db->db->prepare("INSERT INTO llx_stores_branch (fk_soc, date_creation, fk_user_creat, status, b_number, ref, excel_imported, street, house_number, zip_code, country, country_id, phone, city, days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    			$insertPosHardwareQuery = $db->db->db->prepare("INSERT INTO llx_stores_poshardware (ref, date_creation, posNo, status, fk_user_creat, storeId) VALUES (?, ?, ?, ?, ?, ?)");
+				$insertBranchQuery = $db->db->prepare("INSERT INTO llx_stores_branch (fk_soc, date_creation, fk_user_creat, status, b_number, ref, excel_imported, street, house_number, zip_code, country, country_id, phone, city, days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    			$insertPosHardwareQuery = $db->db->prepare("INSERT INTO llx_stores_poshardware (ref, date_creation, posNo, status, fk_user_creat, storeId) VALUES (?, ?, ?, ?, ?, ?)");
 
     			$db->db->begin();
 

@@ -332,7 +332,7 @@ if (empty($reshook)) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_ticket_category as category ON category.code=t.category_code";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_ticket_severity as severity ON severity.code=t.severity_code";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."ticket_extrafields as te ON te.fk_object=t.rowid";
-	$sql .= " WHERE category.rowid != 3 AND t.fk_statut != 8 and te.fk_store = ".$object->id;
+	$sql .= " WHERE t.fk_statut != 8 and te.fk_store = ".$object->id;
 	
 	$object1 = new Ticket($db);
 	$sql .= $db->order("t.datec", "DESC");
@@ -445,7 +445,7 @@ if (empty($reshook)) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_ticket_category as category ON category.code=t.category_code";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_ticket_severity as severity ON severity.code=t.severity_code";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."ticket_extrafields as te ON te.fk_object=t.rowid";
-	$sql .= " WHERE category.rowid != 3 AND t.fk_statut = 8 and te.fk_store = ".$object->id;
+	$sql .= " WHERE t.fk_statut != 8 and te.fk_store = ".$object->id;
 	
 	$object1 = new Ticket($db);
 	$sql .= $db->order("t.datec", "DESC");

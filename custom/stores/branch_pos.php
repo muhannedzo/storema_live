@@ -464,6 +464,7 @@ if ($object->id > 0) {
 				foreach($formsList as $form) {
 					$ticket->fetch($form["ticketId"]);
 					$imagesGroup = json_decode(base64_decode($form["images"]));
+					var_dump($imagesGroup);
 					print '<div class="row mt-2">';
 						print '<div class="col-12" style="background: #aaa;padding: 5px 0 5px 10px;">';
 							print $ticket->getNomUrl();
@@ -478,6 +479,7 @@ if ($object->id > 0) {
 												print '<input type="text" value="'.$group->type.'" name="type" disabled>'.' '.'<input class="btn btn-danger" type="submit" value="Delete" name="delete">';
 												print '<input type="text" name="ticketId" value="'.$form["ticketId"].'" hidden>';
 												print '<input type="text" name="formId" value="'.$form["formId"].'" hidden>';
+												print '<input type="text" name="images" value="'.$form["formId"].'" hidden>';
 											print '</form>';
 										print '</div>';
 									}

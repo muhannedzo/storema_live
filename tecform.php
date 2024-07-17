@@ -52,7 +52,7 @@ if (isset($_POST['form'])) {
     $parameters = $_POST['parameters'];
 
 
-	$sql = 'SELECT * FROM llx_tec_forms WHERE fk_ticket = '.$ticketId.' and fk_user = '.$userId;
+	$sql = 'SELECT * FROM llx_tec_forms WHERE fk_ticket = '.$ticketId.' and fk_user = '.$userId.' and fk_soc = '.$socId.' and fk_store = '.$storeId;
     $result = $db->query($sql)->fetch_all()[0];
     if($result[0]){
         $sql = 'UPDATE llx_tec_forms SET content = "'.base64_encode($form).'", parameters = "'.base64_encode($parameters).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$userId.' AND fk_store = '.$storeId.' AND fk_soc = '.$socId.';';

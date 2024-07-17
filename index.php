@@ -111,7 +111,7 @@ if($user->socid) {
 	$object = new Ticket($db);
 
 	$sql = "SELECT t.rowid, t.ref, t.track_id, t.fk_soc, third.nom, t.datec, t.subject, t.type_code, t.category_code, t.severity_code, t.fk_statut, t.progress,";
-	$sql .= " type.code as type_code, type.label as type_label,";
+	$sql .= " type.code as type_code, type.label as type_label, te.datehour, te.datemin,te.dateofuse,";
 	$sql .= " category.code as category_code, category.label as category_label,";
 	$sql .= " severity.code as severity_code, severity.label as severity_label,";
 	$sql .= " te.fk_store";
@@ -151,6 +151,10 @@ if($user->socid) {
 				$object->subject = $objp->subject;
 				$object->fk_soc = $objp->fk_soc;
 				$object->fk_store = $objp->fk_store;
+				$object->datehour = $objp->datehour;
+				$object->datemin = $objp->datemin;
+				$object->dateofuse = $objp->dateofuse;
+				
 				
 				$store = new Branch($db);
 				$store->fetch($objp->fk_store);
@@ -164,7 +168,7 @@ if($user->socid) {
 
 				// Creation date
 				print '<td class="left">';
-				print dol_print_date($db->jdate($objp->datec), 'day');
+				print dol_print_date($db->jdate($objp->dateofuse), 'day').' '.$object->datehour.':'.$object->datemin;
 				print "</td>";
 
 				// Severity
