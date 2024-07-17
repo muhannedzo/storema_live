@@ -585,30 +585,32 @@ dol_include_once('/stores/compress.php');
       print '</div>';
    // }
 
- print '</div>';
- print '<div class="row mt-3">';
-   print '<div class="col right">';
-      print '<input type="submit" value="Save" id="save-form">';
-   print '</div>';
-   print '<div class="col left">';
-      print '<input type="submit" value="Close" id="close-btn">';
-   print '</div>';
- print '</div>';
-
- print '
-         <div id="popup" class="closed">
-            <div class="row">
-               <div class="col-12">
-                  <img id="popupImage" src="" style="width:100%">
-               </div>
-            </div>
-            <div class="row mt-2">
-               <div class="col-12" style="text-align: center">
-                  <button class="btn btn-danger" id="closePopupBtn">Close</button>
-               </div>
-            </div>
-         </div>';     
-
+      print '</div>';
+      print '<div class="row mt-3">';
+         print '<div class="col right">';
+            print '<input type="submit" value="Save" id="save-form">';
+         print '</div>';
+         print '<div class="col left">';
+            print '<input type="submit" value="Close" id="close-btn">';
+         print '</div>';
+      print '</div>'; 
+      print '
+               <div id="popup" class="closed">
+                  <div class="row">
+                     <div class="col-12">
+                        <img id="popupImage" src="" style="width:100%">
+                     </div>
+                  </div>
+                  <div class="row mt-2">
+                     <div class="col-12" style="text-align: center">
+                        <button class="btn btn-danger" id="closePopupBtn">Close</button>
+                     </div>
+                  </div>
+               </div>';
+            
+      print '<button class="floating-button">
+               <i class="material-icons">Save</i>
+             </button>';
 
  $dir = DOL_DOCUMENT_ROOT.'/formsImages/';
  if(!is_dir($dir)){
@@ -644,7 +646,7 @@ dol_include_once('/stores/compress.php');
           $file_tmpname = $_FILES['files']['tmp_name'][$key];
           $file_name = $_FILES['files']['name'][$key];
           $file_size = $_FILES['files']['size'][$key];
-          $imageQuality = 80;
+          $imageQuality = 20;
           $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
           
           $filepath = $dir.$file_name;
@@ -658,7 +660,7 @@ dol_include_once('/stores/compress.php');
                    $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
                    if( $compressedImage) {
                       array_push($images, $fileN);
-                   }else {                    
+                   } else {                    
                       dol_htmloutput_errors("Error uploading {$file_name} <br />");
                    }
                 }else {
@@ -1266,6 +1268,8 @@ dol_include_once('/stores/compress.php');
          canvas.addEventListener("touchend", stopDrawing);
          canvas.addEventListener("touchcancel", stopDrawing);
       });';
+      // end draw signatures
+
       // Clear canvas
       // Only clear the canvas that was clicked
       print 'function clearCanvas(canvasId) {
@@ -1277,7 +1281,25 @@ dol_include_once('/stores/compress.php');
                 console.warn(`Canvas element with id "${canvasId}" not found`);
             }
         }';
-   // end draw signatures
+      // end clear canvas
+
+      print '
+            const floatingButton = document.querySelector(".floating-button");
+
+            let isScrolling = false;
+
+            window.addEventListener("scroll", () => {
+               isScrolling = true;
+               // floatingButton.style.opacity = 1;
+
+               clearTimeout(hideButtonTimer);
+               var hideButtonTimer = setTimeout(() => {
+                  if (!isScrolling) {
+                     console.log(1);
+                     floatingButton.style.display = "none";
+                  }
+               }, 1000);
+            });';
 
 
    // generate pdf
@@ -1395,5 +1417,22 @@ dol_include_once('/stores/compress.php');
                .group-image {
                   height: 5rem!important;
                }
+            }';
+   print '.floating-button {
+               position: fixed;
+               bottom: 20px;
+               right: 20px;
+               color: white;
+               width: 50px;
+               height: 50px;
+               display: flex;
+               justify-content: center;
+               align-items: center;
+               cursor: pointer;
+               border: 1px solid #8080804a;
+               background: #808080a3;
+               box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+               padding: 5px;
+               border-radius: 5px;
             }';
  print '</style>';
