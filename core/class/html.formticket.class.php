@@ -831,18 +831,20 @@ class FormTicket
 					</td>
 				</tr>';
 
-		// Customer
+		// Business Partner
 		if ($this->withcompany) {
 			$pro = GETPOST('originid', 'int');
+			$selectedThird = $this->withfromsocid;
 			if($pro){
 				$proj->fetch($pro);
+				$selectedThird = $proj->socid;
 			}
 			// altairis: force company and contact id for external user
 			if (empty($user->socid)) {
 				// Company
-				print '<tr><td class="titlefield">'.$langs->trans("Customer").'</td><td>';
+				print '<tr><td class="titlefield">'.$langs->trans("ThirdParty").'</td><td>';
 				$events = array();
-				$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/core/ajax/contacts.php', 1), 'htmlname' => 'contactid_customer', 'params' => array('add-customer-contact' => 'disabled'));
+				$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/core/ajax/contacts.php', 1), 'htmlname' => 'contactid', 'params' => array('add-customer-contact' => 'disabled'));
 				$st = array('method' => 'getContacts',
 								'url' => dol_buildpath('/custom/stores/ajax/stores.php', 1),
 								'htmlname' => 'contactid_customer',
@@ -854,11 +856,8 @@ class FormTicket
 								'params' => array('add-customer-contact' => 'disabled')
 							);
 				print img_picto('', 'company', 'class="paddingright"');
-				$selectedCustomer = $proj->socid;
-				if(isset($_COOKIE["customer"])){
-					$selectedCustomer = $_COOKIE["customer"];
-				}
-				print $form->select_company($selectedCustomer, 'options_customer', '', 1, 1, '', $events, 0, 'minwidth200');
+
+				print $form->select_company($selectedThird, 'socid', '', 1, 1, '', $events, 0, 'minwidth200');
 				print '</td></tr>';
 
 				
@@ -872,17 +871,12 @@ class FormTicket
 				}
 				$store->select_order_customer($selectedOrderVia);
 				
-
 				// Contact and type
 				print '<tr><td>'.$langs->trans("Contact").'</td><td>';
 				print img_picto('', 'contact', 'class="paddingright"');
-				if($proj->id){
-					$selectedCompany = $proj->socid;
-					if(isset($_COOKIE["customer"])){
-						$selectedCompany = $_COOKIE["customer"];
-					}
-				}
-				print $form->selectcontacts($selectedCompany, $this->withfromcontactid, 'contactid_customer', 3, '', '', 0, 'minwidth200');
+		
+				print $form->selectcontacts($selectedThird, $this->withfromcontactid, 'contactid', 3, '', '', 0, 'minwidth200');
+
 				print ' ';
 				$formcompany->selectTypeContact($ticketstatic, '', 'type_customer', 'external', '', 0, 'maginleftonly');
 				print '</td></tr>';
@@ -898,14 +892,14 @@ class FormTicket
 				$store->select_order_customer($selectedOrderVia);
 				
 				// }
-				print '<td><input type="hidden" name="contactid_customer" value="'.$user->contact_id.'"/></td>';
+				print '<td><input type="hidden" name="contactid" value="'.$user->contact_id.'"/></td>';
 				print '<td><input type="hidden" name="type_customer" value="Z"/></td></tr>';
 			}
 
 
 		}
 		 
-		// Customer or supplier
+		// Customer
 		if ($this->withcompany) {
 			$pro = GETPOST('originid', 'int');
 			if($pro){
@@ -914,9 +908,9 @@ class FormTicket
 			// altairis: force company and contact id for external user
 			if (empty($user->socid)) {
 				// Company
-				print '<tr><td class="titlefield">'.$langs->trans("ThirdParty").'</td><td>';
+				print '<tr><td class="titlefield">'.$langs->trans("Customer").'</td><td>';
 				$events = array();
-				$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/core/ajax/contacts.php', 1), 'htmlname' => 'contactid', 'params' => array('add-customer-contact' => 'disabled'));
+				$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/core/ajax/contacts.php', 1), 'htmlname' => 'contactid_customer', 'params' => array('add-customer-contact' => 'disabled'));
 				$st = array('method' => 'getContacts',
 								'url' => dol_buildpath('/custom/stores/ajax/stores.php', 1),
 								'htmlname' => 'contactid',
@@ -928,7 +922,12 @@ class FormTicket
 								'params' => array('add-customer-contact' => 'disabled')
 							);
 				print img_picto('', 'company', 'class="paddingright"');
-				print $form->select_company($this->withfromsocid, 'socid', '', 1, 1, '', $events, 0, 'minwidth200');
+				
+				if(isset($_COOKIE["customer"])){
+					$selectedCustomer = $_COOKIE["customer"];
+				}
+				
+				print $form->select_company($selectedCustomer, 'options_customer', '', 1, 1, '', $events, 0, 'minwidth200');
 				
 				print '</td></tr>';
 				// if (!empty($conf->use_javascript_ajax) && !empty($conf->global->COMPANY_USE_SEARCH_TO_SELECT)) {
@@ -937,21 +936,21 @@ class FormTicket
 					print '<script type="text/javascript">
                     $(document).ready(function () {
 
-                        jQuery("#'.$htmlname.'").change(function () {
+                        jQuery("#'.$customer.'").change(function () {
 							runJs();
                             var obj = '.json_encode($events).';
                             $.each(obj, function(key,values) {
                                 if (values.method.length) {
-                                    runJsCodeForEvent'.$htmlname.'(values);
+                                    runJsCodeForEvent'.$customer.'(values);
                                 }
                             });
                         });
-                        jQuery("#'.$customer.'").change(function () {
+                        jQuery("#'.$htmlname.'").change(function () {
 							runJsProject();
                         });
 
 						function runJs(){
-							var id = $("#'.$htmlname.'").val();
+							var id = $("#'.$customer.'").val();
                             var obj = '.json_encode($st).';
                             $.getJSON(obj["url"],
                                     {
@@ -976,7 +975,7 @@ class FormTicket
 						}
 
 						function runJsProject(){
-							var id = $("#'.$customer.'").val();
+							var id = $("#'.$htmlname.'").val();
                             var obj = '.json_encode($pr).';
                             $.getJSON(obj["url"],
                                     {
@@ -1005,9 +1004,9 @@ class FormTicket
 									}
                             );
 						}
-                        function runJsCodeForEvent'.$htmlname.'(obj) {
-                            console.log("Run runJsCodeForEvent'.$htmlname.'");
-                            var id = $("#'.$htmlname.'").val();
+                        function runJsCodeForEvent'.$customer.'(obj) {
+                            console.log("Run runJsCodeForEvent'.$customer.'");
+                            var id = $("#'.$customer.'").val();
                             var method = obj.method;
                             var url = obj.url;
                             var htmlname = obj.htmlname;
@@ -1059,16 +1058,22 @@ class FormTicket
 					$store->select_store("", "");
 				}
 
+
 				// Contact and type
 				print '<tr><td>'.$langs->trans("Contact").'</td><td>';
 				print img_picto('', 'contact', 'class="paddingright"');
-		
-				print $form->selectcontacts($selectedCompany, $this->withfromcontactid, 'contactid', 3, '', '', 0, 'minwidth200');
+				// if($proj->id){
+				// 	if(isset($_COOKIE["customer"])){
+				// 		$selectedCompany = $_COOKIE["customer"];
+				// 	}
+				// }
+				print $form->selectcontacts("", $this->withfromcontactid, 'contactid_customer', 3, '', '', 0, 'minwidth200');
+
 				print ' ';
 				$formcompany->selectTypeContact($ticketstatic, '', 'type', 'external', '', 0, 'maginleftonly');
 				print '</td></tr>';
 			} else {
-				print '<tr><td class="titlefield"><input type="hidden" name="socid" value="'.$user->socid.'"/></td>';
+				print '<tr><td class="titlefield"><input type="hidden" name="options_customer" value="'.$user->socid.'"/></td>';
 				$selectedStore = null;
 				if(isset($_COOKIE["store"])){
 					$selectedStore = $_COOKIE["store"];
@@ -1634,10 +1639,10 @@ class FormTicket
 				$formproject = new FormProjets($this->db);
 				print '<tr><td><label for="project"><span class="">'.$langs->trans("Project").'</span></label></td><td>';
 				
-				$selectedCompany = null;
-				if(isset($_COOKIE["customer"])){
-					$selectedCompany = $_COOKIE["customer"];
-				}
+				// $selectedCompany = null;
+				// if(isset($_COOKIE["customer"])){
+				// 	$selectedCompany = $_COOKIE["customer"];
+				// }
 
 				
 				if(isset($_COOKIE["customer"]) && isset($_COOKIE["project"])){
@@ -1760,7 +1765,6 @@ class FormTicket
 	public function showForm_1($withdolfichehead = 0, $mode = 'edit', $public = 0, Contact $with_contact = null, $action = '', $third, $store)
 	{
 		global $conf, $langs, $user, $hookmanager;
-
 		// Load translation files required by the page
 		$langs->loadLangs(array('other', 'mails', 'ticket'));
 
@@ -1885,10 +1889,10 @@ class FormTicket
 
 
 
-		// Company
-		print '<tr><td class="titlefield">'.$langs->trans("Customer").'</td><td>';
+		// ThirdParty
+		print '<tr><td class="titlefield">'.$langs->trans("ThirdParty").'</td><td>';
 		$events = array();
-		$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/core/ajax/contacts.php', 1), 'htmlname' => 'contactid_customer', 'params' => array('add-customer-contact' => 'disabled'));
+		$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/core/ajax/contacts.php', 1), 'htmlname' => 'contactid', 'params' => array('add-customer-contact' => 'disabled'));
 		$st = array('method' => 'getContacts',
 						'url' => dol_buildpath('/custom/stores/ajax/stores.php', 1),
 						'htmlname' => 'contactid_customer',
@@ -1900,24 +1904,24 @@ class FormTicket
 						'params' => array('add-customer-contact' => 'disabled')
 					);
 
-		$selectedCustomer = $proj->socid;
-		if(isset($_COOKIE["customer"])){
-			$selectedCustomer = $_COOKIE["customer"];
-		}
-		print img_picto($selectedCustomer, 'company', 'class="paddingright"');
-		print $form->select_company($selectedCustomer, 'options_customer', '', 1, 1, '', $events, 0, 'minwidth200');
+		// $selectedCustomer = $proj->socid;
+		// if(isset($_COOKIE["customer"])){
+		// 	$selectedCustomer = $_COOKIE["customer"];
+		// }
+		print img_picto($selectedCompany, 'company', 'class="paddingright"');
+		print $form->select_company($selectedCompany, 'socid', '', 1, 1, '', $events, 0, 'minwidth200');
 
 		print '</td></tr>';
-		$htmlname = 'options_customer';
+		$htmlname = 'socid';
 		$customer='options_customer';
 		print '<script type="text/javascript">
 		$(document).ready(function () {
-			jQuery("#'.$customer.'").change(function () {
+			jQuery("#'.$htmlname.'").change(function () {
 				runJsProject();
 			});
 
 			function runJsProject(){
-				var id = $("#'.$customer.'").val();
+				var id = $("#'.$htmlname.'").val();
 				var obj = '.json_encode($pr).';
 				$.getJSON(obj["url"],
 						{
@@ -1962,16 +1966,16 @@ class FormTicket
 		// Contact and type
 		print '<tr><td>'.$langs->trans("Contact").'</td><td>';
 		print img_picto('', 'contact', 'class="paddingright"');
-		print $form->selectcontacts($selectedCompany, $this->withfromcontactid, 'contactid_customer', 3, '', '', 0, 'minwidth200');
+		print $form->selectcontacts($selectedCompany, $this->withfromcontactid, 'contactid', 3, '', '', 0, 'minwidth200');
 		print ' ';
-		$formcompany->selectTypeContact($ticketstatic, '', 'type_customer', 'external', '', 0, 'maginleftonly');
+		$formcompany->selectTypeContact($ticketstatic, '', 'type', 'external', '', 0, 'maginleftonly');
 		print '</td></tr>';
 
 		
-		// third
-		print '<tr><td>'.$langs->trans("ThirdParty").'</td><td>';
+		// Customer
+		print '<tr><td>'.$langs->trans("Customer").'</td><td>';
 		print '<span class="fas fa-building paddingright" style=" color: #6c6aa8;"></span> <a href="'.dol_buildpath('/societe/card.php',1).'?socid='.$third.'">'.$soc->name.'</a>';
-		print '<input type="hidden" name="socid" value="'.$third.'"/>';
+		print '<input type="hidden" name="options_customer" value="'.$third.'"/>';
 		print '</td></tr>';
 		// Store
 		if (isModEnabled('stores')){
@@ -1984,9 +1988,9 @@ class FormTicket
 		// Contact and type
 		print '<tr><td>'.$langs->trans("Contact").'</td><td>';
 		print img_picto('', 'contact', 'class="paddingright"');
-		print $form->selectcontacts($third, $this->withfromcontactid, 'contactid', 3, '', '', 0, 'minwidth200');
+		print $form->selectcontacts($third, $this->withfromcontactid, 'contactid_customer', 3, '', '', 0, 'minwidth200');
 		print ' ';
-		$formcompany->selectTypeContact($ticketstatic, '', 'type', 'external', '', 0, 'maginleftonly');
+		$formcompany->selectTypeContact($ticketstatic, '', 'type_customer', 'external', '', 0, 'maginleftonly');
 		print '</td></tr>';
 		
 		// TITLE

@@ -494,7 +494,7 @@ if ($object->id > 0) {
 						<div class="row">
 							<div class="col-12" style="display: flex;align-items: center;">
 								<i class="fa fa-chevron-left" id="'.$imgText.'" onclick="slideImages(this.id, \'prev\')"></i>
-									<img id="popupImage" src="" style="width:100%">
+								<img id="popupImage" src="" style="width:100%">
 								<i class="fa fa-chevron-right" id="'.$imgText.'" onclick="slideImages(this.id, \'next\')"></i>
 							</div>
 						</div>

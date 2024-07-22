@@ -207,7 +207,7 @@ if($user->socid) {
 				print "</tr>\n";
 				print '<tr class="oddeven" colspan="6">';
 					print '<td class="nowraponall" colspan="6">';
-					print $store->street.','. $store->zip_code.' '. $store->city;
+					print $store->street.' '.$store->house_number.', '. $store->zip_code.' '. $store->city;
 					print "</td>";
 				print '</tr>';
 				$i++;

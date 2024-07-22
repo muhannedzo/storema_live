@@ -381,6 +381,7 @@ if ($action == 'import') {
 					$checkoutIndex = "Not found";
 					$posIndex = "Not found";
 					$countryIndex = "Not found";
+					$costumerNameIndex = "Not found";
 					//Create an array to store the columns
 					// $columnArray = array();
 					// 	for($i = 0; $i < 12; $i++){
@@ -498,6 +499,12 @@ if ($action == 'import') {
 					echo '<tr>';
 					echo '<td><label for="filial">Filiale</label></td>';
 					echo '<td><input type="text" name="filial" value="'.($filialIndex === "Not found" ? $filialIndex : $filialIndex+1).'" '.($filialIndex === "Not found" ? 'class="wideInput"' : '').'></td>';
+					echo '</tr>';
+
+					// Kundenname
+					echo '<tr>';
+					echo '<td><label for="kundenname">Kundenname</label></td>';	
+					echo '<td><input type="text" name="kundenname" value="'.($costumerNameIndex === "Not found" ? $costumerNameIndex : $costumerNameIndex+1).'" '.($costumerNameIndex === "Not found" ? 'class="wideInput"' : '').'></td>';
 					echo '</tr>';
 
 					// Location
@@ -829,7 +836,7 @@ confirmButton:hover {
 			$posIndex = $_POST['pos'];
 			$countryIndex = $_POST['country'];
 			$startRow = $_POST['titleRow'];
-
+			$costumerNameIndex = $_POST['kundenname'];
 			// Handling filial schedule
 			if(isset($_POST['mondayO1']) || isset($_POST['mondayC1']) || isset($_POST['mondayO2']) || isset($_POST['mondayC2']) || isset($_POST['tuesdayO1']) || isset($_POST['tuesdayC1']) || isset($_POST['tuesdayO2']) || isset($_POST['tuesdayC2']) || isset($_POST['wednesdayO1']) || isset($_POST['wednesdayC1']) || isset($_POST['wednesdayO2']) || isset($_POST['wednesdayC2']) || isset($_POST['thursdayO1']) || isset($_POST['thursdayC1']) || isset($_POST['thursdayO2']) || isset($_POST['thursdayC2']) || isset($_POST['fridayO1']) || isset($_POST['fridayC1']) || isset($_POST['fridayO2']) || isset($_POST['fridayC2']) || isset($_POST['saturdayO1']) || isset($_POST['saturdayC1']) || isset($_POST['saturdayO2']) || isset($_POST['saturdayC2']) || isset($_POST['sundayO1']) || isset($_POST['sundayC1']) || isset($_POST['sundayO2']) || isset($_POST['sundayC2'])){
 				
@@ -888,8 +895,8 @@ confirmButton:hover {
 				$skippedRowArr = array();
 				//Run through the rows and store the data in an array 
 				// var_dump($db);
-				$insertBranchQuery = $db->db->prepare("INSERT INTO llx_stores_branch (fk_soc, date_creation, fk_user_creat, status, b_number, ref, excel_imported, street, house_number, zip_code, country, country_id, phone, city, days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    			$insertPosHardwareQuery = $db->db->prepare("INSERT INTO llx_stores_poshardware (ref, date_creation, posNo, status, fk_user_creat, storeId) VALUES (?, ?, ?, ?, ?, ?)");
+				$insertBranchQuery = $db->db->db->prepare("INSERT INTO llx_stores_branch (fk_soc, date_creation, fk_user_creat, status, b_number, ref, excel_imported, street, house_number, zip_code, country, country_id, phone, city, days, customer_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    			$insertPosHardwareQuery = $db->db->db->prepare("INSERT INTO llx_stores_poshardware (ref, date_creation, posNo, status, fk_user_creat, storeId) VALUES (?, ?, ?, ?, ?, ?)");
 
     			$db->db->begin();
 
@@ -905,7 +912,7 @@ confirmButton:hover {
 					
 					$break = 0;
 					//-------- Initialize variables ----------------
-
+					$costumerName = $costumerNameIndex === "Not found" ? NULL : $rowData[$costumerNameIndex-1];
 					$costumer = $costumerIndex === "Not found" ? NULL :   substr($rowData[$costumerIndex-1], 0, 3);
 					$country = $countryIndex === "Not found" ? NULL : substr($rowData[$countryIndex-1], 0, 2);
 					$countryID = $country === NULL ? NULL : getCountry($country, 3);
@@ -1078,13 +1085,18 @@ confirmButton:hover {
 						$skippedRows++;
 						continue;
 					}
+					if (($costumerName === 0 || $costumerName === "" || $costumerName === NULL) && $costumerNameIndex !== "Not found") {
+						setEventMessage($langs->trans('Zeile: ') . $row->getRowIndex() . $langs->trans(' und Spalte') . $costumerNameIndex . "(Kundenname) ist leer. Zeile wurde übersprungen.", 'errors');
+						$skippedRows++;
+						continue;
+					}
 					// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 					// Check if we got a partnerID
 					if ($partnerID === 0 || $partnerID == Null) {
 						// If not check if the partner exists in the database
-						$selectQuery = "SELECT rowid FROM llx_societe WHERE nom_alias LIKE '" . $rowData[$costumerIndex-1] . "%'";
+						$selectQuery = "SELECT rowid FROM llx_societe WHERE name_alias LIKE '" . $rowData[$costumerIndex-1] . "%'";
 						$partnerID = $db->query($selectQuery)->fetch_all()[0][0];
 						// var_dump($partnerID);
 						// If the partner does not exist we have to add new partner without any other values just new row
@@ -1096,10 +1108,11 @@ confirmButton:hover {
 						}
 					}
 					//Create branch number
+					
 					if($costumer !== NULL && $countryLabel !== NULL && $filiale !== NULL){
 						$tmpBNumber = $costumer . '-' . $countryLabel . '-' . $filiale;
 					}else if($costumerIndex === "Not found"){
-						$query = "SELECT nom_alias FROM llx_societe WHERE rowid = '".$partnerID."'";
+						$query = "SELECT name_alias FROM llx_societe WHERE rowid = '".$partnerID."'";
 						$resThird = $db->query($query)->fetch_all();
 						$tmpBNumber =  substr($resThird[0][0], 0, 3) . '-' . $countryLabel . '-' . $filiale;
 					}
@@ -1107,7 +1120,7 @@ confirmButton:hover {
 					$const = 1;
 					if ($tmpBNumber !== $bNumber) {
 						
-						$insertBranchQuery->bind_param('isiississssisss', $partnerID, date('Y-m-d H:i:s'), $userID, $const, $tmpBNumber, $tmpBNumber, $const, $street, $houseNumber, $zipCode, $countryLabel, $countryID, $phone, $city, $filialSchedule);
+						$insertBranchQuery->bind_param('isiississssissss', $partnerID, date('Y-m-d H:i:s'), $userID, $const, $tmpBNumber, $tmpBNumber, $const, $street, $houseNumber, $zipCode, $countryLabel, $countryID, $phone, $city, $filialSchedule, $costumerName);
 						$insertBranchQuery->execute();
 						$resSQL = $db->last_insert_id('llx_stores_branch', 'rowid');
 						//echo 'Hey';

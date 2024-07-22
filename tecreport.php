@@ -118,7 +118,7 @@ dol_include_once('/stores/compress.php');
       print '<div>';
          print '<label>Street*</label>';
          print '<br>';
-         print '<input class="textfield" type="text" name="street" value="'.$store->street.','. $store->zip_code.' '. $store->city.'" required>';
+         print '<input class="textfield" type="text" name="street" value="'.$store->street.' '.$store->house_number.', '. $store->zip_code.' '. $store->city.'" required>';
       print '</div>';
       print '<br>';
       print '<div>';
@@ -194,12 +194,12 @@ dol_include_once('/stores/compress.php');
             print '<table class="noborder centpercent">';
                print '<tr class="oddeven">';
                   print '<td colspan="1">Lancom Router</td>';
-                  print '<td colspan="1"><input type="text" name="lancom-router" style="width:100%"></td>';
+                  print '<td colspan="1"><input type="text" name="lancom-router" style="width:100%" required></td>';
                   print '<td colspan="1" class="center"><input type="checkbox" name="router-value"></td>';
                print '</tr>';
                print '<tr class="oddeven">';
                   print '<td colspan="1">Palo Alto Firewall</td>';
-                  print '<td colspan="1"><input type="text" name="firewall-qr" style="width:100%"></td>';
+                  print '<td colspan="1"><input type="text" name="firewall-qr" style="width:100%" required></td>';
                   print '<td colspan="1" class="center"><input type="checkbox" name="firewall-value"></td>';
                print '</tr>';
                print '<tr class="oddeven">';
@@ -588,7 +588,7 @@ dol_include_once('/stores/compress.php');
       print '</div>';
       print '<div class="row mt-3">';
          print '<div class="col right">';
-            print '<input type="submit" value="Save" id="save-form">';
+            print '<input type="submit" value="Save" id="save-form" disabled>';
          print '</div>';
          print '<div class="col left">';
             print '<input type="submit" value="Close" id="close-btn">';
@@ -608,7 +608,7 @@ dol_include_once('/stores/compress.php');
                   </div>
                </div>';
             
-      print '<button class="floating-button">
+      print '<button class="floating-button" id="floating-save-form">
                <i class="material-icons">Save</i>
              </button>';
 
@@ -770,6 +770,30 @@ dol_include_once('/stores/compress.php');
 
    }
    print '<script>';
+
+
+   print '
+         const form = document.getElementById("report-body");
+         const submitButton = document.getElementById("save-form");
+
+         function checkFormValidity() {
+         const requiredFields = form.querySelectorAll("input[required]");
+         let allFieldsFilled = true;
+
+         requiredFields.forEach(field => {
+            if (field.value.trim() === "") {
+               allFieldsFilled = false;
+            }
+         });
+
+         submitButton.disabled = !allFieldsFilled;
+         }
+
+         // Call the function initially to check form state on page load
+         checkFormValidity();
+
+         form.addEventListener("input", checkFormValidity);';
+
 
    print '
       $(document).ready(function() {
@@ -1030,10 +1054,10 @@ dol_include_once('/stores/compress.php');
                formData.append("ticketId", "'.$ticketId.'");
                formData.append("socId", "'.$object->fk_soc.'");
                
-               savePDFOnServer(formData);
+               savePDFOnServer(formData, 1);
             });
 
-            function savePDFOnServer(formData) {
+            function savePDFOnServer(formData, redirect) {
                $.ajax({
                   url: "tecform.php",
                   type: "POST",
@@ -1042,14 +1066,50 @@ dol_include_once('/stores/compress.php');
                   contentType: false,
                   success: function(response) {
                         console.log(response);
-                        window.location.href = "index.php";
+                        if(redirect == 1){
+                           window.location.href = "index.php";
+                        }
                   },
                   error: function(xhr, status, error) {
                         console.error("Request failed with status: " + xhr.status + ", Error: " + error);
-                        window.location.href = "index.php";
+                        if(redirect == 1){
+                           window.location.href = "index.php";
+                        }
                   }
                });
-            }';
+            }
+            $("#floating-save-form").on("click", function() {
+               const formData = new FormData();
+               
+               let parameters = [];
+
+               // 1. Capture serialized form data
+               const serializedData = $("#report-body").find(":input").serializeArray();
+               serializedData.forEach(item => {
+                  parameters.push({ name: item.name, value: item.value });
+               });
+
+               // 2. Capture checked checkboxes
+               $("#report-body input[type=\'checkbox\']").each(function() {
+                  parameters.push({ name: this.name, value: this.checked ? "1" : "0" });
+               });
+
+               // 3. Capture signature canvases
+               $("#report-body canvas").each(function() {
+                  parameters.push({ name: this.id, value: this.toDataURL() });  
+               });
+
+               // Add the full HTML content
+               formData.append("form", $("#report-body").html());
+               formData.append("parameters", JSON.stringify(parameters));
+               // Add other required fields
+               formData.append("storeId", "'.$storeid.'");
+               formData.append("userId", "'.$user->id.'");
+               formData.append("ticketId", "'.$ticketId.'");
+               formData.append("socId", "'.$object->fk_soc.'");
+               
+               savePDFOnServer(formData, 2);
+            });   ';
    //end save form
 
    // calculate distance/times
@@ -1283,23 +1343,19 @@ dol_include_once('/stores/compress.php');
         }';
       // end clear canvas
 
+      // show/hide save button on scrolling
       print '
             const floatingButton = document.querySelector(".floating-button");
-
-            let isScrolling = false;
-
-            window.addEventListener("scroll", () => {
-               isScrolling = true;
-               // floatingButton.style.opacity = 1;
-
-               clearTimeout(hideButtonTimer);
-               var hideButtonTimer = setTimeout(() => {
-                  if (!isScrolling) {
-                     console.log(1);
-                     floatingButton.style.display = "none";
-                  }
-               }, 1000);
+            $(window).scroll(function() {
+               
+               if(window.pageYOffset + window.innerHeight >= document.body.scrollHeight) {
+                  floatingButton.style.display = "none";
+               } else {
+                  floatingButton.style.display = "block";
+               }
+            
             });';
+      // end show/hide save button on scrolling
 
 
    // generate pdf

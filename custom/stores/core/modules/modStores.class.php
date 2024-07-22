@@ -311,7 +311,7 @@ class modStores extends DolibarrModules
 			'enabled'=>'isModEnabled("stores")', // Define condition to show or hide menu entry. Use '$conf->stores->enabled' if entry must be visible if module is enabled.
 			'perms'=>1, // Use 'perms'=>'$user->rights->stores->branch->read' if you want your menu with a permission rules
 			'target'=>'',
-			'user'=>0, // 0=Menu for internal users, 1=external users, 2=both
+			'user'=>'$user->rights->stores->branch->read', // 0=Menu for internal users, 1=external users, 2=both
 		);
 		// var_dump($this->menu);
 		/* END MODULEBUILDER TOPMENU */

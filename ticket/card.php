@@ -753,6 +753,8 @@ if ($action == 'create' || $action == 'presend') {
 	$formticket->param = array('origin' => GETPOST('origin'), 'originid' => GETPOST('originid'));
 
 	$formticket->withcancel = 1;
+	$thirdparty = GETPOST('third', 'int');
+	$branch = GETPOST('store', 'int');
 	//Muhannad's code
 	if($thirdparty && $branch){
 		$formticket->showForm_1(1, 'create', 0, null, $action, $thirdparty, $branch);
