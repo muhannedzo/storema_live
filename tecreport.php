@@ -532,6 +532,8 @@ dol_include_once('/stores/compress.php');
                            <option>arbeitssplaty nachher</option>
                            <option>seriennummer router</option>
                            <option>seriennummer firewall</option>
+                           <option>Firewall Rückseite (Beschriftung Patchkabel)</option>
+                           <option>Kabeletikett</option>
                            <option>image abnahmeprotokoll/testprotokoll</option>
                         </select>
                      </div>

@@ -1361,7 +1361,6 @@ if ($action == 'create' || $action == 'presend') {
 		}
 		print '</td>';
 		print '</tr>';
-
 		if (GETPOST('set', 'alpha') == 'properties' && $user->hasRight('ticket', 'write')) {
 			print '<tr>';
 			// Type
@@ -1391,13 +1390,13 @@ if ($action == 'create' || $action == 'presend') {
 			// Type
 			print '<tr><td class="titlefield">'.$langs->trans("Type").'</td><td>';
 			if (!empty($object->type_code)) {
-				print $langs->getLabelFromKey($db, 'TicketTypeShort'.$object->type_code, 'c_ticket_type', 'code', 'label', $object->type_code);
+				print $langs->getLabelFromKey($db, $object->type_code, 'c_ticket_type', 'code', 'label', $object->type_code);
 			}
 			print '</td></tr>';
 			// Group
 			$s = '';
 			if (!empty($object->category_code)) {
-				$s = $langs->getLabelFromKey($db, 'TicketCategoryShort'.$object->category_code, 'c_ticket_category', 'code', 'label', $object->category_code);
+				$s = $langs->getLabelFromKey($db, $object->category_code, 'c_ticket_category', 'code', 'label', $object->category_code);
 			}
 			print '<tr><td>'.$langs->trans("TicketCategory").'</td><td class="tdoverflowmax200" title="'.dol_escape_htmltag($s).'">';
 			print dol_escape_htmltag($s);
@@ -1405,7 +1404,7 @@ if ($action == 'create' || $action == 'presend') {
 			// Severity
 			print '<tr><td>'.$langs->trans("TicketSeverity").'</td><td>';
 			if (!empty($object->severity_code)) {
-				print $langs->getLabelFromKey($db, 'TicketSeverityShort'.$object->severity_code, 'c_ticket_severity', 'code', 'label', $object->severity_code);
+				print $langs->getLabelFromKey($db, $object->severity_code, 'c_ticket_severity', 'code', 'label', $object->severity_code);
 			}
 			print '</td></tr>';
 		}

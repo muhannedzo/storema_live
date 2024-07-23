@@ -308,6 +308,16 @@ if (empty($reshook)) {
 	}
 
 	if ($action == 'update' && empty(GETPOST('cancel')) && $permissiontoadd) {
+		$sql = "SELECT stores";
+		$sql .= " FROM llx_projet_extrafields";
+		$sql .= " WHERE fk_object = ".$object->id.";";
+		$result = $db->query($sql)->fetch_all()[0][0];
+		$existStores = explode(",", $result);
+		
+		$stores = GETPOST('options_stores', 'alpha');
+		$storesDef = array_diff($stores, $existStores);
+
+
 		$error = 0;
 
 		if (empty($ref)) {
@@ -414,6 +424,21 @@ if (empty($reshook)) {
 			$action = 'edit';
 		} else {
 			$db->commit();
+
+			//Muhannad's Code start
+			$ticketstat = new Ticket($db);
+			foreach($storesDef as $store){
+				$defaultref = $ticketstat->getDefaultRef();
+				$trackid = 'tic'.$object->id.bin2hex(random_bytes(10));
+				$ticketsubject = 'Rollout '.$object->ref;
+				$query = "INSERT INTO `llx_ticket` (`entity`, `ref`, `track_id`, `fk_soc`, `fk_project`, `fk_user_create`, `subject`, `message`, `fk_statut`, `type_code`, `category_code`, `severity_code`, `datec`)"; 
+				$query .= " VALUES ('1', '" . $defaultref . "', '". $trackid ."', '" . $object->socid . "', '".$object->id."', '".$user->id."', '".$ticketsubject."', '".$object->description."', '0', 'Roll', 'INSTA OT', 'Termin', '".date("Y-m-d H:i:s")."')";
+				$db->query($query, 'ddl');
+				$iid = $db->last_insert_id('llx_ticket');
+				$query_extra = "INSERT INTO `llx_ticket_extrafields` (`fk_object`, `fk_store`, `customer`, `ordervia`) VALUES ('" . $iid . "', '". $store ."', '" . $object->array_options["options_customerbranch"] . "', 'Storema')";
+				$db->query($query_extra, 'ddl');
+			}
+			// Muhannad's code end
 
 			if (GETPOST('socid', 'int') > 0) {
 				$object->fetch_thirdparty(GETPOST('socid', 'int'));
@@ -2002,182 +2027,182 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			}
 		</style>
 		';
-		// if($object->array_options["options_stores"]){
+		if($object->array_options["options_stores"]){
 
-		// 	// Dropdown filter for countries
-		// 	$countryFilter = GETPOST('country') ? GETPOST('country') : "DE";
+			// Dropdown filter for countries
+			$countryFilter = GETPOST('country') ? GETPOST('country') : "DE";
 	
-		// 	$country_filter = '<div class="row">';
-		// 	foreach ($countries as $country) {
-		// 		if($country["country"] == $countryFilter) {
-		// 			$country_filter .= '<div class="col-4 clickable" style="background: #e0e0e0;" onclick="reloadPage(\''.$country["country"].'\', \''.$country["country_id"].'\')">';
-		// 		} else {
-		// 			$country_filter .= '<div class="col-4 clickable" onclick="reloadPage(\''.$country["country"].'\', \''.$country["country_id"].'\')">';
-		// 		}
-		// 		$country_filter .= $country["country"].'</div>';
-		// 	}
-		// 	print ' <script>
-		// 				function reloadPage(country, country_id) {
-		// 					window.location.href = "?id='.$object->id.'&country=" + country + "&country_id=" + country_id;
-		// 				}
-		// 			</script>
-		// 			';
-		// 	$country_filter .= '</div>';
-		// 	// Display country filter above tables
-		// 	$allStores .= $country_filter;
-		// 	$allStores .= '<div style="display: flex;">';
+			$country_filter = '<div class="row">';
+			foreach ($countries as $country) {
+				if($country["country"] == $countryFilter) {
+					$country_filter .= '<div class="col-4 clickable" style="background: #e0e0e0;" onclick="reloadPage(\''.$country["country"].'\', \''.$country["country_id"].'\')">';
+				} else {
+					$country_filter .= '<div class="col-4 clickable" onclick="reloadPage(\''.$country["country"].'\', \''.$country["country_id"].'\')">';
+				}
+				$country_filter .= $country["country"].'</div>';
+			}
+			print ' <script>
+						function reloadPage(country, country_id) {
+							window.location.href = "?id='.$object->id.'&country=" + country + "&country_id=" + country_id;
+						}
+					</script>
+					';
+			$country_filter .= '</div>';
+			// Display country filter above tables
+			$allStores .= $country_filter;
+			$allStores .= '<div style="display: flex;">';
 	
-		// 	$countryIDFilter = GETPOST('country_id') ? GETPOST('country_id') : "5";
-		// 	// First Table
-		// 	$allStores .= '<div class="div-table-responsive-no-min">';
-		// 	$allStores .= '<table class="noborder centpercent">';
-		// 	$allStores .= '<tr class="liste_titre">';
-		// 	$allStores .= '<th>PLZ</th>';
-		// 	$allStores .= '<th class="center">Stores</th>';
-		// 	$allStores .= '<th class="center">Im Projekt</th>';
-		// 	$allStores .= '<th class="center">Fertig/Offen</th>';
-		// 	$allStores .= '</tr>';
-		// 	$sql = "SELECT DISTINCT LEFT(s.zip_code, 1) AS `zipcode`, 
-		// 						(SELECT COUNT(*) FROM llx_stores_branch WHERE fk_soc = ".$object->array_options["options_customerbranch"]." AND LEFT(zip_code, 1) = LEFT(s.zip_code, 1) AND s.country_id = ".$countryIDFilter.") AS `zipcode_stores`, 
-		// 						(SELECT COUNT(*) FROM llx_stores_branch ss 
-		// 						LEFT JOIN llx_projet_extrafields p ON CONCAT(',', p.stores, ',') LIKE CONCAT('%,', ss.rowid, ',%') 
-		// 						WHERE p.fk_object = ".$id." AND s.fk_soc = ".$object->array_options["options_customerbranch"]." AND LEFT(zip_code, 1) = LEFT(s.zip_code, 1) AND s.country_id = ".$countryIDFilter.") AS `zipcode_stores_p`,
-		// 						(SELECT COUNT(DISTINCT te.fk_store) 
-		// 							FROM llx_ticket_extrafields te 
-		// 							JOIN llx_ticket t ON te.fk_object = t.rowid 
-		// 							JOIN llx_stores_branch sb ON te.fk_store = sb.rowid 
-		// 							JOIN llx_projet pr ON t.fk_project = pr.rowid 
-		// 						WHERE te.customer = s.fk_soc AND t.fk_project = ".$id." AND LEFT(sb.zip_code, 1) = LEFT(s.zip_code, 1) AND t.fk_statut = 8 AND s.country_id = ".$countryIDFilter.") AS `total_stores_done`,
-		// 						(SELECT COUNT(DISTINCT te.fk_store) 
-		// 							FROM llx_ticket_extrafields te 
-		// 							JOIN llx_ticket t ON te.fk_object = t.rowid 
-		// 							JOIN llx_stores_branch sb ON te.fk_store = sb.rowid 
-		// 							JOIN llx_projet pr ON t.fk_project = pr.rowid 
-		// 						WHERE te.customer = s.fk_soc AND t.fk_project = ".$id." AND LEFT(sb.zip_code, 1) = LEFT(s.zip_code, 1) AND t.fk_statut <> 8 AND s.country_id = ".$countryIDFilter.") AS `total_stores_open`
-		// 				FROM llx_stores_branch s
-		// 				WHERE s.fk_soc = ".$object->array_options["options_customerbranch"]." AND s.country_id = ".$countryIDFilter." ORDER BY zipcode";			
-		// 	$result = $db->query($sql);
-		// 	$stores = new Branch($db);
-		// 	if ($result) {
-		// 		$num = $db->num_rows($result);
+			$countryIDFilter = GETPOST('country_id') ? GETPOST('country_id') : "5";
+			// First Table
+			$allStores .= '<div class="div-table-responsive-no-min">';
+			$allStores .= '<table class="noborder centpercent">';
+			$allStores .= '<tr class="liste_titre">';
+			$allStores .= '<th>PLZ</th>';
+			$allStores .= '<th class="center">Stores</th>';
+			$allStores .= '<th class="center">Im Projekt</th>';
+			$allStores .= '<th class="center">Fertig/Offen</th>';
+			$allStores .= '</tr>';
+			$sql = "SELECT DISTINCT LEFT(s.zip_code, 1) AS `zipcode`, 
+								(SELECT COUNT(*) FROM llx_stores_branch WHERE fk_soc = ".$object->array_options["options_customerbranch"]." AND LEFT(zip_code, 1) = LEFT(s.zip_code, 1) AND s.country_id = ".$countryIDFilter.") AS `zipcode_stores`, 
+								(SELECT COUNT(*) FROM llx_stores_branch ss 
+								LEFT JOIN llx_projet_extrafields p ON CONCAT(',', p.stores, ',') LIKE CONCAT('%,', ss.rowid, ',%') 
+								WHERE p.fk_object = ".$id." AND s.fk_soc = ".$object->array_options["options_customerbranch"]." AND LEFT(zip_code, 1) = LEFT(s.zip_code, 1) AND s.country_id = ".$countryIDFilter.") AS `zipcode_stores_p`,
+								(SELECT COUNT(DISTINCT te.fk_store) 
+									FROM llx_ticket_extrafields te 
+									JOIN llx_ticket t ON te.fk_object = t.rowid 
+									JOIN llx_stores_branch sb ON te.fk_store = sb.rowid 
+									JOIN llx_projet pr ON t.fk_project = pr.rowid 
+								WHERE te.customer = s.fk_soc AND t.fk_project = ".$id." AND LEFT(sb.zip_code, 1) = LEFT(s.zip_code, 1) AND t.fk_statut = 8 AND s.country_id = ".$countryIDFilter.") AS `total_stores_done`,
+								(SELECT COUNT(DISTINCT te.fk_store) 
+									FROM llx_ticket_extrafields te 
+									JOIN llx_ticket t ON te.fk_object = t.rowid 
+									JOIN llx_stores_branch sb ON te.fk_store = sb.rowid 
+									JOIN llx_projet pr ON t.fk_project = pr.rowid 
+								WHERE te.customer = s.fk_soc AND t.fk_project = ".$id." AND LEFT(sb.zip_code, 1) = LEFT(s.zip_code, 1) AND t.fk_statut <> 8 AND s.country_id = ".$countryIDFilter.") AS `total_stores_open`
+						FROM llx_stores_branch s
+						WHERE s.fk_soc = ".$object->array_options["options_customerbranch"]." AND s.country_id = ".$countryIDFilter." ORDER BY zipcode";			
+			$result = $db->query($sql);
+			$stores = new Branch($db);
+			if ($result) {
+				$num = $db->num_rows($result);
 			
-		// 		$i = 0;
+				$i = 0;
 			
-		// 		if ($num > 0) {
+				if ($num > 0) {
 			
-		// 			while ($i < $num && $objp = $db->fetch_object($result)) {
+					while ($i < $num && $objp = $db->fetch_object($result)) {
 			
-		// 				$stores->zipcode = $objp->zipcode;
-		// 				$stores->zipcode_stores = $objp->zipcode_stores;
-		// 				$stores->zipcode_stores_p = $objp->zipcode_stores_p;
-		// 				$stores->total_stores_done = $objp->total_stores_done;
-		// 				$stores->total_stores_open = $objp->total_stores_open;
+						$stores->zipcode = $objp->zipcode;
+						$stores->zipcode_stores = $objp->zipcode_stores;
+						$stores->zipcode_stores_p = $objp->zipcode_stores_p;
+						$stores->total_stores_done = $objp->total_stores_done;
+						$stores->total_stores_open = $objp->total_stores_open;
 			
-		// 				// To divide into two tables, we can check the iteration count
-		// 				// Let's assume half the records are in each table for simplicity
-		// 				if ($i < $num / 2) {
-		// 					$allStores .= '<tr class="oddeven">';
-		// 					// Zipcode
-		// 					$allStores .= '<td class="nowrap tdoverflowmax200">';
-		// 					$allStores .= $stores->zipcode;
-		// 					$allStores .= "</td>\n";
-		// 					// Thirdparty Stores in the zipcode
-		// 					$allStores .= '<td class="center">';
-		// 					$allStores .= $stores->zipcode_stores;
-		// 					$allStores .= '</td>';
-		// 					// Thirdparty Stores in the zipcode for the current project
-		// 					$allStores .= '<td class="center">';
-		// 					$allStores .= $stores->zipcode_stores_p;
-		// 					$allStores .= '</td>';
-		// 					// done/open
-		// 					$allStores .= '<td class="center">';
-		// 					$allStores .= $stores->total_stores_done.'/'.$stores->total_stores_open;
-		// 					$allStores .= '</td>';
-		// 					$allStores .= "</tr>\n";
-		// 				}
-		// 				$i++;
-		// 			}
+						// To divide into two tables, we can check the iteration count
+						// Let's assume half the records are in each table for simplicity
+						if ($i < $num / 2) {
+							$allStores .= '<tr class="oddeven">';
+							// Zipcode
+							$allStores .= '<td class="nowrap tdoverflowmax200">';
+							$allStores .= $stores->zipcode;
+							$allStores .= "</td>\n";
+							// Thirdparty Stores in the zipcode
+							$allStores .= '<td class="center">';
+							$allStores .= $stores->zipcode_stores;
+							$allStores .= '</td>';
+							// Thirdparty Stores in the zipcode for the current project
+							$allStores .= '<td class="center">';
+							$allStores .= $stores->zipcode_stores_p;
+							$allStores .= '</td>';
+							// done/open
+							$allStores .= '<td class="center">';
+							$allStores .= $stores->total_stores_done.'/'.$stores->total_stores_open;
+							$allStores .= '</td>';
+							$allStores .= "</tr>\n";
+						}
+						$i++;
+					}
 			
-		// 			$db->free($result);
+					$db->free($result);
 			
-		// 		} else {
-		// 			$allStores .= '<td class="left" colspan="6">';
-		// 			$allStores .= 'No Stores';
-		// 			$allStores .= '</td>';
-		// 		}
-		// 		$allStores .= "</table>\n";
-		// 		$allStores .= '</div>';
-		// 		$allStores .= "<!-- End last thirdparties modified -->\n";
-		// 	} else {
-		// 		dol_print_error($db);
-		// 	}
+				} else {
+					$allStores .= '<td class="left" colspan="6">';
+					$allStores .= 'No Stores';
+					$allStores .= '</td>';
+				}
+				$allStores .= "</table>\n";
+				$allStores .= '</div>';
+				$allStores .= "<!-- End last thirdparties modified -->\n";
+			} else {
+				dol_print_error($db);
+			}
 			
-		// 	// Second Table
-		// 	$allStores .= '<div class="div-table-responsive-no-min">';
-		// 	$allStores .= '<table class="noborder centpercent">';
-		// 	$allStores .= '<tr class="liste_titre">';
-		// 	$allStores .= '<th>PLZ</th>';
-		// 	$allStores .= '<th class="center">Stores</th>';
-		// 	$allStores .= '<th class="center">Im Projekt</th>';
-		// 	$allStores .= '<th class="center">Fertig/Offen</th>';
-		// 	$allStores .= '</tr>';
+			// Second Table
+			$allStores .= '<div class="div-table-responsive-no-min">';
+			$allStores .= '<table class="noborder centpercent">';
+			$allStores .= '<tr class="liste_titre">';
+			$allStores .= '<th>PLZ</th>';
+			$allStores .= '<th class="center">Stores</th>';
+			$allStores .= '<th class="center">Im Projekt</th>';
+			$allStores .= '<th class="center">Fertig/Offen</th>';
+			$allStores .= '</tr>';
 			
-		// 	$result = $db->query($sql); // Execute the query again to reset the result pointer
-		// 	if ($result) {
-		// 		$num = $db->num_rows($result);
+			$result = $db->query($sql); // Execute the query again to reset the result pointer
+			if ($result) {
+				$num = $db->num_rows($result);
 			
-		// 		$i = 0;
+				$i = 0;
 			
-		// 		if ($num > 0) {
+				if ($num > 0) {
 			
-		// 			while ($i < $num && $objp = $db->fetch_object($result)) {
+					while ($i < $num && $objp = $db->fetch_object($result)) {
 			
-		// 				$stores->zipcode = $objp->zipcode;
-		// 				$stores->zipcode_stores = $objp->zipcode_stores;
-		// 				$stores->zipcode_stores_p = $objp->zipcode_stores_p;
-		// 				$stores->total_stores_done = $objp->total_stores_done;
-		// 				$stores->total_stores_open = $objp->total_stores_open;
+						$stores->zipcode = $objp->zipcode;
+						$stores->zipcode_stores = $objp->zipcode_stores;
+						$stores->zipcode_stores_p = $objp->zipcode_stores_p;
+						$stores->total_stores_done = $objp->total_stores_done;
+						$stores->total_stores_open = $objp->total_stores_open;
 			
-		// 				// Displaying the second half of the records in the second table
-		// 				if ($i >= $num / 2) {
-		// 					$allStores .= '<tr class="oddeven">';
-		// 					// Zipcode
-		// 					$allStores .= '<td class="nowrap tdoverflowmax200">';
-		// 					$allStores .= $stores->zipcode;
-		// 					$allStores .= "</td>\n";
-		// 					// Thirdparty Stores in the zipcode
-		// 					$allStores .= '<td class="center">';
-		// 					$allStores .= $stores->zipcode_stores;
-		// 					$allStores .= '</td>';
-		// 					// Thirdparty Stores in the zipcode for the current project
-		// 					$allStores .= '<td class="center">';
-		// 					$allStores .= $stores->zipcode_stores_p;
-		// 					$allStores .= '</td>';
-		// 					// done/open
-		// 					$allStores .= '<td class="center">';
-		// 					$allStores .= $stores->total_stores_done.'/'.$stores->total_stores_open;
-		// 					$allStores .= '</td>';
-		// 					$allStores .= "</tr>\n";
-		// 				}
-		// 				$i++;
-		// 			}
+						// Displaying the second half of the records in the second table
+						if ($i >= $num / 2) {
+							$allStores .= '<tr class="oddeven">';
+							// Zipcode
+							$allStores .= '<td class="nowrap tdoverflowmax200">';
+							$allStores .= $stores->zipcode;
+							$allStores .= "</td>\n";
+							// Thirdparty Stores in the zipcode
+							$allStores .= '<td class="center">';
+							$allStores .= $stores->zipcode_stores;
+							$allStores .= '</td>';
+							// Thirdparty Stores in the zipcode for the current project
+							$allStores .= '<td class="center">';
+							$allStores .= $stores->zipcode_stores_p;
+							$allStores .= '</td>';
+							// done/open
+							$allStores .= '<td class="center">';
+							$allStores .= $stores->total_stores_done.'/'.$stores->total_stores_open;
+							$allStores .= '</td>';
+							$allStores .= "</tr>\n";
+						}
+						$i++;
+					}
 			
-		// 			$db->free($result);
+					$db->free($result);
 			
-		// 		} else {
-		// 			$allStores .= '<td class="left" colspan="6">';
-		// 			$allStores .= 'No Stores';
-		// 			$allStores .= '</td>';
-		// 		}
-		// 		$allStores .= "</table>\n";
-		// 		$allStores .= '</div>';
-		// 		$allStores .= "<!-- End last thirdparties modified -->\n";
-		// 	} else {
-		// 		dol_print_error($db);
-		// 	}
-		// 	print $allStores;
+				} else {
+					$allStores .= '<td class="left" colspan="6">';
+					$allStores .= 'No Stores';
+					$allStores .= '</td>';
+				}
+				$allStores .= "</table>\n";
+				$allStores .= '</div>';
+				$allStores .= "<!-- End last thirdparties modified -->\n";
+			} else {
+				dol_print_error($db);
+			}
+			print $allStores;
 
-		// }
+		}
 		print '</div>';
 		print '</div>';
 		print '</div>';

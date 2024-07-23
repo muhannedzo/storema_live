@@ -148,6 +148,12 @@ function ticket_prepare_head($object)
 	$head[$h][2] = 'ticketHistory';
 	$h++;
 
+	// Report 
+	$head[$h][0] = DOL_URL_ROOT.'/ticket/reportOverview.php?id='.$object->id.'&action=view';
+	$head[$h][1] = $langs->trans("Report");
+	$head[$h][2] = 'tabTicketReport';
+	$h++;
+
 
 	complete_head_from_modules($conf, $langs, $object, $head, $h, 'ticket', 'add', 'external');
 
