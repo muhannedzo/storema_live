@@ -3443,4 +3443,375 @@ class FormTicket
 
 		print "<!-- End form TICKET -->\n";
 	}
+
+	/**
+	 * Show the form to add message on ticket
+	 *
+	 * @param  	string  $width      	Width of form
+	 * @return 	void
+	 */
+	public function showMessageFormReport($width = '40%', $s)
+	{
+		global $conf, $langs, $user, $hookmanager, $form, $mysoc;
+
+		$formmail = new FormMail($this->db);
+		$addfileaction = 'addfile';
+
+		if (!is_object($form)) {
+			$form = new Form($this->db);
+		}
+
+		// Load translation files required by the page
+		$langs->loadLangs(array('other', 'mails', 'ticket'));
+
+		// Clear temp files. Must be done at beginning, before call of triggers
+		if (GETPOST('mode', 'alpha') == 'init' || (GETPOST('modelselected') && GETPOST('modelmailselected', 'alpha') && GETPOST('modelmailselected', 'alpha') != '-1')) {
+			$this->clear_attached_files();
+		}
+
+		// Define output language
+		$outputlangs = $langs;
+		$newlang = '';
+		if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && isset($this->param['langsmodels'])) {
+			$newlang = $this->param['langsmodels'];
+		}
+		if (!empty($newlang)) {
+			$outputlangs = new Translate("", $conf);
+			$outputlangs->setDefaultLang($newlang);
+			$outputlangs->load('other');
+		}
+
+		// Get message template for $this->param["models"] into c_email_templates
+		$arraydefaultmessage = -1;
+		if (isset($this->param['models']) && $this->param['models'] != 'none') {
+			$model_id = 0;
+			if (array_key_exists('models_id', $this->param)) {
+				$model_id = (int) $this->param["models_id"];
+			}
+
+			$arraydefaultmessage = $formmail->getEMailTemplate($this->db, $this->param["models"], $user, $outputlangs, $model_id); // If $model_id is empty, preselect the first one
+		}
+
+		// Define list of attached files
+		$listofpaths = array();
+		$listofnames = array();
+		$listofmimes = array();
+
+		if (!empty($this->trackid)) {
+			$keytoavoidconflict = '-'.$this->trackid;
+		} else {
+			$keytoavoidconflict = empty($this->track_id) ? '' : '-'.$this->track_id; // track_id instead of trackid
+		}
+		//var_dump($keytoavoidconflict);
+		if (GETPOST('mode', 'alpha') == 'init' || (GETPOST('modelselected') && GETPOST('modelmailselected', 'alpha') && GETPOST('modelmailselected', 'alpha') != '-1')) {
+			if (!empty($arraydefaultmessage->joinfiles) && !empty($this->param['fileinit']) && is_array($this->param['fileinit'])) {
+				foreach ($this->param['fileinit'] as $file) {
+					$formmail->add_attached_files($file, basename($file), dol_mimetype($file));
+				}
+			}
+		}
+		//var_dump($_SESSION);
+		//var_dump($_SESSION["listofpaths".$keytoavoidconflict]);
+		if (!empty($_SESSION["listofpaths".$keytoavoidconflict])) {
+			$listofpaths = explode(';', $_SESSION["listofpaths".$keytoavoidconflict]);
+		}
+		if (!empty($_SESSION["listofnames".$keytoavoidconflict])) {
+			$listofnames = explode(';', $_SESSION["listofnames".$keytoavoidconflict]);
+		}
+		if (!empty($_SESSION["listofmimes".$keytoavoidconflict])) {
+			$listofmimes = explode(';', $_SESSION["listofmimes".$keytoavoidconflict]);
+		}
+
+		// Define output language
+		$outputlangs = $langs;
+		$newlang = '';
+		if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && isset($this->param['langsmodels'])) {
+			$newlang = $this->param['langsmodels'];
+		}
+		if (!empty($newlang)) {
+			$outputlangs = new Translate("", $conf);
+			$outputlangs->setDefaultLang($newlang);
+			$outputlangs->load('other');
+		}
+
+		print "\n<!-- Begin message_form TICKET -->\n";
+
+		$send_email = GETPOST('send_email', 'int') ? GETPOST('send_email', 'int') : 0;
+
+		// Example 1 : Adding jquery code
+		print '<script nonce="'.getNonce().'" type="text/javascript">
+		jQuery(document).ready(function() {
+			send_email=' . $send_email.';
+			if (send_email) {
+				if (!jQuery("#send_msg_email").is(":checked")) {
+					jQuery("#send_msg_email").prop("checked", true).trigger("change");
+				}
+				jQuery(".email_line").show();
+			} else {
+				if (!jQuery("#private_message").is(":checked")) {
+					jQuery("#private_message").prop("checked", true).trigger("change");
+				}
+				jQuery(".email_line").hide();
+			}
+		';
+
+		// If constant set, allow to send private messages as email
+		if (!getDolGlobalString('TICKET_SEND_PRIVATE_EMAIL')) {
+			print '
+					jQuery(".email_line").show();
+				';
+		}
+
+		print '});
+		</script>';
+
+
+		print '<form method="post" name="ticket" id="ticket" enctype="multipart/form-data" action="'.$this->param["returnurl"].'">';
+		print '<input type="hidden" name="token" value="'.newToken().'">';
+		print '<input type="hidden" name="action" value="'.$this->action.'">';
+		print '<input type="hidden" name="actionbis" value="add_message">';
+		print '<input type="hidden" name="backtopage" value="'.$this->backtopage.'">';
+		print '<input type="hidden" name="send_email" value="1" id="send_msg_email"/> ';
+		if (!empty($this->trackid)) {
+			print '<input type="hidden" name="trackid" value="'.$this->trackid.'">';
+		} else {
+			print '<input type="hidden" name="trackid" value="'.(empty($this->track_id) ? '' : $this->track_id).'">';
+			$keytoavoidconflict = empty($this->track_id) ? '' : '-'.$this->track_id; // track_id instead of trackid
+		}
+		foreach ($this->param as $key => $value) {
+			print '<input type="hidden" name="'.$key.'" value="'.$value.'">';
+		}
+
+		// Get message template
+		$model_id = 0;
+		if (array_key_exists('models_id', $this->param)) {
+			$model_id = $this->param["models_id"];
+			$arraydefaultmessage = $formmail->getEMailTemplate($this->db, $this->param["models"], $user, $outputlangs, $model_id);
+		}
+
+		$result = $formmail->fetchAllEMailTemplate(!empty($this->param["models"]) ? $this->param["models"] : "", $user, $outputlangs);
+		if ($result < 0) {
+			setEventMessages($this->error, $this->errors, 'errors');
+		}
+		$modelmail_array = array();
+		foreach ($formmail->lines_model as $line) {
+			$modelmail_array[$line->id] = $line->label;
+		}
+
+		// print '<table class="border" width="'.$width.'">';
+
+		// External users can't send message email
+		if ($user->hasRight("ticket", "write") && !$user->socid) {
+			$ticketstat = new Ticket($this->db);
+			$res = $ticketstat->fetch('', '', $this->track_id);
+
+			$topic = "";
+			foreach ($formmail->lines_model as $line) {
+				if ($this->param['models_id'] == $line->id) {
+					$topic = $line->topic;
+					break;
+				}
+			}
+			print '<div class="row email_line">';
+				print '<div class="col-12">';
+					print $langs->trans('Subject');
+					if (empty($topic)) {
+						print '<input type="text" class="text minwidth500" name="subject" value="['.getDolGlobalString('MAIN_INFO_SOCIETE_NOM').' - '.$langs->trans("Ticket").' '.$ticketstat->ref.'] '.$langs->trans('TicketNewMessage').'" />';
+					} else {
+						print '<input type="text" class="text minwidth500" name="subject" value="['.getDolGlobalString('MAIN_INFO_SOCIETE_NOM').' - '.$langs->trans("Ticket").' '.$ticketstat->ref.'] '.$topic.'" />';
+					}
+				print '</div>';
+			print "</div>";
+			print '<br>';
+
+			print '<div class="row email_line">';
+				print '<div class="col-12">';
+					print '<laebl>'.$langs->trans('MailRecipients').'</label>';
+					if ($res) {
+						// Retrieve email of all contacts (internal and external)
+						$contacts = $ticketstat->getInfosTicketInternalContact(1);
+						$contacts = array_merge($contacts, $ticketstat->getInfosTicketExternalContact(1));
+						// var_dump($contacts);
+		
+						$sendto = array();
+		
+						// Build array to display recipient list
+						if (is_array($contacts) && count($contacts) > 0) {
+							foreach ($contacts as $key => $info_sendto) {
+								if ($info_sendto['email'] != '') {
+									$sendto[] = dol_escape_htmltag(trim($info_sendto['firstname']." ".$info_sendto['lastname'])." <".$info_sendto['email'].">").' <small class="opacitymedium">('.dol_escape_htmltag($info_sendto['libelle']).")</small>";
+								}
+							}
+						}
+		
+						if ($ticketstat->origin_email && !in_array($ticketstat->origin_email, $sendto)) {
+							$sendto[] = dol_escape_htmltag($ticketstat->origin_email).' <small class="opacitymedium">('.$langs->trans("TicketEmailOriginIssuer").")</small>";
+						}
+		
+						if ($ticketstat->fk_soc > 0) {
+							$ticketstat->socid = $ticketstat->fk_soc;
+							$ticketstat->fetch_thirdparty();
+		
+							if (!empty($ticketstat->thirdparty->email) && !in_array($ticketstat->thirdparty->email, $sendto)) {
+								$sendto[] = $ticketstat->thirdparty->email.' <small class="opacitymedium">('.$langs->trans('Customer').')</small>';
+							}
+						}
+		
+						if (getDolGlobalInt('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS')) {
+							$sendto[] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO').' <small class="opacitymedium">(generic email)</small>';
+						}
+		
+						// Print recipient list
+						if (is_array($sendto) && count($sendto) > 0) {
+							print img_picto('', 'email', 'class="pictofixedwidth"');
+							print implode(', ', $sendto);
+						} else {
+							print '<div class="warning">'.$langs->trans('WarningNoEMailsAdded').' '.$langs->trans('TicketGoIntoContactTab').'</div>';
+						}
+					}
+				print '</div>';
+			print "</div>";
+			print '<br>';
+
+		}
+
+		$uselocalbrowser = false;
+
+		// Attached files
+		if (!empty($this->withfile)) {
+			$out = '<div class="row">';
+				$out .= '<div class="col-12">';
+					$out .= $langs->trans("MailFile");
+					// TODO Trick to have param removedfile containing nb of image to delete. But this does not works without javascript
+					$out .= '<input type="hidden" class="removedfilehidden" name="removedfile" value="">'."\n";
+					$out .= '<script nonce="'.getNonce().'" type="text/javascript">';
+					$out .= 'jQuery(document).ready(function () {';
+					$out .= '    jQuery("#'.$addfileaction.'").prop("disabled", true);';
+					$out .= '    jQuery("#addedfile").on("change", function() {';
+					$out .= '        if (jQuery(this).val().length) {';
+					$out .= '            jQuery("#'.$addfileaction.'").prop("disabled", false);';
+					$out .= '        } else {';
+					$out .= '            jQuery("#'.$addfileaction.'").prop("disabled", true);';
+					$out .= '        }';
+					$out .= '    });';
+					$out .= '    jQuery(".removedfile").click(function() {';
+					$out .= '        jQuery(".removedfilehidden").val(jQuery(this).val());';
+					$out .= '    });';
+					$out .= '})';
+					$out .= '</script>'."\n";
+
+					if (count($listofpaths)) {
+						foreach ($listofpaths as $key => $val) {
+							$out .= '<div id="attachfile_'.$key.'">';
+							$out .= img_mime($listofnames[$key]).' '.$listofnames[$key];
+							if (!$this->withfilereadonly) {
+								$out .= ' <input type="image" style="border: 0px;" src="'.DOL_URL_ROOT.'/theme/'.$conf->theme.'/img/delete.png" value="'.($key + 1).'" class="removedfile reposition" id="removedfile_'.$key.'" name="removedfile_'.$key.'" />';
+							}
+							$out .= '<br></div>';
+						}
+					} else {
+						//$out .= $langs->trans("NoAttachedFiles").'<br>';
+					}
+					if ($this->withfile == 2) { // Can add other files
+						$out .= '<input type="file" class="flat" id="addedfile" name="addedfile" value="'.$langs->trans("Upload").'" />';
+						$out .= ' ';
+						$out .= '<input type="submit" class="button smallpaddingimp reposition" id="'.$addfileaction.'" name="'.$addfileaction.'" value="'.$langs->trans("MailingAddFile").'" />';
+					}
+				$out .= "</div>";
+			$out .= "</div>\n";
+
+			// print $out;
+			// print '<br>';
+		}
+
+		
+		// MESSAGE
+		$defaultmessage = "";
+		if (is_object($arraydefaultmessage) && $arraydefaultmessage->content) {
+			$defaultmessage = $arraydefaultmessage->content;
+		}
+		$defaultmessage = str_replace('\n', "\n", $defaultmessage);
+
+		// Deal with format differences between message and signature (text / HTML)
+		if (dol_textishtml($defaultmessage) && !dol_textishtml($this->substit['__USER_SIGNATURE__'])) {
+			$this->substit['__USER_SIGNATURE__'] = dol_nl2br($this->substit['__USER_SIGNATURE__']);
+		} elseif (!dol_textishtml($defaultmessage) && isset($this->substit['__USER_SIGNATURE__']) && dol_textishtml($this->substit['__USER_SIGNATURE__'])) {
+			$defaultmessage = dol_nl2br($defaultmessage);
+		}
+		if (GETPOSTISSET("message") && !GETPOST('modelselected')) {
+			$defaultmessage = GETPOST('message', 'restricthtml');
+		} else {
+			$defaultmessage = make_substitutions($defaultmessage, $this->substit);
+			// Clean first \n and br (to avoid empty line when CONTACTCIVNAME is empty)
+			$defaultmessage = preg_replace("/^(<br>)+/", "", $defaultmessage);
+			$defaultmessage = preg_replace("/^\n+/", "", $defaultmessage);
+		}
+		print '<div class="row">';
+			print '<div class="col-12">';
+				print '<label for="message"><span class="">'.$langs->trans("Message").'</span>';
+				if ($user->hasRight("ticket", "write") && !$user->socid) {
+					$texttooltip = $langs->trans("TicketMessageHelp");
+					if (getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO') || getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE')) {
+						$texttooltip .= '<br><br>'.$langs->trans("ForEmailMessageWillBeCompletedWith").'...';
+					}
+					if (getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO')) {
+						$texttooltip .= '<br><u>'.$langs->trans("TicketMessageMailIntro").'</u><br>'.getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO');
+					}
+					if (getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE')) {
+						$texttooltip .= '<br><br><u>'.$langs->trans("TicketMessageMailFooter").'</u><br>'.getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
+					}
+					print $form->textwithpicto('', $texttooltip, 1, 'help');
+				}
+				print '</label>';
+			print '</div>';
+			print '<div class="col-12">';
+				//$toolbarname = 'dolibarr_details';
+				$toolbarname = 'dolibarr_notes';
+				include_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
+				$doleditor = new DolEditor('message', $s, '100%', 300, $toolbarname, '', false, $uselocalbrowser, getDolGlobalInt('FCKEDITOR_ENABLE_MAIL'), ROWS_5, '100%');
+				$doleditor->Create(0,'',true,'','','','');
+			print '</div>';
+		print '</div>';
+
+		print '<br>';
+		print '<div class="row" style="text-align:center">';
+			print '<div class="col-6">';
+				print '<input type="submit" class="button" name="btn_add_message" value="'.$langs->trans("Add").'"';
+				// Add a javascript test to avoid to forget to submit file before sending email
+				if ($this->withfile == 2 && !empty($conf->use_javascript_ajax)) {
+					print ' onClick="if (document.ticket.addedfile.value != \'\') { alert(\''.dol_escape_js($langs->trans("FileWasNotUploaded")).'\'); return false; } else { return true; }"';
+				}
+				print ' />';
+			print '</div>';
+			print '<div class="col-6">';
+				if (!empty($this->withcancel)) {
+					print " &nbsp; &nbsp; ";
+					print '<input class="button button-cancel" type="submit" name="cancel" value="'.$langs->trans("Cancel").'">';
+				}
+			print '</div>';
+		print '</div>';
+		// print "</center>\n";
+
+		print '<input type="hidden" name="page_y">'."\n";
+
+		print "</form><br>\n";
+
+		// Disable enter key if option MAIN_MAILFORM_DISABLE_ENTERKEY is set
+		if (getDolGlobalString('MAIN_MAILFORM_DISABLE_ENTERKEY')) {
+			print '<script type="text/javascript">';
+			print 'jQuery(document).ready(function () {';
+			print '		$(document).on("keypress", \'#ticket\', function (e) {		/* Note this is called at every key pressed ! */
+	    					var code = e.keyCode || e.which;
+	    					if (code == 13) {
+								console.log("Enter was intercepted and blocked");
+	        					e.preventDefault();
+	        					return false;
+	    					}
+						});';
+			print '})';
+			print '</script>';
+		}
+
+		print "<!-- End form TICKET -->\n";
+	}
 }

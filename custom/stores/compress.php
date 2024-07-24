@@ -48,12 +48,12 @@ class Compress {
                         print '<input type="hidden" name="objectIndex" value="'.$k.'">';
                     print '</form>';
                 print '</div>';  
-                print '<div style="display: flex; align-items:center">';
-                    if(isset($elem["ticket"]) && $elem["ticket"] != null){
+                // print '<div style="display: flex; align-items:center">';
+                //     if(isset($elem["ticket"]) && $elem["ticket"] != null){
                       
-                      print '<a href="../../ticket/card.php?id='.explode("|", $elem["ticket"])[0].'">'.explode("|", $elem["ticket"])[1].'</a>';
-                    }
-                print '</div>';  
+                //       print '<a href="../../ticket/card.php?id='.explode("|", $elem["ticket"])[0].'">'.explode("|", $elem["ticket"])[1].'</a>';
+                //     }
+                // print '</div>';  
                 print '<div style="display: flex; align-items:center">';
                   print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
                     print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
@@ -88,7 +88,7 @@ class Compress {
                 print '<div class="group-element">';
                 print '<input type="file" name="files[]" multiple hidden>';
                   print '<div class="element-image">';
-                    print '<img class="myImg" id="'.$k.' '.$key.'" alt="img" src="./img/'.explode("|", $image)[0].'" width="100" height="100" onclick="ss(this.id);">';
+                    print '<img class="myImg" id="'.$k.' '.$key.'" alt="img" src="./img/'.explode("|", $image)[0].'" width="100" height="100" onclick="ss(this.id, 1);">';
                   print '</div>';
                   print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
                   print '<div class="element-description">';
@@ -103,15 +103,15 @@ class Compress {
                               <!-- Modal content -->
                                   <div class="modal-content">
                                       <div class="modal-header">
-                                          <p class="'.$k.' '.$key.'" id="rotate '.$k.' '.$key.'" onclick="rotateImage(this.id,this.className)">Rotate</p>
+                                          <p class="'.$k.' '.$key.'" id="rotate '.$k.' '.$key.'" onclick="rotateImage(this.id,this.className, 1)">Rotate</p>
                                           <span class="close '.$k.' '.$key.'" id="close '.$k.' '.$key.'">&times;</span>
                                       </div>
                                       <div class="modal-body">  
                                           <div class="modal-image" style="display: flex; align-items: center; justify-content: space-evenly;">
-                                              <a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="prevImage(this.id, this.className)"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
-                                              <img class="'.$k.' '.$key.'" id="img rotate '.$k.' '.$key.'" alt="img" src="./img/'.explode("|", $image)[0].'" onclick="se(this.id,this.className);"
+                                              <a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="prevImage(this.id, this.className, 1)"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
+                                              <img class="'.$k.' '.$key.'" id="img rotate '.$k.' '.$key.'" alt="img" src="./img/'.explode("|", $image)[0].'" onclick="se(this.id,this.className, 1);"
                                                                       style="cursor: pointer">
-                                              <a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="nextImage(this.id, this.className)"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
+                                              <a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="nextImage(this.id, this.className, 1)"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
                                           </div>';
                                           // if($desc != ""){
                                               print '<div><p id="txt rotate '.$k.' '.$key.'">'.$desc.'</p></div>';
@@ -158,10 +158,14 @@ class Compress {
                           updateImage(currentIndex, className, lists, listTexts);
                       }
                   
-                      function nextImage(id, className) {
+                      function nextImage(id, className, number) {
                           var lists = id.split("|")[0].split(", ");
                           var listTexts = id.split("|")[1].split(", ");
-                          var className1 = "img rotate " + className;
+                          if(number == 1){
+                            var className1 = "img rotate " + className;
+                          } else {
+                            var className1 = "form-img rotate " + className;
+                          }
                           var imgElement = document.getElementById(className1);
                           var src = imgElement.getAttribute("src");
                           var imageName = src.split("/").pop();
@@ -208,9 +212,14 @@ class Compress {
                         }
                         var rotation = 0;
                         var angle = 90;
-                        function rotateImage(i,j) {
-                            var c = "img "+i;
-                            var n = "full-view-img "+i;
+                        function rotateImage(i,j, number) {
+                            if(number == 1){
+                              var c = "img "+i;
+                              var n = "full-view-img "+i;
+                            } else {
+                              var c = "form-img "+i;
+                              var n = "form-full-view-img "+i;
+                            }
                             var rotated = document.getElementById(c);
                             var rotated1 = document.getElementById(n);
                             var rotated2 = document.getElementById(j);
@@ -223,16 +232,22 @@ class Compress {
                             rotated2.style.transform = `rotate(${rotation}deg)`;
                             rotated2.style.transform = `scale(${rotation}deg)`;
                         }
-                        function se(i,j){
-                            var m = "full-model "+j;
-                            var n = "full-view-img rotate "+j;
+                        function se(i,j, number){
+                            if(number == 1){
+                              var m = "full-model "+j;
+                              var n = "full-view-img rotate "+j;
+                              var spann = "full-view-close " +j;
+                            } else {
+                              var m = "form-full-model "+j;
+                              var n = "form-full-view-img rotate "+j;
+                              var spann = "form-full-view-close " +j;
+                            }
                             var img = document.getElementById(i);
                             var modal = document.getElementById(m);
                             // img.onclick = function(){
                                 modal.style.display = "block";
                             // }
                             
-                            var spann = "full-view-close " +j;
                             var span = document.getElementById(spann);
 
                             span.onclick = function() { 
@@ -271,10 +286,15 @@ class Compress {
                         }
                     </script>';
             print '<script>
-                        function ss(i){
+                        function ss(i, number){
                             // alert(i);
-                            var c = "close " +i;
-                            var m = "modal "+i;
+                            if(number == 1){
+                              var c = "close " +i;
+                              var m = "modal "+i;
+                            } else {
+                              var c = "form-close " +i;
+                              var m = "form-modal "+i;
+                            }
                             var modal = document.getElementById(m);
                             modal.style.display = "block";
                             var span = document.getElementById(c); 
@@ -369,7 +389,7 @@ class Compress {
             }
             
             /* The Close Button */
-            .close {
+            .close, .form-close {
               color: #333333;
               float: right;
               font-size: 28px;
@@ -377,7 +397,8 @@ class Compress {
             }
             
             .close:hover,
-            .close:focus {
+            .close:focus, .form-close:hover,
+            .form-close:focus {
               color: #000;
               text-decoration: none;
               cursor: pointer;
@@ -451,7 +472,7 @@ class Compress {
               }
               
               /* The Close Button */
-              .full-view-close {
+              .full-view-close, .form-full-view-close {
                 position: absolute;
                 top: 15px;
                 right: 35px;
@@ -462,7 +483,9 @@ class Compress {
               }
               
               .full-view-close:hover,
-              .full-view-close:focus {
+              .full-view-close:focus,
+              .form-full-view-close:hover,
+              .form-full-view-close:focus {
                 color: #bbb;
                 text-decoration: none;
                 cursor: pointer;

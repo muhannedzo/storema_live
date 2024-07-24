@@ -2887,6 +2887,361 @@ class Ticket extends CommonObject
 		}
 	}
 
+	/**
+	 * Add new message on a ticket (private/public area).
+	 * Can also send it by email if GETPOST('send_email', 'int') is set. For such email, header and footer is added.
+	 *
+	 * @param   User    $user       	User for action
+	 * @param   string  $action     	Action string
+	 * @param   int     $private    	1=Message is private (must not be visible by external users)
+	 * @param   int     $public_area    0=Default,
+	 * 									1=If we are creating the message from a public area, so confirmation email will be sent to the author
+	 * 									and we can search contact from email to add it as contact of ticket if TICKET_ASSIGN_CONTACT_TO_MESSAGE is set
+	 * @return  int						Return integer <0 if KO, >= 0 if OK
+	 */
+	public function newMessageForm($user, &$action, $private = 1, $public_area = 0)
+	{
+		global $mysoc, $conf, $langs;
+
+		$error = 0;
+
+		$object = new Ticket($this->db);
+
+		$ret = $object->fetch('', '', GETPOST('track_id', 'alpha'));
+
+		$object->socid = $object->fk_soc;
+		$object->fetch_thirdparty();
+		$object->fetch_project();
+
+		if ($ret < 0) {
+			$error++;
+			array_push($this->errors, $langs->trans("ErrorTicketIsNotValid"));
+			$action = '';
+		}
+
+		if (!GETPOST("message")) {
+			$error++;
+			array_push($this->errors, $langs->trans("ErrorFieldRequired", $langs->transnoentities("message")));
+			$action = 'add_message';
+		}
+
+		if (!$error) {
+			$object->subject = GETPOST('subject', 'alphanohtml');
+			$object->message = GETPOST("message", "restricthtml");
+			$object->private = GETPOST("private_message", "alpha");
+
+			$send_email = GETPOST('send_email', 'int');
+
+			// Copy attached files (saved into $_SESSION) as linked files to ticket. Return array with final name used.
+			$resarray = $object->copyFilesForTicket();
+			if (is_numeric($resarray) && $resarray == -1) {
+				setEventMessages($object->error, $object->errors, 'errors');
+				return -1;
+			}
+
+			$listofpaths = $resarray['listofpaths'];
+			$listofnames = $resarray['listofnames'];
+			$listofmimes = $resarray['listofmimes'];
+
+			$id = $object->createTicketMessage($user, 0, $listofpaths, $listofmimes, $listofnames, $send_email, $public_area);
+			if ($id <= 0) {
+				$error++;
+				$this->error = $object->error;
+				$this->errors = $object->errors;
+				$action = 'add_message';
+			}
+
+			if (!$error && $id > 0) {
+				setEventMessages($langs->trans('TicketMessageSuccessfullyAdded'), null, 'mesgs');
+
+				//var_dump($_SESSION);
+				//var_dump($listofpaths);exit;
+
+				if (!empty($public_area)) {
+					/*
+					 * Message created from the Public interface
+					 *
+					 * Send emails to assigned users (public area notification)
+					 */
+					if (getDolGlobalString('TICKET_PUBLIC_NOTIFICATION_NEW_MESSAGE_ENABLED')) {
+						// Retrieve internal contact datas
+						$internal_contacts = $object->getInfosTicketInternalContact(1);
+
+						$assigned_user_dont_have_email = '';
+
+						$sendto = array();
+
+						if ($this->fk_user_assign > 0) {
+							$assigned_user = new User($this->db);
+							$assigned_user->fetch($this->fk_user_assign);
+							if (!empty($assigned_user->email)) {
+								$sendto[$assigned_user->email] = $assigned_user->getFullName($langs)." <".$assigned_user->email.">";
+							} else {
+								$assigned_user_dont_have_email = $assigned_user->getFullName($langs);
+							}
+						}
+
+						// Build array to display recipient list
+						foreach ($internal_contacts as $key => $info_sendto) {
+							// Avoid duplicate notifications
+							if ($info_sendto['id'] == $user->id) {
+								continue;
+							}
+
+							// We check if the email address is not the assignee's address to prevent notification from being sent twice
+							if (!empty($info_sendto['email']) && $assigned_user->email != $info_sendto['email']) {
+								$sendto[] = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'])." <".$info_sendto['email'].">";
+							}
+						}
+
+						if (empty($sendto)) {
+							if (getDolGlobalString('TICKET_PUBLIC_NOTIFICATION_NEW_MESSAGE_DEFAULT_EMAIL')) {
+								$sendto[getDolGlobalString('TICKET_PUBLIC_NOTIFICATION_NEW_MESSAGE_DEFAULT_EMAIL')] = getDolGlobalString('TICKET_PUBLIC_NOTIFICATION_NEW_MESSAGE_DEFAULT_EMAIL');
+							} elseif (getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')) {
+								$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
+							}
+						}
+
+						// Add global email address recipient
+						if (getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') &&
+							getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)
+						) {
+							$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
+						}
+
+						if (!empty($sendto)) {
+							$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
+
+							$subject = '['.$appli.'- ticket #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
+
+							// Message send
+							$message = $langs->trans('TicketMessageMailIntroText');
+							$message .= '<br><br>';
+							$messagePost = GETPOST('message', 'restricthtml');
+							if (!dol_textishtml($messagePost)) {
+								$messagePost = dol_nl2br($messagePost);
+							}
+							$message .= $messagePost;
+
+							// Customer company infos
+							$message .= '<br><br>';
+							$message .= "==============================================";
+							$message .= !empty($object->thirdparty->name) ? '<br>'.$langs->trans('Thirdparty')." : ".$object->thirdparty->name : '';
+							$message .= !empty($object->thirdparty->town) ? '<br>'.$langs->trans('Town')." : ".$object->thirdparty->town : '';
+							$message .= !empty($object->thirdparty->phone) ? '<br>'.$langs->trans('Phone')." : ".$object->thirdparty->phone : '';
+
+							// Email send to
+							$message .= '<br><br>';
+							if (!empty($assigned_user_dont_have_email)) {
+								$message .= '<br>'.$langs->trans('NoEMail').' : '.$assigned_user_dont_have_email;
+							}
+							foreach ($sendto as $val) {
+								$message .= '<br>'.$langs->trans('TicketNotificationRecipient').' : '.$val;
+							}
+
+							// URL ticket
+							$url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
+							$message .= '<br><br>';
+							$message .= $langs->trans('TicketNotificationEmailBodyInfosTrackUrlinternal').' : <a href="'.$url_internal_ticket.'">'.$object->track_id.'</a>';
+
+							$this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
+						}
+					}
+				} else {
+					/*
+					 * Message send from the Backoffice / Private area
+					 *
+					 * Send emails to internal users (linked contacts) then, if private is not set, to external users (linked contacts or thirdparty email if no contact set)
+					 */
+					if ($send_email > 0) {
+						// Retrieve internal contact datas
+						$internal_contacts = $object->getInfosTicketInternalContact(1);
+
+						$sendto = array();
+						if (is_array($internal_contacts) && count($internal_contacts) > 0) {
+							// Set default subject
+							$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
+
+							$subject = GETPOST('subject', 'alphanohtml') ? GETPOST('subject', 'alphanohtml') : '['.$appli.' - '.$langs->trans("Ticket").' #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
+
+							$message_intro = $langs->trans('TicketNotificationEmailBody', "#".$object->id);
+							$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
+
+							$message = $langs->trans('TicketMessageMailIntroText');
+							$message .= '<br><br>';
+							$messagePost = GETPOST('message', 'restricthtml');
+							if (!dol_textishtml($messagePost)) {
+								$messagePost = dol_nl2br($messagePost);
+							}
+							$message .= $messagePost;
+
+							// Data about customer
+							$message .= '<br><br>';
+							$message .= "==============================================<br>";
+							$message .= !empty($object->thirdparty->name) ? $langs->trans('Thirdparty')." : ".$object->thirdparty->name : '';
+							$message .= !empty($object->thirdparty->town) ? '<br>'.$langs->trans('Town')." : ".$object->thirdparty->town : '';
+							$message .= !empty($object->thirdparty->phone) ? '<br>'.$langs->trans('Phone')." : ".$object->thirdparty->phone : '';
+
+							// Build array to display recipient list
+							foreach ($internal_contacts as $key => $info_sendto) {
+								// Avoid duplicate notifications
+								if ($info_sendto['id'] == $user->id) {
+									continue;
+								}
+
+								if ($info_sendto['email'] != '') {
+									if (!empty($info_sendto['email'])) {
+										$sendto[$info_sendto['email']] = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'])." <".$info_sendto['email'].">";
+									}
+
+									// Contact type
+									$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], '-1').' ('.strtolower($info_sendto['libelle']).')';
+									$message .= (!empty($recipient) ? $langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
+								}
+							}
+							$message .= '<br>';
+							// URL ticket
+							$url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
+
+							// Add html link on url
+							$message .= '<br>'.$langs->trans('TicketNotificationEmailBodyInfosTrackUrlinternal').' : <a href="'.$url_internal_ticket.'">'.$object->track_id.'</a><br>';
+
+							// Add global email address recipient
+							if (getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)) {
+								if (getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')) {
+									$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
+								}
+							}
+
+							// dont try to send email if no recipient
+							if (!empty($sendto)) {
+								$this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
+							}
+						}
+
+						/*
+						 * Send emails for externals users if not private (linked contacts)
+						 */
+						if (empty($object->private)) {
+							// Retrieve email of all contacts (external)
+							$external_contacts = $object->getInfosTicketExternalContact(1);
+
+							// If no contact, get email from thirdparty
+							if (is_array($external_contacts) && count($external_contacts) === 0) {
+								if (!empty($object->fk_soc)) {
+									$object->fetch_thirdparty($object->fk_soc);
+									$array_company = array(array('firstname' => '', 'lastname' => $object->thirdparty->name, 'email' => $object->thirdparty->email, 'libelle' => $langs->transnoentities('Customer'), 'socid' => $object->thirdparty->id));
+									$external_contacts = array_merge($external_contacts, $array_company);
+								} elseif (empty($object->fk_soc) && !empty($object->origin_email)) {
+									$array_external = array(array('firstname' => '', 'lastname' => $object->origin_email, 'email' => $object->thirdparty->email, 'libelle' => $langs->transnoentities('Customer'), 'socid' => $object->thirdparty->id));
+									$external_contacts = array_merge($external_contacts, $array_external);
+								}
+							}
+
+							$sendto = array();
+							if (is_array($external_contacts) && count($external_contacts) > 0) {
+								// Get default subject for email to external contacts
+								$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
+
+								$subject = GETPOST('subject') ? GETPOST('subject') : '['.$appli.' - '.$langs->trans("Ticket").' #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
+
+								$message_intro = GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO');
+								$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
+								if (!dol_textishtml($message_intro)) {
+									$message_intro = dol_nl2br($message_intro);
+								}
+								if (!dol_textishtml($message_signature)) {
+									$message_signature = dol_nl2br($message_signature);
+								}
+
+								// We put intro after
+								$messagePost = GETPOST('message', 'restricthtml');
+								if (!dol_textishtml($messagePost)) {
+									$messagePost = dol_nl2br($messagePost);
+								}
+								$message = $messagePost;
+								$message .= '<br><br>';
+
+								foreach ($external_contacts as $key => $info_sendto) {
+									// altairis: avoid duplicate emails to external contacts
+									if ($info_sendto['id'] == $user->contact_id) {
+										continue;
+									}
+
+									if ($info_sendto['email'] != '' && $info_sendto['email'] != $object->origin_email) {
+										if (!empty($info_sendto['email'])) {
+											$sendto[$info_sendto['email']] = trim($info_sendto['firstname']." ".$info_sendto['lastname'])." <".$info_sendto['email'].">";
+										}
+
+										$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], '-1').' ('.strtolower($info_sendto['libelle']).')';
+										$message .= (!empty($recipient) ? $langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
+									}
+								}
+
+								// If public interface is not enable, use link to internal page into mail
+								$url_public_ticket = (getDolGlobalInt('TICKET_ENABLE_PUBLIC_INTERFACE') ?
+										(getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') !== '' ? getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') . '/view.php' : dol_buildpath('/public/ticket/view.php', 2)) : dol_buildpath('/ticket/card.php', 2)).'?track_id='.$object->track_id;
+
+								$message .= '<br>'.$langs->trans('TicketNewEmailBodyInfosTrackUrlCustomer').' : <a href="'.$url_public_ticket.'">'.$object->track_id.'</a><br>';
+
+								// Build final message
+								$message = $message_intro.'<br><br>'.$message;
+
+								// Add signature
+								$message .= '<br>'.$message_signature;
+
+								if (!empty($object->origin_email)) {
+									$sendto[$object->origin_email] = $object->origin_email;
+								}
+
+								if ($object->fk_soc > 0 && !array_key_exists($object->origin_email, $sendto)) {
+									$object->socid = $object->fk_soc;
+									$object->fetch_thirdparty();
+									if (!empty($object->thirdparty->email)) {
+										$sendto[$object->thirdparty->email] = $object->thirdparty->email;
+									}
+								}
+
+								// Add global email address recipient
+								if (getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)) {
+									if (getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')) {
+										$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
+									}
+								}
+
+								// Dont try to send email when no recipient
+								if (!empty($sendto)) {
+									$result = $this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
+									if ($result) {
+										// update last_msg_sent date (for last message sent to external users)
+										$this->date_last_msg_sent = dol_now();
+										$this->update($user, 1);	// disable trigger when updating date_last_msg_sent. sendTicketMessageByEmail already create an event in actioncomm table.
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// Set status back to "In progress" if not set yet, but only if internal user and not a private message
+				// Or set status to "In porgress" if the client has answered and if the ticket has started
+				// So we are sure to leave the STATUS_DRAFT, STATUS_NEED_INFO.
+				if (($object->status < self::STATUS_IN_PROGRESS && !$user->socid && !$private) ||
+					($object->status > self::STATUS_IN_PROGRESS && $public_area)
+				) {
+					$object->setStatut($object::STATUS_IN_PROGRESS);
+				}
+				return 1;
+			} else {
+				setEventMessages($object->error, $object->errors, 'errors');
+				return -1;
+			}
+		} else {
+			setEventMessages($this->error, $this->errors, 'errors');
+			return -1;
+		}
+	}
+
 
 	/**
 	 * Send ticket by email to linked contacts

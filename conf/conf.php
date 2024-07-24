@@ -24,7 +24,7 @@ $dolibarr_main_authentication='dolibarr';
 
 //$dolibarr_main_demo='autologin,autopass';
 // Security settings
-$dolibarr_main_prod='1';
+$dolibarr_main_prod='0';
 $dolibarr_main_force_https='0';
 $dolibarr_main_restrict_os_commands='mariadb-dump, mariadb, mysqldump, mysql, pg_dump, pgrestore, clamdscan, clamscan.exe';
 $dolibarr_nocsrfcheck='1';

@@ -316,221 +316,153 @@ if ($object->id > 0) {
 	// }
 
 		$obj = new Compress();	
-		// print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">
-		// 			<h2>'.$langs->trans("StoreImages").'</h2>
-		// 			<p style="display:flex">
-		// 				<input placeholder="Enter Images Label" type="text" id="images-lable" name="images-label">';
-		// 				$ticket_item = new Ticket($db);
-		// 				$tickets = "SELECT t.rowid, t.ref";
-		// 				$tickets .= " FROM llx_ticket t";
-		// 				$tickets .= " LEFT JOIN llx_ticket_extrafields te on te.fk_object = t.rowid";
-		// 				$tickets .= " WHERE te.fk_store = ".$id.";";
+		print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">
+					<h2>'.$langs->trans("StoreImages").'</h2>
+					<p style="display:flex">
+						<input placeholder="Enter Images Label" type="text" id="images-lable" name="images-label">';
+						// $ticket_item = new Ticket($db);
+						// $tickets = "SELECT t.rowid, t.ref";
+						// $tickets .= " FROM llx_ticket t";
+						// $tickets .= " LEFT JOIN llx_ticket_extrafields te on te.fk_object = t.rowid";
+						// $tickets .= " WHERE te.fk_store = ".$id.";";
 						
-		// 				$result = $db->query($tickets);
-		// 				if ($result) {
-		// 					$num = $db->num_rows($result);
-		// 					$i = 0;
+						// $result = $db->query($tickets);
+						// if ($result) {
+						// 	$num = $db->num_rows($result);
+						// 	$i = 0;
 				
-		// 					print '<select name="ticket" id="ticket">';
-		// 					for($i=0;  $i < $num; $i++) {
+						// 	print '<select name="ticket" id="ticket">';
+						// 	for($i=0;  $i < $num; $i++) {
 								
-		// 						$objc = $db->fetch_object($result);
+						// 		$objc = $db->fetch_object($result);
 				
-		// 						$ticket_item->id = $objc->rowid;
-		// 						$ticket_item->ref = $objc->ref;
+						// 		$ticket_item->id = $objc->rowid;
+						// 		$ticket_item->ref = $objc->ref;
 				
-		// 						print '<option value="'.$ticket_item->id.'|'.$ticket_item->ref.'">'.$ticket_item->ref.'</option>';
-		// 					} 	
-		// 					print '</select>';
-		// 				} else {
-		// 					print '<select id="ticket">';
-		// 					print '<option>No Tickets</option>';
-		// 					print '</select>';
-		// 				}
-		// 				$db->free($result);
-		// 				print '<br><br>	
-		// 				<input type="file" name="files[]" multiple>
-		// 				<br>';
-		// 			print'	<input type="submit" name="submit" value="Upload" >
-		// 			</p>
-		// 		</form>';
+						// 		print '<option value="'.$ticket_item->id.'|'.$ticket_item->ref.'">'.$ticket_item->ref.'</option>';
+						// 	} 	
+						// 	print '</select>';
+						// } else {
+						// 	print '<select id="ticket">';
+						// 	print '<option>No Tickets</option>';
+						// 	print '</select>';
+						// }
+						// $db->free($result);
+						print '<br><br>	
+						<input type="file" name="files[]" multiple>
+						<br>';
+					print'	<input type="submit" name="submit" value="Upload" >
+					</p>
+				</form>';
 
-		// 		$imagesList = array();
-		// 		$images = array();	
-		// 		$query = 'SELECT images FROM llx_stores_branch WHERE rowid = '.$id;
-		// 		$list = $db->query($query)->fetch_row();
-		// 		if($list[0 != null]){
-		// 			$arr = json_decode($list[0],true);
-		// 			foreach($arr as $elm){
-		// 				array_push($imagesList, $elm);
-		// 			}
-		// 		}
-		// 		// var_dump($imagesList);
+				$imagesList = array();
+				$images = array();	
+				$query = 'SELECT images FROM llx_stores_branch WHERE rowid = '.$id;
+				$list = $db->query($query)->fetch_row();
+				if($list[0 != null]){
+					$arr = json_decode($list[0],true);
+					foreach($arr as $elm){
+						array_push($imagesList, $elm);
+					}
+				}
+				// var_dump($imagesList);
 
 			
 
-		// 		$dir = DOL_DOCUMENT_ROOT.'/custom/stores/img/';
-		// 		if(!is_dir($dir)){
-		// 			mkdir($dir);
-		// 		}
-		// 		// var_dump($images);
-		// 		if(isset($_POST['submit'])) {
-		// 			// var_dump($_POST);
-		// 			// Configure upload directory and allowed file types
-		// 			$allowed_types = array('jpg', 'png', 'jpeg', 'gif');
+				$dir = DOL_DOCUMENT_ROOT.'/custom/stores/img/';
+				if(!is_dir($dir)){
+					mkdir($dir);
+				}
+				// var_dump($images);
+				if(isset($_POST['submit'])) {
+					// var_dump($_POST);
+					// Configure upload directory and allowed file types
+					$allowed_types = array('jpg', 'png', 'jpeg', 'gif');
 					 
-		// 			$maxsize = 1024 * 1024;
+					$maxsize = 1024 * 1024;
 					
-		// 			// Checks if user sent an empty form
-		// 			if(!empty(array_filter($_FILES['files']['name']))) {
+					// Checks if user sent an empty form
+					if(!empty(array_filter($_FILES['files']['name']))) {
 						
 				 
-		// 				// Loop through each file in files[] array
-		// 				foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+						// Loop through each file in files[] array
+						foreach ($_FILES['files']['tmp_name'] as $key => $value) {
 							
-		// 					$file_tmpname = $_FILES['files']['tmp_name'][$key];
-		// 					$file_name = $_FILES['files']['name'][$key];
-		// 					$file_size = $_FILES['files']['size'][$key];
-		// 					$imageQuality = 80;
-		// 					$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+							$file_tmpname = $_FILES['files']['tmp_name'][$key];
+							$file_name = $_FILES['files']['name'][$key];
+							$file_size = $_FILES['files']['size'][$key];
+							$imageQuality = 80;
+							$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
 							
-		// 					// Set upload file path
-		// 					$filepath = $dir.$file_name;
+							// Set upload file path
+							$filepath = $dir.$file_name;
 				 
-		// 					// Check file type is allowed or not
-		// 					if(in_array(strtolower($file_ext), $allowed_types)) {
+							// Check file type is allowed or not
+							if(in_array(strtolower($file_ext), $allowed_types)) {
 
-		// 							if(file_exists($filepath)) {
-		// 								$fileN = time().$file_name;
-		// 								$filepath = $dir.$fileN;
-		// 								$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
-		// 								if( $compressedImage) {
-		// 									array_push($images, $fileN);
-		// 								}else {                    
-		// 									dol_htmloutput_errors("Error uploading {$file_name} <br />");
-		// 								}
-		// 							}else {
-		// 								$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
-		// 								if($compressedImage) {
-		// 									array_push($images,$file_name);
-		// 								}else {                    
-		// 									dol_htmloutput_errors("Error uploading {$file_name} <br />");
-		// 								}
-		// 							}
-									
-		// 						// }        
-				 
-		// 					}else {
-		// 						dol_htmloutput_errors("Error uploading {$file_name} ");
-		// 						dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
-		// 					}
-		// 				}
-		// 			}else {
-		// 				dol_htmloutput_errors("No files selected.");
-		// 			}
-		// 			$object = [
-		// 				"title" => $_POST['images-label'],
-		// 				"images" => $images,
-		// 				"ticket" => $_POST['ticket']
-		// 			];
-		// 			array_push($imagesList, $object);
-		// 			$list = json_encode($imagesList);
-		// 			$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-		// 			$db->query($sql,0,'ddl');
-		// 			// var_dump($db->query($sql,0,'ddl'));
-		// 		}
-
-
-			//////////////////////////////////////////////////////////
-			
-			
-			$query = 'SELECT f.rowid, f.fk_ticket, f.images FROM llx_tec_forms f
-					  WHERE fk_store = '.$id;
-			$forms = $db->query($query)->fetch_all();
-			$formsList = [];
-			$formObject = [];
-			if($forms){
-				foreach($forms as $form){
-					$formObject = [
-						"formId" => $form[0],
-						"ticketId" => $form[1],
-						"images" => $form[2]
-					];
-					array_push($formsList, $formObject);
-				}
-			}
-			$listImages = [];
-			if($formsList) {
-				foreach($formsList as $form) {
-					$ticket->fetch($form["ticketId"]);
-					$imagesGroup = json_decode(base64_decode($form["images"]));
-					var_dump($imagesGroup);
-					print '<div class="row mt-2">';
-						print '<div class="col-12" style="background: #aaa;padding: 5px 0 5px 10px;">';
-							print $ticket->getNomUrl();
-						print '</div>';
-						foreach($imagesGroup as $group){
-							print '<div class="row mt-2">';
-									foreach($group->images as $image){
-										array_push($listImages, $image);
-										print '<div class="col-3 col-md-3 mt-2">';
-											print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-												print '<img class="group-image mb-2" src="../../formsImages/'.$image.'" id="'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src, this.id)">';
-												print '<input type="text" value="'.$group->type.'" name="type" disabled>'.' '.'<input class="btn btn-danger" type="submit" value="Delete" name="delete">';
-												print '<input type="text" name="ticketId" value="'.$form["ticketId"].'" hidden>';
-												print '<input type="text" name="formId" value="'.$form["formId"].'" hidden>';
-												print '<input type="text" name="images" value="'.$form["formId"].'" hidden>';
-											print '</form>';
-										print '</div>';
+									if(file_exists($filepath)) {
+										$fileN = time().$file_name;
+										$filepath = $dir.$fileN;
+										$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
+										if( $compressedImage) {
+											array_push($images, $fileN);
+										}else {                    
+											dol_htmloutput_errors("Error uploading {$file_name} <br />");
+										}
+									}else {
+										$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
+										if($compressedImage) {
+											array_push($images,$file_name);
+										}else {                    
+											dol_htmloutput_errors("Error uploading {$file_name} <br />");
+										}
 									}
-							print '</div>';
+									
+								// }        
+				 
+							}else {
+								dol_htmloutput_errors("Error uploading {$file_name} ");
+								dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+							}
 						}
-					print '</div>';
+					}else {
+						dol_htmloutput_errors("No files selected.");
+					}
+					$object = [
+						"title" => $_POST['images-label'],
+						"images" => $images
+					];
+					array_push($imagesList, $object);
+					$list = json_encode($imagesList);
+					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
+					$db->query($sql,0,'ddl');
+					// var_dump($db->query($sql,0,'ddl'));
+				}
+			//////////////////////List Of images//////////////////////	
+			$query = 'SELECT images FROM llx_stores_branch WHERE rowid = '.$id;
+			$list = $db->query($query)->fetch_row();
+			$imagesList = [];
+			if($list[0 != null]){
+				$arr = json_decode($list[0],true);
+				
+				foreach($arr as $elm){
+					array_push($imagesList, $elm);
 				}
 			}
-			$imgText = implode(",", $listImages);
-			print '
-					<div id="popup" class="closed">
-						<div class="row">
-							<div class="col-12" style="display: flex;align-items: center;">
-								<i class="fa fa-chevron-left" id="'.$imgText.'" onclick="slideImages(this.id, \'prev\')"></i>
-								<img id="popupImage" src="" style="width:100%">
-								<i class="fa fa-chevron-right" id="'.$imgText.'" onclick="slideImages(this.id, \'next\')"></i>
-							</div>
-						</div>
-						<div class="row mt-2">
-							<div class="col-12" style="text-align: center">
-								<button class="btn btn-danger" id="closePopupBtn">Close</button>
-							</div>
-						</div>
-					</div>';  
+			print '<table class="noborder" width="100%">';
 			
-
-			//////////////////////List Of images//////////////////////	
-			// $query = 'SELECT images FROM llx_stores_branch WHERE rowid = '.$id;
-			// $list = $db->query($query)->fetch_row();
-			// $imagesList = [];
-			// if($list[0 != null]){
-			// 	$arr = json_decode($list[0],true);
-			// 	foreach($arr as $elm){
-			// 		array_push($imagesList, $elm);
-			// 	}
-			// }
-			// // $imagesList = array_reverse($imagesList);
-			// // var_dump($imagesList);
-			// print '<table class="noborder" width="100%">';
-			// 				$obj->print_list($imagesList);
-				// if(isset($_POST['delete'])) {
-				// 	$imagesList = array_reverse($imagesList);
-				// 	$key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
-				// 	unlink($dir.$_POST["img"]);
-				// 	unset($imagesList[$_POST["objectIndex"]]["images"][$key]);
-				// 	$list = json_encode(array_reverse($imagesList));
-				// 	$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-				// 	$db->query($sql,0,'ddl');
-				// 	print '<script>window.location.href = window.location.href;
-				// 	</script>';
-				// }
+							$obj->print_list($imagesList);
+				if(isset($_POST['delete'])) {
+					$imagesList = array_reverse($imagesList);
+					$key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
+					unlink($dir.$_POST["img"]);
+					unset($imagesList[$_POST["objectIndex"]]["images"][$key]);
+					$list = json_encode(array_reverse($imagesList));
+					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
+					$db->query($sql,0,'ddl');
+					print '<script>window.location.href = window.location.href;
+					</script>';
+				}
 				if(isset($_POST['edit'])) {
 					$imagesList = array_reverse($imagesList);
 					$key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
@@ -550,7 +482,8 @@ if ($object->id > 0) {
 					print '<script>window.location.href = window.location.href;
 					</script>';
 				}	
-				if(isset($_POST['delete-group'])) {		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('DeleteBranch'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
+				if(isset($_POST['delete-group'])) {		
+					$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('DeleteBranch'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
 					// var_dump($_POST);
 					$imagesList = array_reverse($imagesList);
 					$imagesCount = count($imagesList[$_POST["objectIndex"]]["images"]);
@@ -627,7 +560,155 @@ if ($object->id > 0) {
 					$db->query($sql,0,'ddl');
 					print '<script>window.location.href = window.location.href;
 					</script>';
-				}		
+				}	
+			////////////////////////////End Normal Images/////////////////////////////////	
+
+			////////////////////////////Forms tickets images//////////////////////////////
+			
+			$query = 'SELECT f.rowid, f.fk_ticket, f.images FROM llx_tec_forms f
+					  WHERE fk_store = '.$id;
+			$forms = $db->query($query)->fetch_all();
+			$formsList = [];
+			$formObject = [];
+			if($forms){
+				foreach($forms as $form){
+					$formObject = [
+						"formId" => $form[0],
+						"ticketId" => $form[1],
+						"images" => $form[2]
+					];
+					array_push($formsList, $formObject);
+				}
+			}
+			$listImages = [];
+			if($formsList) {
+				foreach($formsList as $form) {
+					$ticket->fetch($form["ticketId"]);
+					$imagesGroup = json_decode(base64_decode($form["images"]));
+					// var_dump($imagesGroup);
+					$k = 0;
+					print '<div class="group">';
+						print '<div class="group-header">';
+						print '<div style="display: flex">';
+							print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+								print $ticket->getNomUrl();
+								// print '<div class="edit-icon" id="edit-icon '.$k.'"><span id="'.$k.'" class="fa fa-pen" onclick="changeLabel(this.id)"></span></div>';
+								// print '<button type="submit" name="edit-label" id="save-edit '.$k.'" hidden>Save</button></td>';
+								// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+							print '</form>';
+						print '</div>';  
+						print '<div style="display: flex; align-items:center">';
+							// print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+							// print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
+							// print '<button type="submit" id="delete-group delete '.$k.'" name="delete-group" hidden>delete</button></td>';
+							// print '<span id="addmore '.$k.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
+							// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+							// print '</form>';  
+						print '</div>';
+					print '</div>';
+					foreach($imagesGroup as $elem){
+						$elements = $elem->images;
+						$exploded_elements = array_map(function($element) {
+							$parts = explode("|", $element);
+							return $parts[0];
+						}, $elements);
+						$exploded_texts = array_map(function($element) {
+							$parts = explode("|", $element);
+							return $parts[1];
+						}, $elements);
+						
+						$text = implode(", ", $exploded_elements);
+						$titles = implode(", ", $exploded_texts);
+								
+						// $text = implode(", ", $elements);
+						print '<input type="text" class="array '.$k.'" value="'.$text.'" hidden>';
+						foreach($elements as $key => $image){
+
+							print '<div class="group-element">';
+							print '<input type="file" name="files[]" multiple hidden>';
+							  print '<div class="element-image">';
+								print '<img class="myImg" id="'.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" width="100" height="100" onclick="ss(this.id, 2);">';
+							  print '</div>';
+							  print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+							  print '<div class="element-description">';
+								print '<input id="desc '.$k.' '.$key.'" name="description"type="text" placeholder="Description.." value="'.$elem->type.'" disabled>';
+							  print '</div>';
+								print '<div class="element-buttons">';
+									print '<button type="submit" name="delete-form-img" onclick="return confirmDelete();">Delete</button>';
+								print '</div>';
+								print '<div id="form-modal '.$k.' '.$key.'" class="modal '.$k.' '.$key.'">
+											<!-- Modal content -->
+												<div class="modal-content">
+													<div class="modal-header">
+														<p class="'.$k.' '.$key.'" id="rotate '.$k.' '.$key.'" onclick="rotateImage(this.id,this.className, 2)">Rotate</p>
+														<span class="form-close '.$k.' '.$key.'" id="form-close '.$k.' '.$key.'">&times;</span>
+													</div>
+													<div class="modal-body">  
+														<div class="modal-image" style="display: flex; align-items: center; justify-content: space-evenly;">
+															<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="prevImage(this.id, this.className, 2)"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
+															<img class="'.$k.' '.$key.'" id="form-img rotate '.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" onclick="se(this.id,this.className, 2);"
+																					style="cursor: pointer">
+															<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="nextImage(this.id, this.className, 2)"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
+														</div>';
+														// if($desc != ""){
+															print '<div><p id="form-txt rotate '.$k.' '.$key.'">'.$desc.'</p></div>';
+														// }
+												print '</div>
+													<div class="modal-footer">
+													</div>
+												</div>
+										</div>';
+								print '<div id="form-full-model '.$k.' '.$key.'" class="full-view '.$key.'">
+											<span class="form-full-view-close '.$k.' '.$key.'" id="form-full-view-close '.$k.' '.$key.'">&times;</span>
+												<img class="full-view-content" id="form-full-view-img rotate '.$k.' '.$key.'" src="../../formsImages/'.explode("|", $image)[0].'">
+										</div>';    
+								print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+								print '<input type="hidden" name="imgIndex" value="'.$key.'">';
+								print '<input type="hidden" name="img" value="'.explode("|", $image)[0].'">';
+							  print '</form>';
+							print '</div>';
+						}
+						$k++;
+					}
+					// print '<div class="row mt-2">';
+					// 	print '<div class="col-12" style="background: #aaa;padding: 5px 0 5px 10px;">';
+					// 		print $ticket->getNomUrl();
+					// 	print '</div>';
+					// 	foreach($imagesGroup as $group){
+					// 		print '<div class="row mt-2">';
+					// 				foreach($group->images as $image){
+					// 					array_push($listImages, $image);
+					// 					print '<div class="col-3 col-md-3 mt-2">';
+					// 						print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+					// 							print '<img class="group-image mb-2" src="../../formsImages/'.$image.'" id="'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src, this.id)">';
+					// 							print '<input type="text" value="'.$group->type.'" name="type" disabled>'.' '.'<input class="btn btn-danger" type="submit" value="Delete" name="delete">';
+					// 							print '<input type="text" name="ticketId" value="'.$form["ticketId"].'" hidden>';
+					// 							print '<input type="text" name="formId" value="'.$form["formId"].'" hidden>';
+					// 							print '<input type="text" name="images" value="'.$form["formId"].'" hidden>';
+					// 						print '</form>';
+					// 					print '</div>';
+					// 				}
+					// 		print '</div>';
+					// 	}
+					// print '</div>';
+				}
+			}
+			$imgText = implode(",", $listImages);
+			print '
+					<div id="popup" class="closed">
+						<div class="row">
+							<div class="col-12" style="display: flex;align-items: center;">
+								<i class="fa fa-chevron-left" id="'.$imgText.'" onclick="slideImages(this.id, \'prev\')"></i>
+								<img id="popupImage" src="" style="width:100%">
+								<i class="fa fa-chevron-right" id="'.$imgText.'" onclick="slideImages(this.id, \'next\')"></i>
+							</div>
+						</div>
+						<div class="row mt-2">
+							<div class="col-12" style="text-align: center">
+								<button class="btn btn-danger" id="closePopupBtn">Close</button>
+							</div>
+						</div>
+					</div>';  	
 }
 
 // End of page

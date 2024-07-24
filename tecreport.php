@@ -503,21 +503,26 @@ dol_include_once('/stores/compress.php');
             print '<table class="noborder centpercent">';
                print '<tr class="oddeven">';
                   print '<td colspan="1">Fehlgeschlagener P1 Test (bitte Nummer angeben)</td>';
-                  print '<td colspan="1"><input type="radio" name="table2" id="table2_1" value="1"></td>';
+                  print '<td colspan="1"><input type="radio" name="table2" id="table2_1" value="1" onchange="toggleNoteInput()"></td>';
                print '</tr>';
                print '<tr class="oddeven">';
                   print '<td colspan="1">Fehlendes Material</td>';
-                  print '<td colspan="1"><input type="radio" name="table2" id="table2_2" value="2"></td>';
+                  print '<td colspan="1"><input type="radio" name="table2" id="table2_2" value="2" onchange="toggleNoteInput()"></td>';
                print '</tr>';
                print '<tr class="oddeven">';
                   print '<td colspan="1">Fehler der Automatisierung / App</td>';
-                  print '<td colspan="1"><input type="radio" name="table2" id="table2_3" value="3"></td>';
+                  print '<td colspan="1"><input type="radio" name="table2" id="table2_3" value="3" onchange="toggleNoteInput()"></td>';
                print '</tr>';
                print '<tr class="oddeven">';
                   print '<td colspan="1">Defekte Hardware</td>';
-                  print '<td colspan="1"><input type="radio" name="table2" id="table2_4" value="4"></td>';
+                  print '<td colspan="1"><input type="radio" name="table2" id="table2_4" value="4" onchange="toggleNoteInput()"></td>';
+               print '</tr>';
+               print '<tr class="oddeven">';
+                  print '<td colspan="1">Sonstiges</td>';
+                  print '<td colspan="1"><input type="radio" name="table2" id="table2_5" value="5" onchange="toggleNoteInput()"></td>';
                print '</tr>';
             print '</table>';
+            Print '<input type="text" id="note-other" style="width:100%; margin-bottom: 15px; display: none" name="note-other">';
             Print '<h6 style="color: red; display: none" id="error-text-p1">Error results: <h6>';
             print '<button id="hide" class="btn btn-primary" onclick="toggleVisibility(this.id)">Hide</button>';
          print '</div>';
@@ -718,7 +723,8 @@ dol_include_once('/stores/compress.php');
    $encoded_params = json_encode($parameters);
    if($result){
       print '<script>';
-        // deselect radio button when click on twice
+
+        // Fill fields with data from database
         print '
               let parameters = \'' . $encoded_params . '\';
               console.log(JSON.parse(parameters));
@@ -768,12 +774,30 @@ dol_include_once('/stores/compress.php');
                   }
               });
         ';
+        //  End fill fields with data from database
         print '</script>';
 
    }
+
    print '<script>';
 
+   // Show note input field when checking Sonstiges field
+   print '
+         function toggleNoteInput() {
+            const noteInput = document.getElementById("note-other");
+            const selectedRadio = document.querySelector(\'input[name="table2"]:checked\');
 
+            if (selectedRadio && selectedRadio.value === "5") {
+               noteInput.style.display = "block";
+            } else {
+               noteInput.style.display = "none";
+            }
+         }
+   ';
+   // End show note input field when checking Sonstiges field
+
+
+   // Disable save button until filling all required fields
    print '
          const form = document.getElementById("report-body");
          const submitButton = document.getElementById("save-form");
@@ -794,18 +818,21 @@ dol_include_once('/stores/compress.php');
          // Call the function initially to check form state on page load
          checkFormValidity();
 
-         form.addEventListener("input", checkFormValidity);';
+         form.addEventListener("input", checkFormValidity);
+   ';
+   // End disable save button until filling all required fields
 
-
+   // Check all done VKST 4.0
    print '
       $(document).ready(function() {
+         toggleNoteInput();
          $(".check-all").click(function() {
             var column = $(this).data("column");
             $("." + column + "-radio").prop("checked", true);
          });
       });
-   
    ';
+   // End check all done VKST 4.0
 
    // Close button
    print '
@@ -848,7 +875,7 @@ dol_include_once('/stores/compress.php');
                   }
                });
          });';
-   // end deselect radio button when click on twice
+   // End deselect radio button when click on twice
 
    // check P1, P2 table rows
    print ' 
@@ -868,34 +895,54 @@ dol_include_once('/stores/compress.php');
             let prio1RollbackFailed = false;
             let prio2Failed = false;
             //console.log(rows.length);
-            for (let i = 0; i < rows.length - 4; i++) {
+            for (let i = 0; i < rows.length; i++) {
             //console.log("Iteration: " + i);
                      const row = rows[i];
                      const cells = row.children;
-                     const prio = cells[2].textContent.trim();
                      
-                     const notAvailable = cells[5].querySelector(\'input[type="checkbox"]\').checked;
-                           if(notAvailable){
-                     //console.log("Not available");
-                     cells[3].querySelector(\'input[type="radio"]\').disabled = true;
-                     cells[3].querySelector(\'input[type="radio"]\').checked = false;
-                     cells[4].querySelector(\'input[type="radio"]\').disabled = true;
-                     cells[4].querySelector(\'input[type="radio"]\').checked = false;
-                     cells[6].querySelector(\'input[type="radio"]\').disabled = true;
-                     cells[6].querySelector(\'input[type="radio"]\').checked = false;
-                     cells[7].querySelector(\'input[type="radio"]\').disabled = true;
-                     cells[7].querySelector(\'input[type="radio"]\').checked = false;
-                     continue;
-         }else if(!notAvailable){
-         cells[3].querySelector(\'input[type="radio"]\').disabled = false;
-                     cells[4].querySelector(\'input[type="radio"]\').disabled = false;
-                     cells[6].querySelector(\'input[type="radio"]\').disabled = false;
-                     cells[7].querySelector(\'input[type="radio"]\').disabled = false;
-         }
-                     const testPassed = cells[3].querySelector(\'input[type="radio"]\').checked;
-                     const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                     const rollbackPassed = cells[6].querySelector(\'input[type="radio"]\').checked;
-                     const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                     // console.log(cells.length);
+                     if(cells.length == 8){
+                        const prio = cells[2].textContent.trim();
+                        const notAvailable = cells[5].querySelector(\'input[type="checkbox"]\').checked;
+                        if(notAvailable){
+                           // console.log("Not available");
+                           cells[3].querySelector(\'input[type="radio"]\').disabled = true;
+                           cells[3].querySelector(\'input[type="radio"]\').checked = false;
+                           cells[4].querySelector(\'input[type="radio"]\').disabled = true;
+                           cells[4].querySelector(\'input[type="radio"]\').checked = false;
+                           cells[6].querySelector(\'input[type="radio"]\').disabled = true;
+                           cells[6].querySelector(\'input[type="radio"]\').checked = false;
+                           cells[7].querySelector(\'input[type="radio"]\').disabled = true;
+                           cells[7].querySelector(\'input[type="radio"]\').checked = false;
+                           continue;
+                        } else if(!notAvailable){
+                           cells[3].querySelector(\'input[type="radio"]\').disabled = false;
+                           cells[4].querySelector(\'input[type="radio"]\').disabled = false;
+                           cells[6].querySelector(\'input[type="radio"]\').disabled = false;
+                           cells[7].querySelector(\'input[type="radio"]\').disabled = false;
+                        }
+                        const testPassed = cells[3].querySelector(\'input[type="radio"]\').checked;
+                        const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                        const rollbackPassed = cells[6].querySelector(\'input[type="radio"]\').checked;
+                        const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+
+                        if (prio === "1") {
+                           //console.log("Prio : 1");
+                           if (testFailed) {
+                              //console.log("Prio 1 test failed");
+                              prio1Failed = true;
+                              if (rollbackFailed) {
+                                    //console.log("Prio 1 rollback failed");
+                                    prio1RollbackFailed = true;
+                              }
+                           }else if(testPassed && opt4.checked == true && rollbackFailed == true){
+                              prio1Failed = true;
+                              prio1RollbackFailed = true;
+                           }
+                        } else if (prio === "2" && testFailed) {
+                           prio2Failed = true;
+                        }
+                     }
                      // console.log(row);
                      // console.log(prio);
                      // console.log(cells);
@@ -904,23 +951,6 @@ dol_include_once('/stores/compress.php');
                      // console.log(rollbackPassed);
                      // console.log(rollbackFailed);
                
-
-                     if (prio === "1") {
-                        //console.log("Prio : 1");
-                        if (testFailed) {
-                           //console.log("Prio 1 test failed");
-                           prio1Failed = true;
-                           if (rollbackFailed) {
-                                 //console.log("Prio 1 rollback failed");
-                                 prio1RollbackFailed = true;
-                           }
-                        }else if(testPassed && opt4.checked == true && rollbackFailed == true){
-                           prio1Failed = true;
-                           prio1RollbackFailed = true;
-                        }
-                     } else if (prio === "2" && testFailed) {
-                        prio2Failed = true;
-                     }
                }
 
                if (prio1Failed) {
@@ -950,28 +980,28 @@ dol_include_once('/stores/compress.php');
          });
 
          function testTracker(){
-         document.getElementById("error-text").style.display = "none";
-         document.getElementById("error-text-p1").style.display = "none";
-         toggleVisibility("hide");
+            document.getElementById("error-text").style.display = "none";
+            document.getElementById("error-text-p1").style.display = "none";
+            toggleVisibility("hide");
 
-         let rows = document.querySelectorAll(\'#questions-table .oddeven\');
-            if(opt1.checked){
-               document.getElementById("error-text").style.display = "none";
-            }else if(opt2.checked){
-               document.getElementById("error-text").style.display = "block";
-               document.getElementById("error-text").textContent = "Error results: ";
-               for(let i = 0; i < rows.length - 4; i++){
-               const row = rows[i];
-               const cells = row.children;
-               const prio = cells[2].textContent.trim();
-               if(prio == 2){
-                  const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                  if(testFailed){
-                     const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                     document.getElementById("error-text").textContent += secondColumnText+ ", ";
+            let rows = document.querySelectorAll(\'#questions-table .oddeven\');
+               if(opt1.checked){
+                  document.getElementById("error-text").style.display = "none";
+               }else if(opt2.checked){
+                  document.getElementById("error-text").style.display = "block";
+                  document.getElementById("error-text").textContent = "Error results: ";
+                  for(let i = 0; i < rows.length - 4; i++){
+                  const row = rows[i];
+                  const cells = row.children;
+                  const prio = cells[2].textContent.trim();
+                  if(prio == 2){
+                     const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                     if(testFailed){
+                        const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                        document.getElementById("error-text").textContent += secondColumnText+ ", ";
+                     }
                   }
-               }
-         }
+            }
                document.getElementById("error-text").textContent = document.getElementById("error-text").textContent.slice(0, -2);
             }else if(opt3.checked){
                document.getElementById("error-text").style.display = "none";

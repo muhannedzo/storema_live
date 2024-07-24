@@ -59,6 +59,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/project.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/stores/class/branch.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formticket.class.php';
 require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/ticket.lib.php';
@@ -697,7 +698,8 @@ print 'document.querySelectorAll("textarea").forEach(textarea => {
 	textarea.style.backgroundColor = "#80808026";
 });';
 print '</script>';
-	}else if($action == "createMail"){
+
+	} else if($action == "createMail"){
 		print '<div id="mail-body">Sehr geehrtes VKST4.0 Projektteam,</div>';
       print '<div id="options-body"></div>';
 		print '<script>	
@@ -728,105 +730,182 @@ print '</script>';
 			
 		
 		</script>';
-		print '<div class="section-title"><b>VKST-Details</b></div>
-    <table class="noborder centpercent" id="header-table">
-        <tr>
-            <td>VKST-ID:</td>
-            <td>'.$store->b_number.'</td>
-        </tr>
-        <tr>
-            <td>Adresse:</td>
-            <td>'.$store->street.','. $store->zip_code.' '. $store->city.'</td>
-        </tr>
-    </table>
+      $s = '<div class="page-body row" id="page-body">';
+         $s .= '<div class="col-12">';
+            $s .= '<b id="ssss">VKST-Details</b>';
+         $s .= '</div>';
+         $s .= '<div class="col-12">';
+            $s .= '<table class="noborder centpercent" id="header-table" style="width:50%">
+                     <tr>
+                           <td>VKST-ID:</td>
+                           <td>'.$store->b_number.'</td>
+                     </tr>
+                     <tr>
+                           <td>Adresse:</td>
+                           <td>'.$store->street.','. $store->zip_code.' '. $store->city.'</td>
+                     </tr>
+                  </table>';
+         $s .= '</div>';
+         $s .= '<div class="col-12">';
+            $s .= '<b>Umbaudetails</b>';
+         $s .= '</div>';
+         $s .= '<div class="col-12">';
+            $s .= '<table class="noborder centpercent" id="body-table" style="width:50%">
+                     <tr>
+                           <td>Techniker (Nachname, Vorname)</td>
+                           <td>Ibrahim Dura</td>
+                     </tr>
+                     <tr>
+                           <td>Datum</td>
+                           <td>'.date("d.m.y H:i", $object->datec).'</td>
+                     </tr>
+                     <tr>
+                           <td>Uhrzeit Start</td>
+                           <td id="workTimeStart"></td>
+                     </tr>
+                     <tr>
+                           <td>Uhrzeit Ende</td>
+                           <td id="workTimeEnd"></td>
+                     </tr>
+                     <tr>
+                           <td>Fehlgeschlagene P2 Tests</td>
+                           <td id="p2Errors"></td>
+                     </tr>
+                  </table>';
+         $s .= '</div>';
+      $s .= '</div>';
+      $s .= '<script>
+                     let rows2 = document.querySelectorAll(\'#questions-table .oddeven\');
+                     for(let i = 0; i < rows2.length - 4; i++){
+                        const row = rows2[i];
+                        console.log("Row" + row);
+                        const cells = row.children;
+                        console.log("Cells " + cells);
+                        const prio = cells[2].textContent.trim();
+                        console.log("Prio" + prio);
+                        if(prio == 2){
+                           const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              if(testFailed){
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 console.log("Wo es hakt" + document.getElementById("p2Errors"));
+                                 document.getElementById("p2Errors").textContent += secondColumnText+ ", ";
+                                 console.log("Found" + secondColumnText);
+                              }
+                           }
+                     }
+                     document.getElementById("p2Errors").textContent = document.getElementById("p2Errors").textContent.slice(0, -2);
+                     document.getElementById("workTimeStart").textContent = document.getElementById("input-work-start").value;
+                     document.getElementById("workTimeEnd").textContent = document.getElementById("input-work-end").value;
 
-    <div class="section-title"><b>Umbaudetails</b></div>
-    <table class="noborder centpercent" id="body-table">
-        <tr>
-            <td>Techniker (Nachname, Vorname)</td>
-            <td>Ibrahim Dura</td>
-        </tr>
-        <tr>
-            <td>Datum</td>
-            <td>'.date("d.m.y H:i", $object->datec).'</td>
-        </tr>
-        <tr>
-            <td>Uhrzeit Start (hh:mm Uhr)</td>
-            <td id="workTimeStart"></td>
-        </tr>
-        <tr>
-            <td>Uhrzeit Ende (hh:mm Uhr)</td>
-            <td id="workTimeEnd"></td>
-        </tr>
-        <tr>
-            <td>Fehlgeschlagene P2 Tests</td>
-            <td id="p2Errors"></td>
-        </tr>
-		<button onClick="copyToClipboard()">Tabelleninhalt kopieren</button> 
-    </table>';
-	print '<script>
-	let rows2 = document.querySelectorAll(\'#questions-table .oddeven\');
-			for(let i = 0; i < rows2.length - 4; i++){
-               const row = rows2[i];
-			   console.log("Row" + row);
-               const cells = row.children;
-			   console.log("Cells " + cells);
-               const prio = cells[2].textContent.trim();
-			   console.log("Prio" + prio);
-               if(prio == 2){
-                  const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                  if(testFailed){
-                     const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-					 console.log("Wo es hakt" + document.getElementById("p2Errors"));
-                     document.getElementById("p2Errors").textContent += secondColumnText+ ", ";
-					 console.log("Found" + secondColumnText);
-                  }
-               }
-         }
-               document.getElementById("p2Errors").textContent = document.getElementById("p2Errors").textContent.slice(0, -2);
+                     function copyToClipboard() {
+                           
+                        // Iterate through all table rows and append inner html to copy such that left column : right column
+                        let copyText = \'\';
+                        let mailBody = document.getElementById(\'mail-body\').innerHTML;
+                        let optionsBody = document.getElementById(\'options-body\').innerHTML;
+                        // Remove HTML tags from mail body
+                        let tempDiv = document.createElement(\'div\');
+                        tempDiv.innerHTML = mailBody;
+                        copyText += tempDiv.innerText + \'\\n\';
+                        tempDiv.innerHTML = optionsBody;
+                        copyText += tempDiv.innerText + \'\\n\';
+               
+                        let rows = document.querySelectorAll(\'#body-table tr\');
+                        let rows2 = document.querySelectorAll(\'#header-table tr\');
+                        rows2.forEach(row => {
+                           const cells = row.children;
+                           copyText += cells[0].textContent + \': \' + cells[1].textContent + \'\\n\';
+                        });
+                        
+                        rows.forEach(row => {
+                           const cells = row.children;
+                           copyText += cells[0].textContent + \': \' + cells[1].textContent + \'\\n\';
+                        });
+               
+                        // Create a temporary text field to copy the text to the clipboard
+                        const tempInput = document.createElement(\'textarea\');
+                        tempInput.value = copyText;
+                        document.body.appendChild(tempInput);
+               
+                        // Den Text markieren und in die Zwischenablage kopieren
+                        tempInput.select();
+                        document.execCommand(\'copy\');
+                           
+                        // Das temporäre Textfeld entfernen
+                        document.body.removeChild(tempInput); 
+                        alert(\'HTML-Code wurde in die Zwischenablage kopiert.\');
+                     }
+               </script>';
+      print $s;
+      $ss = '<head>
+               <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.1/purify.min.js"></script>
+            </head>
+            <body>';
+      $ss .= $s;
+      $ss .= '</body>';
+      print '<button onClick="copyToClipboard()">Tabelleninhalt kopieren</button> '; 
 
-			   document.getElementById("workTimeStart").textContent = document.getElementById("input-work-start").value;
-			   document.getElementById("workTimeEnd").textContent = document.getElementById("input-work-end").value;
-		function copyToClipboard() {
-            
-         // Iterate through all table rows and append inner html to copy such that left column : right column
-         let copyText = \'\';
-         let mailBody = document.getElementById(\'mail-body\').innerHTML;
-         let optionsBody = document.getElementById(\'options-body\').innerHTML;
-         // Remove HTML tags from mail body
-         let tempDiv = document.createElement(\'div\');
-         tempDiv.innerHTML = mailBody;
-         copyText += tempDiv.innerText + \'\\n\';
-         tempDiv.innerHTML = optionsBody;
-         copyText += tempDiv.innerText + \'\\n\';
+      if ($object->fk_soc > 0) {
+         $object->fetch_thirdparty();
+      }
 
-         let rows = document.querySelectorAll(\'#body-table tr\');
-         let rows2 = document.querySelectorAll(\'#header-table tr\');
-         rows2.forEach(row => {
-            const cells = row.children;
-            copyText += cells[0].textContent + \': \' + cells[1].textContent + \'\\n\';
-         });
-         
-         rows.forEach(row => {
-            const cells = row.children;
-            copyText += cells[0].textContent + \': \' + cells[1].textContent + \'\\n\';
-         });
+      $outputlangs = $langs;
+      $newlang = '';
+      if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && GETPOST('lang_id', 'aZ09')) {
+         $newlang = GETPOST('lang_id', 'aZ09');
+      } elseif (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && is_object($object->thirdparty)) {
+         $newlang = $object->thirdparty->default_lang;
+      }
+      if (!empty($newlang)) {
+         $outputlangs = new Translate("", $conf);
+         $outputlangs->setDefaultLang($newlang);
+      }
 
-         // Create a temporary text field to copy the text to the clipboard
-         const tempInput = document.createElement(\'textarea\');
-         tempInput.value = copyText;
-         document.body.appendChild(tempInput);
+      $arrayoffamiliestoexclude = array('objectamount');
 
-            // Den Text markieren und in die Zwischenablage kopieren
-            tempInput.select();
-            document.execCommand(\'copy\');
-            
-            // Das temporäre Textfeld entfernen
-            document.body.removeChild(tempInput);
-            
-            alert(\'HTML-Code wurde in die Zwischenablage kopiert.\');
-        }
-</script>';
+      $action = 'add_message'; // action to use to post the message
+      $modelmail = 'ticket_send';
+
+      // Substitution array
+      $morehtmlright = '';
+      $help = "";
+      $substitutionarray = getCommonSubstitutionArray($outputlangs, 0, $arrayoffamiliestoexclude, $object);
+      // $morehtmlright .= $form->textwithpicto('<span class="opacitymedium">'.$langs->trans("TicketMessageSubstitutionReplacedByGenericValues").'</span>', $help, 1, 'helpclickable', '', 0, 3, 'helpsubstitution');
+
+      print '<div>';
+
+      print '<div id="formmailbeforetitle" name="formmailbeforetitle"></div>';
+
+      print load_fiche_titre($langs->trans('TicketAddMessage'), $morehtmlright, 'messages@ticket');
+
+      print '<hr>';
+
+      $formticket = new FormTicket($db);
+      $action = "add_message";
+      $backtopage = "/ticket/reportOverview?id=".$object->id."&action=".$action;
+      $formticket->action = $action;
+      $formticket->track_id = $object->track_id;
+      $formticket->ref = $object->ref;
+      $formticket->id = $object->id;
+      $formticket->trackid = 'tic'.$object->id;
+
+      $formticket->withfile = 2;
+      $formticket->withcancel = 1;
+      $formticket->param = array('fk_user_create' => $user->id);
+      $formticket->param['langsmodels'] = (empty($newlang) ? $langs->defaultlang : $newlang);
+
+      // Table of additional post parameters
+      $formticket->param['models'] = $modelmail;
+      $formticket->param['models_id'] = GETPOST('modelmailselected', 'int');
+      //$formticket->param['socid']=$object->fk_soc;
+      $formticket->param['returnurl'] = $_SERVER["PHP_SELF"].'?id='.$object->id.'&action='.$action.'&track_id='.$object->track_id;
+
+      $formticket->withsubstit = 1;
+      $formticket->substit = $substitutionarray;
+      $formticket->backtopage = $backtopage;
+
+      $formticket->showMessageFormReport('100%', $s);
+      print '</div>';
    }
 }else{
 	print '<script>';
@@ -838,7 +917,29 @@ print '</script>';
 	print "Noch kein Bericht vorhanden";
 }
 
-   
+
+// var_dump($_POST);
+// Action to add a message (private or not, with email or not).
+	// This may also send an email (concatenated with email_intro and email footer if checkbox was selected)
+	if (GETPOSTISSET('action') == 'add_message' && GETPOSTISSET('btn_add_message')) {
+      var_dump(1);
+		$ret = $object->newMessageForm($user, $action, (GETPOST('private_message', 'alpha') == "on" ? 1 : 0), 0);
+      
+		if ($ret > 0) {
+			if (!empty($backtopage)) {
+				$url = $backtopage;var_dump(2);
+			} else {
+				$url = 'card.php?id='.$object->id;
+			}
+
+			// header("Location: ".$url);
+			exit;
+		} else {
+			setEventMessages($object->error, $object->errors, 'errors');
+			$action = 'presend';
+		}
+	}   
+	
  print '<style>';
  print ' .textfield, textarea, select, .task-message {
 			 border: 1px solid #8080804a;
