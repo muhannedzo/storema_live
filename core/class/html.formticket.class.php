@@ -3343,7 +3343,6 @@ class FormTicket
 
 			print $out;
 		}
-
 		// MESSAGE
 
 		$defaultmessage = "";
@@ -3510,8 +3509,8 @@ class FormTicket
 				}
 			}
 		}
-		//var_dump($_SESSION);
-		//var_dump($_SESSION["listofpaths".$keytoavoidconflict]);
+		// var_dump($_SESSION);
+		// var_dump($_SESSION["listofpaths".$keytoavoidconflict]);
 		if (!empty($_SESSION["listofpaths".$keytoavoidconflict])) {
 			$listofpaths = explode(';', $_SESSION["listofpaths".$keytoavoidconflict]);
 		}
@@ -3565,8 +3564,9 @@ class FormTicket
 		print '});
 		</script>';
 
-
-		print '<form method="post" name="ticket" id="ticket" enctype="multipart/form-data" action="'.$this->param["returnurl"].'">';
+		// var_dump($_POST);
+		// var_dump($_FILES);
+		print '<form method="post" name="ticket" id="ticket" enctype="multipart/form-data" action="'.$this->param["returnurlForm"].'">';
 		print '<input type="hidden" name="token" value="'.newToken().'">';
 		print '<input type="hidden" name="action" value="'.$this->action.'">';
 		print '<input type="hidden" name="actionbis" value="add_message">';
@@ -3615,11 +3615,11 @@ class FormTicket
 			print '<div class="row email_line">';
 				print '<div class="col-12">';
 					print $langs->trans('Subject');
-					if (empty($topic)) {
-						print '<input type="text" class="text minwidth500" name="subject" value="['.getDolGlobalString('MAIN_INFO_SOCIETE_NOM').' - '.$langs->trans("Ticket").' '.$ticketstat->ref.'] '.$langs->trans('TicketNewMessage').'" />';
-					} else {
-						print '<input type="text" class="text minwidth500" name="subject" value="['.getDolGlobalString('MAIN_INFO_SOCIETE_NOM').' - '.$langs->trans("Ticket").' '.$ticketstat->ref.'] '.$topic.'" />';
-					}
+					// if (empty($topic)) {
+						print '<input type="text" class="text minwidth500" name="subject" value="" />';
+					// } else {
+					// 	// print '<input type="text" class="text minwidth500" name="subject" value="['.getDolGlobalString('MAIN_INFO_SOCIETE_NOM').' - '.$langs->trans("Ticket").' '.$ticketstat->ref.'] '.$topic.'" />';
+					// }
 				print '</div>';
 			print "</div>";
 			print '<br>';
@@ -3674,9 +3674,11 @@ class FormTicket
 			print '<br>';
 
 		}
-
+		
 		$uselocalbrowser = false;
-
+		$listofnames = $this->param['imagesNames'];
+		$listofpaths = $this->param['imagesPaths'];
+		$listofmimes = $this->param['imagesMimes'];
 		// Attached files
 		if (!empty($this->withfile)) {
 			$out = '<div class="row">';
@@ -3699,29 +3701,29 @@ class FormTicket
 					$out .= '    });';
 					$out .= '})';
 					$out .= '</script>'."\n";
-
+					// var_dump($listofpaths);
 					if (count($listofpaths)) {
 						foreach ($listofpaths as $key => $val) {
 							$out .= '<div id="attachfile_'.$key.'">';
 							$out .= img_mime($listofnames[$key]).' '.$listofnames[$key];
-							if (!$this->withfilereadonly) {
-								$out .= ' <input type="image" style="border: 0px;" src="'.DOL_URL_ROOT.'/theme/'.$conf->theme.'/img/delete.png" value="'.($key + 1).'" class="removedfile reposition" id="removedfile_'.$key.'" name="removedfile_'.$key.'" />';
-							}
+							// if (!$this->withfilereadonly) {
+							// 	$out .= ' <input type="image" style="border: 0px;" src="'.DOL_URL_ROOT.'/theme/'.$conf->theme.'/img/delete.png" value="'.($key + 1).'" class="removedfile reposition" id="removedfile_'.$key.'" name="removedfile_'.$key.'" />';
+							// }
 							$out .= '<br></div>';
 						}
 					} else {
-						//$out .= $langs->trans("NoAttachedFiles").'<br>';
+						// $out .= $langs->trans("NoAttachedFiles").'<br>';
 					}
-					if ($this->withfile == 2) { // Can add other files
-						$out .= '<input type="file" class="flat" id="addedfile" name="addedfile" value="'.$langs->trans("Upload").'" />';
-						$out .= ' ';
-						$out .= '<input type="submit" class="button smallpaddingimp reposition" id="'.$addfileaction.'" name="'.$addfileaction.'" value="'.$langs->trans("MailingAddFile").'" />';
-					}
+					// if ($this->withfile == 2) { // Can add other files
+					// 	$out .= '<input type="file" class="flat" id="addedfile" name="addedfile" value="'.$langs->trans("Upload").'" />';
+					// 	$out .= ' ';
+					// 	$out .= '<input type="submit" class="button smallpaddingimp reposition" id="'.$addfileaction.'" name="'.$addfileaction.'" value="'.$langs->trans("MailingAddFile").'" />';
+					// }
 				$out .= "</div>";
 			$out .= "</div>\n";
 
-			// print $out;
-			// print '<br>';
+			print $out;
+			print '<br>';
 		}
 
 		
@@ -3768,15 +3770,15 @@ class FormTicket
 				//$toolbarname = 'dolibarr_details';
 				$toolbarname = 'dolibarr_notes';
 				include_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
-				$doleditor = new DolEditor('message', $s, '100%', 300, $toolbarname, '', false, $uselocalbrowser, getDolGlobalInt('FCKEDITOR_ENABLE_MAIL'), ROWS_5, '100%');
-				$doleditor->Create(0,'',true,'','','','');
+				$doleditor = new DolEditor('message', $s, '100%', 900, $toolbarname, '', false, $uselocalbrowser, True, ROWS_5, '100%');
+				$doleditor->Create(0,'',false,'','','','');
 			print '</div>';
 		print '</div>';
 
 		print '<br>';
 		print '<div class="row" style="text-align:center">';
 			print '<div class="col-6">';
-				print '<input type="submit" class="button" name="btn_add_message" value="'.$langs->trans("Add").'"';
+				print '<input type="submit" class="button" name="btn_add_message" value="'.$langs->trans("Send").'"';
 				// Add a javascript test to avoid to forget to submit file before sending email
 				if ($this->withfile == 2 && !empty($conf->use_javascript_ajax)) {
 					print ' onClick="if (document.ticket.addedfile.value != \'\') { alert(\''.dol_escape_js($langs->trans("FileWasNotUploaded")).'\'); return false; } else { return true; }"';
@@ -3813,5 +3815,16 @@ class FormTicket
 		}
 
 		print "<!-- End form TICKET -->\n";
+	}
+	function get_image_mime_type_by_extension($filename) {
+		$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+		$mime_types = [
+			'jpg' => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'png' => 'image/png',
+			'gif' => 'image/gif',
+			// Add more extensions and MIME types as needed
+		];
+		return isset($mime_types[$ext]) ? $mime_types[$ext] : false;
 	}
 }

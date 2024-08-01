@@ -2899,7 +2899,7 @@ class Ticket extends CommonObject
 	 * 									and we can search contact from email to add it as contact of ticket if TICKET_ASSIGN_CONTACT_TO_MESSAGE is set
 	 * @return  int						Return integer <0 if KO, >= 0 if OK
 	 */
-	public function newMessageForm($user, &$action, $private = 1, $public_area = 0)
+	public function newMessageForm($user, &$action, $private = 1, $public_area = 0, $listNames, $listPaths, $listMimes)
 	{
 		global $mysoc, $conf, $langs;
 
@@ -2939,9 +2939,9 @@ class Ticket extends CommonObject
 				return -1;
 			}
 
-			$listofpaths = $resarray['listofpaths'];
-			$listofnames = $resarray['listofnames'];
-			$listofmimes = $resarray['listofmimes'];
+			$listofpaths = $listPaths;
+			$listofnames = $listNames;
+			$listofmimes = $listMimes;
 
 			$id = $object->createTicketMessage($user, 0, $listofpaths, $listofmimes, $listofnames, $send_email, $public_area);
 			if ($id <= 0) {
@@ -3015,8 +3015,8 @@ class Ticket extends CommonObject
 							$subject = '['.$appli.'- ticket #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
 
 							// Message send
-							$message = $langs->trans('TicketMessageMailIntroText');
-							$message .= '<br><br>';
+							// $message = $langs->trans('TicketMessageMailIntroText');
+							// $message .= '<br><br>';
 							$messagePost = GETPOST('message', 'restricthtml');
 							if (!dol_textishtml($messagePost)) {
 								$messagePost = dol_nl2br($messagePost);
@@ -3025,10 +3025,10 @@ class Ticket extends CommonObject
 
 							// Customer company infos
 							$message .= '<br><br>';
-							$message .= "==============================================";
-							$message .= !empty($object->thirdparty->name) ? '<br>'.$langs->trans('Thirdparty')." : ".$object->thirdparty->name : '';
-							$message .= !empty($object->thirdparty->town) ? '<br>'.$langs->trans('Town')." : ".$object->thirdparty->town : '';
-							$message .= !empty($object->thirdparty->phone) ? '<br>'.$langs->trans('Phone')." : ".$object->thirdparty->phone : '';
+							// $message .= "==============================================";
+							// $message .= !empty($object->thirdparty->name) ? '<br>'.$langs->trans('Thirdparty')." : ".$object->thirdparty->name : '';
+							// $message .= !empty($object->thirdparty->town) ? '<br>'.$langs->trans('Town')." : ".$object->thirdparty->town : '';
+							// $message .= !empty($object->thirdparty->phone) ? '<br>'.$langs->trans('Phone')." : ".$object->thirdparty->phone : '';
 
 							// Email send to
 							$message .= '<br><br>';
@@ -3040,9 +3040,9 @@ class Ticket extends CommonObject
 							}
 
 							// URL ticket
-							$url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
-							$message .= '<br><br>';
-							$message .= $langs->trans('TicketNotificationEmailBodyInfosTrackUrlinternal').' : <a href="'.$url_internal_ticket.'">'.$object->track_id.'</a>';
+							// $url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
+							// $message .= '<br><br>';
+							// $message .= $langs->trans('TicketNotificationEmailBodyInfosTrackUrlinternal').' : <a href="'.$url_internal_ticket.'">'.$object->track_id.'</a>';
 
 							$this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
 						}
@@ -3067,8 +3067,8 @@ class Ticket extends CommonObject
 							$message_intro = $langs->trans('TicketNotificationEmailBody', "#".$object->id);
 							$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
 
-							$message = $langs->trans('TicketMessageMailIntroText');
-							$message .= '<br><br>';
+							// $message = $langs->trans('TicketMessageMailIntroText');
+							// $message .= '<br><br>';
 							$messagePost = GETPOST('message', 'restricthtml');
 							if (!dol_textishtml($messagePost)) {
 								$messagePost = dol_nl2br($messagePost);
@@ -3077,10 +3077,10 @@ class Ticket extends CommonObject
 
 							// Data about customer
 							$message .= '<br><br>';
-							$message .= "==============================================<br>";
-							$message .= !empty($object->thirdparty->name) ? $langs->trans('Thirdparty')." : ".$object->thirdparty->name : '';
-							$message .= !empty($object->thirdparty->town) ? '<br>'.$langs->trans('Town')." : ".$object->thirdparty->town : '';
-							$message .= !empty($object->thirdparty->phone) ? '<br>'.$langs->trans('Phone')." : ".$object->thirdparty->phone : '';
+							// $message .= "==============================================<br>";
+							// $message .= !empty($object->thirdparty->name) ? $langs->trans('Thirdparty')." : ".$object->thirdparty->name : '';
+							// $message .= !empty($object->thirdparty->town) ? '<br>'.$langs->trans('Town')." : ".$object->thirdparty->town : '';
+							// $message .= !empty($object->thirdparty->phone) ? '<br>'.$langs->trans('Phone')." : ".$object->thirdparty->phone : '';
 
 							// Build array to display recipient list
 							foreach ($internal_contacts as $key => $info_sendto) {
@@ -3096,15 +3096,15 @@ class Ticket extends CommonObject
 
 									// Contact type
 									$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], '-1').' ('.strtolower($info_sendto['libelle']).')';
-									$message .= (!empty($recipient) ? $langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
+									// $message .= (!empty($recipient) ? $langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
 								}
 							}
 							$message .= '<br>';
 							// URL ticket
-							$url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
+							// $url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
 
 							// Add html link on url
-							$message .= '<br>'.$langs->trans('TicketNotificationEmailBodyInfosTrackUrlinternal').' : <a href="'.$url_internal_ticket.'">'.$object->track_id.'</a><br>';
+							// $message .= '<br>'.$langs->trans('TicketNotificationEmailBodyInfosTrackUrlinternal').' : <a href="'.$url_internal_ticket.'">'.$object->track_id.'</a><br>';
 
 							// Add global email address recipient
 							if (getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)) {
@@ -3174,7 +3174,7 @@ class Ticket extends CommonObject
 										}
 
 										$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], '-1').' ('.strtolower($info_sendto['libelle']).')';
-										$message .= (!empty($recipient) ? $langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
+										// $message .= (!empty($recipient) ? $langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
 									}
 								}
 

@@ -62,6 +62,7 @@ require_once DOL_DOCUMENT_ROOT.'/custom/stores/class/branch.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formticket.class.php';
 require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
+require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/ticket.lib.php';
 print '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">';
 print '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>';
@@ -89,6 +90,7 @@ $lineid = GETPOST('lineid', 'int');
 $url_page_current = DOL_URL_ROOT.'/ticket/contact.php';
 $object = new Ticket($db);
 
+$formticket = new FormTicket($db);
 
 $permissiontoadd = $user->rights->ticket->write;
 
@@ -116,11 +118,14 @@ $store = new Branch($db);
 $store->fetch($storeid);
 $project = new Project($db);
 $project->fetch($object->fk_project);
+$techUser = new User($db);
 
 
-$sql = 'SELECT content, parameters FROM llx_tec_forms WHERE fk_ticket = '.$object->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+$sql = 'SELECT content, parameters, fk_user, images FROM llx_tec_forms WHERE fk_ticket = '.$object->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
 $result = $db->query($sql)->fetch_all()[0];
 
+$techUser->fetch($result[2]);
+$techName = $techUser->firstname.' '.$techUser->lastname;
 
 
 llxHeader("", $langs->trans("Report"));
@@ -622,6 +627,7 @@ print '<div id="report-body">';
          <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>
          <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.3.2/jspdf.plugin.autotable.min.js"></script>';
    $parameters = json_decode(base64_decode($result[1]));
+   $images = json_decode(base64_decode($result[3]));
    $encoded_params = json_encode($parameters);
    if($result[1] ){
 	print '<script>';
@@ -679,57 +685,89 @@ print '<div id="report-body">';
 	if($action == "edit"){
 		
 	}else if($action == "view"){
-//turn every input into a text field, disable every checkbox and radio button but keep the values. Basically prevent user from changing anything
-print '<script>';
-print 'document.querySelectorAll("input").forEach(input => {
-	if (input.type === "checkbox" || input.type === "radio") {
-		input.disabled = true;
-	} else {
-		input.type = "text";
-		input.disabled = true;
-	}
-});';
-print 'document.querySelectorAll("select").forEach(select => {
-	select.disabled = true;
-	select.style.backgroundColor = "#80808026";
-});';
-print 'document.querySelectorAll("textarea").forEach(textarea => {
-	textarea.disabled = true;
-	textarea.style.backgroundColor = "#80808026";
-});';
-print '</script>';
+      //turn every input into a text field, disable every checkbox and radio button but keep the values. Basically prevent user from changing anything
+      print '<script>';
+      print 'document.querySelectorAll("input").forEach(input => {
+         if (input.type === "checkbox" || input.type === "radio") {
+            input.disabled = true;
+         } else {
+            input.type = "text";
+            input.disabled = true;
+         }
+      });';
+      print 'document.querySelectorAll("select").forEach(select => {
+         select.disabled = true;
+         select.style.backgroundColor = "#80808026";
+      });';
+      print 'document.querySelectorAll("textarea").forEach(textarea => {
+         textarea.disabled = true;
+         textarea.style.backgroundColor = "#80808026";
+      });';
+      print '</script>';
 
 	} else if($action == "createMail"){
+      $workStartValue = "";
+      $workEndValue = "";
+      $otherNote = "";
+      $table2Checked = "";
+      $p2tests = "";
+      $serverImages = [];
+      $documentImages = [];
+      foreach ($parameters as $item) {
+         if ($item->name === 'work-start') {
+             $workStartValue = $item->value;
+         }
+         if ($item->name === 'work-end') {
+             $workEndValue = $item->value;
+         }
+         if ($item->name === 'p2tests') {
+             $p2tests = $item->value;
+         }
+         if ($item->name === 'table2') {
+             $table2Checked = $item->value;
+         }
+         if ($item->name === 'note-other') {
+             $otherNote = $item->value;
+             break;
+         }
+      }
+      foreach ($images as $group) {
+         if ($group->type === 'serverschrank nachher') {
+             $serverImages = $group->images;
+         }
+         if ($group->type === 'image abnahmeprotokoll/testprotokoll') {
+             $documentImages = $group->images;
+             break;
+         }
+      }
 		print '<div id="mail-body">Sehr geehrtes VKST4.0 Projektteam,</div>';
       print '<div id="options-body"></div>';
 		print '<script>	
-			document.getElementById("report-body").style.display = "none";
-			document.getElementById("reportOptions").style.display = "none";
-			document.getElementById("save-form").style.display = "none";
-			document.getElementById("generate-pdf").style.display = "none";
+               document.getElementById("report-body").style.display = "none";
+               document.getElementById("reportOptions").style.display = "none";
+               document.getElementById("save-form").style.display = "none";
+               document.getElementById("generate-pdf").style.display = "none";
 
 
-			
-			const rows = Array.from(document.querySelectorAll("#options-table.noborder.centpercent tr.oddeven"));
-			console.log(rows);
-            let selectedOptionText = \'\';
+               
+               const rows = Array.from(document.querySelectorAll("#options-table.noborder.centpercent tr.oddeven"));
+               console.log(rows);
+               let selectedOptionText = \'\';
 
-            rows.forEach(row => {
-			console.log(row);
-                const radio = row.querySelector("input[type=radio]");
-				console.log(radio);
-                if (radio && radio.checked) {
-                    selectedOptionText = row.cells[0].innerText;
-                }
-            });
+               rows.forEach(row => {
+                  console.log(row);
+                  const radio = row.querySelector("input[type=radio]");
+                  console.log(radio);
+                  if (radio && radio.checked) {
+                     selectedOptionText = row.cells[0].innerText;
+                  }
+               });
 
-            if (selectedOptionText) {
-                document.getElementById(\'options-body\').innerHTML += `${selectedOptionText}`;
+               if (selectedOptionText) {
+                  document.getElementById(\'options-body\').innerHTML += `${selectedOptionText}`;
 
-            }
-			
-		
-		</script>';
+               }
+		      </script>';
       $s = '<div class="page-body row" id="page-body">';
          $s .= '<div class="col-12">';
             $s .= '<b id="ssss">VKST-Details</b>';
@@ -745,7 +783,7 @@ print '</script>';
                            <td>'.$store->street.','. $store->zip_code.' '. $store->city.'</td>
                      </tr>
                   </table>';
-         $s .= '</div>';
+         $s .= '</div><br>';
          $s .= '<div class="col-12">';
             $s .= '<b>Umbaudetails</b>';
          $s .= '</div>';
@@ -753,7 +791,7 @@ print '</script>';
             $s .= '<table class="noborder centpercent" id="body-table" style="width:50%">
                      <tr>
                            <td>Techniker (Nachname, Vorname)</td>
-                           <td>Ibrahim Dura</td>
+                           <td>'.$techName.'</td>
                      </tr>
                      <tr>
                            <td>Datum</td>
@@ -761,20 +799,203 @@ print '</script>';
                      </tr>
                      <tr>
                            <td>Uhrzeit Start</td>
-                           <td id="workTimeStart"></td>
+                           <td>'.$workStartValue.'</td>
                      </tr>
                      <tr>
                            <td>Uhrzeit Ende</td>
-                           <td id="workTimeEnd"></td>
+                           <td>'.$workEndValue.'</td>
                      </tr>
                      <tr>
                            <td>Fehlgeschlagene P2 Tests</td>
-                           <td id="p2Errors"></td>
+                           <td>'.$p2tests.'</td>
                      </tr>
                   </table>';
          $s .= '</div>';
-      $s .= '</div>';
-      $s .= '<script>
+      $s .= '</div><br>';
+      $s .= '<hr>';
+      $se = '<div class="col-12">';
+         $se .= '<b>Grund des Rückbaus (Sonstiges bitte unten beschreiben):</b>';
+      $se .= '</div>';
+      $se .= '<div class="col-12" id="ruckbau-table"">';
+         $se .= '<table class="noborder centpercent" style="width:50%">';
+            $se .= '<tr class="oddeven">';
+               $check1 = $table2Checked == "1" ? "checked" : "";
+               $se .= '<td colspan="1">Fehlgeschlagener P1 Test (bitte Nummer angeben)</td>';
+               $se .= '<td colspan="1"><input type="radio" name="table2" id="table2_1" value="1" '.$check1.' disabled></td>';
+            $se .= '</tr>';
+            $se .= '<tr class="oddeven">';
+               $check2 = $table2Checked == "2" ? "checked" : "";
+               $se .= '<td colspan="1">Fehlendes Material</td>';
+               $se .= '<td colspan="1"><input type="radio" name="table2" id="table2_2" value="2" '.$check2.' disabled></td>';
+            $se .= '</tr>';
+            $se .= '<tr class="oddeven">';
+               $check3 = $table2Checked == "3" ? "checked" : "";
+               $se .= '<td colspan="1">Fehler der Automatisierung / App</td>';
+               $se .= '<td colspan="1"><input type="radio" name="table2" id="table2_3" value="3" '.$check3.' disabled></td>';
+            $se .= '</tr>';
+            $se .= '<tr class="oddeven">';
+               $check4 = $table2Checked == "4" ? "checked" : "";
+               $se .= '<td colspan="1">Defekte Hardware</td>';
+               $se .= '<td colspan="1"><input type="radio" name="table2" id="table2_4" value="4" '.$check4.' disabled></td>';
+            $se .= '</tr>';
+            $se .= '<tr class="oddeven">';
+               $check5 = $table2Checked == "5" ? "checked" : "";
+               $se .= '<td colspan="1">Sonstiges</td>';
+               $se .= '<td colspan="1"><input type="radio" name="table2" id="table2_5" value="5" '.$check5.' disabled></td>';
+            $se .= '</tr>';
+         $se .= '</table><br>';
+         $se .= '<label>Sonstiges: </label><input type="text" id="note-other" style="width:100%; margin-bottom: 15px;width:50%" name="note-other" value="'.$otherNote.'">';
+      $se .= '</div>';
+      print $s;
+      print $se;
+      print '<button onClick="copyToClipboard()">Tabelleninhalt kopieren</button> ';
+      $ruckbaus = '<div class="col-12">';
+         $ruckbaus .= '<b>Grund des Rückbaus (Sonstiges bitte unten beschreiben):</b>';
+      $ruckbaus .= '</div>';
+      $ruckbaus .= '<div class="col-12" id="ruckbau-table"">';
+         if($table2Checked == "1"){
+            $ruckbaus .= "Fehlgeschlagener P1 Test (bitte Nummer angeben)";
+         }
+         if($table2Checked == "2"){
+            $ruckbaus .= "Fehlendes Material";
+         }
+         if($table2Checked == "3"){
+            $ruckbaus .= "Fehler der Automatisierung / App";
+         }
+         if($table2Checked == "4"){
+            $ruckbaus .= "Defekte Hardware";
+         }
+         if($table2Checked == "5"){
+            $ruckbaus .= '<label>Sonstiges: '.$otherNote;
+         }
+      $ruckbaus .= '</div>'; 
+      $ruckbaus .= '<hr>'; 
+      $emailContent = '';
+      
+      $emailContent .= '<div class="col-12">';
+         $emailContent .= '
+               <table class="noborder centpercent" id="body-table" style="width:95%">
+                  <tr>
+                        <th><b>Zustand</b></th>
+                        <th><b>Betreff</b></th>
+                        <th><b>Inhalt</b></th>
+                  </tr>
+                  <tr>
+                     <td>
+                        <ul>
+                           <li>Umbau wurde erfolgreich abgeschlossen</li>
+                           <li>Alle Tests wurden erfolgreich durchgeführt</li>
+                        </ul>
+                     </td>
+                     <td>
+                        VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH
+                     </td>
+                     <td>
+                        Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                        <ul>
+                           <li>Umbau wurde erfolgreich abgeschlossen</li>
+                           <li>Es ist mindestes ein P2 Tests fehlgeschlagen</li>
+                        </ul>
+                     </td>
+                     <td>
+                        VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH, offene Themen
+                     </td>
+                     <td>
+                        Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                        <ul>
+                           <li>Der Umbau konnte nicht stattfinden / wurde vor Beginn abgebrochen</li>
+                        </ul>
+                     </td>
+                     <td>
+                        VKST4.0 - '.$store->b_number.' NICHT ERFOLGT
+                     </td>
+                     <td>
+                        Der Umbau in VKST '.$store->b_number.' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                        <ul>
+                           <li>Der Umbau auf VKST4.0 konnte nicht erfolgreich durchgeführt werden</li>
+                           <li>Nach Rollback konnten alle Tests erfolgreich durchgeführt werden</li>
+                        </ul>
+                     </td>
+                     <td>
+                        VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH
+                     </td>
+                     <td>
+                        Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                        <ul>
+                           <li>Es wurde ein Rollback erfolgreich durchgeführt</li>
+                           <li>Nach Rollback ist mindestens ein P2 Tests fehlgeschlagen</li>
+                        </ul>
+                     </td>
+                     <td>
+                        VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH, offene Themen
+                     </td>
+                     <td>
+                        Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                        <ul>
+                           <li>Der Rollback war nicht erfolgreich</li>
+                           <li>Projektleitstand wurde informiert</li>
+                        </ul>
+                     </td>
+                     <td>
+                        VKST4.0 - '.$store->b_number.' ROLLBACK FEHLSCHLAG
+                     </td>
+                     <td>
+                        Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.
+                     </td>
+                  </tr>
+               </table>';
+      $emailContent .= '</div><br>';
+      $emailContent .= '<p>Sehr geehrtes VKST4.0 Projektteam,</p><br>';
+      $emailContent .= '<br>';
+      $emailContent .= $s;
+      $emailContent .= $ruckbaus;
+      $imagesNames = [];
+      $imagesPaths = [];
+      $imagesMimes = [];
+      
+      if($serverImages) {
+         foreach($serverImages as $image){
+            array_push($imagesNames, $image);
+            array_push($imagesMimes, $formticket->get_image_mime_type_by_extension($image));
+            array_push($imagesPaths, DOL_DOCUMENT_ROOT.'/formsImages/'.$image);
+         }
+      }
+      if($documentImages) {
+         foreach($documentImages as $image){
+            array_push($imagesNames, $image);
+            array_push($imagesMimes, $formticket->get_image_mime_type_by_extension($image));
+            array_push($imagesPaths, DOL_DOCUMENT_ROOT.'/formsImages/'.$image);
+         }
+      }
+
+      $emailContent .= 'Mit freundlichen Grüßen,';
+      $emailContent .= '<br>';
+      $emailContent .= $techName;
+      if ($object->fk_soc > 0) {
+         $object->fetch_thirdparty();
+      }
+
+      print '<script>
                      let rows2 = document.querySelectorAll(\'#questions-table .oddeven\');
                      for(let i = 0; i < rows2.length - 4; i++){
                         const row = rows2[i];
@@ -836,19 +1057,6 @@ print '</script>';
                         alert(\'HTML-Code wurde in die Zwischenablage kopiert.\');
                      }
                </script>';
-      print $s;
-      $ss = '<head>
-               <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.1/purify.min.js"></script>
-            </head>
-            <body>';
-      $ss .= $s;
-      $ss .= '</body>';
-      print '<button onClick="copyToClipboard()">Tabelleninhalt kopieren</button> '; 
-
-      if ($object->fk_soc > 0) {
-         $object->fetch_thirdparty();
-      }
-
       $outputlangs = $langs;
       $newlang = '';
       if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && GETPOST('lang_id', 'aZ09')) {
@@ -880,7 +1088,7 @@ print '</script>';
 
       print '<hr>';
 
-      $formticket = new FormTicket($db);
+      // $formticket = new FormTicket($db);
       $action = "add_message";
       $backtopage = "/ticket/reportOverview?id=".$object->id."&action=".$action;
       $formticket->action = $action;
@@ -899,12 +1107,16 @@ print '</script>';
       $formticket->param['models_id'] = GETPOST('modelmailselected', 'int');
       //$formticket->param['socid']=$object->fk_soc;
       $formticket->param['returnurl'] = $_SERVER["PHP_SELF"].'?id='.$object->id.'&action='.$action.'&track_id='.$object->track_id;
+      $formticket->param['returnurlForm'] = $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=createMail&track_id='.$object->track_id;
+      $formticket->param['imagesNames'] = $imagesNames;
+      $formticket->param['imagesPaths'] = $imagesPaths;
+      $formticket->param['imagesMimes'] = $imagesMimes;
 
       $formticket->withsubstit = 1;
       $formticket->substit = $substitutionarray;
       $formticket->backtopage = $backtopage;
 
-      $formticket->showMessageFormReport('100%', $s);
+      $formticket->showMessageFormReport('100%', $emailContent);
       print '</div>';
    }
 }else{
@@ -922,12 +1134,12 @@ print '</script>';
 // Action to add a message (private or not, with email or not).
 	// This may also send an email (concatenated with email_intro and email footer if checkbox was selected)
 	if (GETPOSTISSET('action') == 'add_message' && GETPOSTISSET('btn_add_message')) {
-      var_dump(1);
-		$ret = $object->newMessageForm($user, $action, (GETPOST('private_message', 'alpha') == "on" ? 1 : 0), 0);
       
+		$ret = $object->newMessageForm($user, $action, (GETPOST('private_message', 'alpha') == "on" ? 1 : 0), 0, $imagesNames, $imagesPaths, $imagesMimes);
+      // var_dump($ret);
 		if ($ret > 0) {
 			if (!empty($backtopage)) {
-				$url = $backtopage;var_dump(2);
+				$url = $backtopage;
 			} else {
 				$url = 'card.php?id='.$object->id;
 			}
