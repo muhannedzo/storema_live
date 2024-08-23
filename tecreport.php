@@ -224,40 +224,50 @@ dol_include_once('/stores/compress.php');
                print '</table>';
             print '</div>';
          print '</div>';
-         print '<div class="container">';
-            print '<div class="row mb-3">';
-               print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-time-departure" class="form-label mb-0">Time Departure: </label>';
+         print '<div class="">';
+            print '<div class="row">';
+               print '<div class="col-6 col-md-3">';
+                  print '<div class="row mb-3">';
+                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
+                        print '<label for="input-time-departure" class="form-label mb-0">Time Departure: </label>';
+                     print '</div>';
+                     print '<div class="col-7 col-md-7">';
+                        print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="">';
+                     print '</div>';
+                  print '</div>';
                print '</div>';
-               print '<div class="col-6 col-md-9">';
-                  print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="">';
+               print '<div class="col-6 col-md-3">';
+                  print '<div class="row mb-3">';
+                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
+                        print '<label for="input-time-arrival" class="form-label mb-0">Time Arrival: </label>';
+                     print '</div>';
+                     print '<div class="col-7 col-md-7">';
+                        print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="">';
+                     print '</div>';
+                  print '</div>';
                print '</div>';
-            print '</div>';
-            print '<div class="row mb-3">';
-               print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-time-arrival" class="form-label mb-0">Time Arrival: </label>';
+               print '<div class="col-6 col-md-3">';
+                  print '<div class="row mb-3">';
+                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
+                        print '<label class="form-label mb-0">Duration of Trip: </label>';
+                     print '</div>';
+                     print '<div class="col-7 col-md-7 d-flex">';
+                        print '<input type="number" id="input-duration-hours" name="trip-hours" class="form-control me-2" style="max-width: 70px;" placeholder="h" value="">';
+                        print '<span class="align-self-center me-2">h :</span>';
+                        print '<input type="number" id="input-duration-minutes" name="trip-minutes" class="form-control" style="max-width: 70px;" max="60" placeholder="m" value="">';
+                        print '<span class="align-self-center me-2">m</span>';
+                     print '</div>';
+                  print '</div>';
                print '</div>';
-               print '<div class="col-6 col-md-9">';
-                  print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="">';
-               print '</div>';
-            print '</div>';
-            print '<div class="row mb-3">';
-               print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label class="form-label mb-0">Duration of Trip: </label>';
-               print '</div>';
-               print '<div class="col-6 col-md-9 d-flex">';
-                  print '<input type="number" id="input-duration-hours" name="trip-hours" class="form-control me-2" style="max-width: 70px;" placeholder="h" value="">';
-                  print '<span class="align-self-center me-2">h :</span>';
-                  print '<input type="number" id="input-duration-minutes" name="trip-minutes" class="form-control" style="max-width: 70px;" max="60" placeholder="m" value="">';
-                  print '<span class="align-self-center me-2">m</span>';
-               print '</div>';
-            print '</div>';
-            print '<div class="row mb-3">';
-               print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-km" class="form-label mb-0">KM: </label>';
-               print '</div>';
-               print '<div class="col-6 col-md-9">';
-                  print '<input type="number" id="input-km" class="form-control" name="km" value="">';
+               print '<div class="col-6 col-md-3">';
+                  print '<div class="row mb-3">';
+                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
+                        print '<label for="input-km" class="form-label mb-0">KM: </label>';
+                     print '</div>';
+                     print '<div class="col-7 col-md-7">';
+                        print '<input type="number" id="input-km" class="form-control" name="km" value="">';
+                     print '</div>';
+                  print '</div>';
                print '</div>';
             print '</div>';
          print '</div>';
@@ -411,7 +421,6 @@ dol_include_once('/stores/compress.php');
                      }
                   }
                print '</table>';
-            print '</div>';
             print '<input id="rows-counter" name="rows-counter" type="hidden" value="'.$rowsCount.'">';
          print '</div>';
          print '
@@ -429,29 +438,342 @@ dol_include_once('/stores/compress.php');
                </div>';
 
          $rowsCount += 1;
+         print '</div>';
+         print '<div id="add-row-popup" style="display: none;">
+                  <div class="popup-header">
+                     <div class="row">
+                        <div class="col-8">
+                           <h4>Add New Row</h4>
+                        </div>
+                        <div class="col-4" style="text-align: right; color: red">
+                           <h4 id="close-popup">X</h4>
+                        </div>
+                     </div>
+                  </div>
+                  <hr>
+                  <form id="add-row-form">
+                     <div class="popup-body">
+                        <div class="row">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Raum / Standort:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-1" name="1" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Bezeichnung:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-2" name="2" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Hersteller:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-3" name="3" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Typ:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-4" name="4" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">SN Nummer:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-5" name="5" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Einfache:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-6" name="6" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Schwer:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-7" name="7" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Hubsteiger:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-8" name="8" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Reinigung:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-9" name="9" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Prüfzyklus:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-11" name="11" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Schutzklasse:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-12" name="12" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">IO:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-13" name="13" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">mit Mängeln:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-14" name="14" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Mängel im Detail:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-15" name="15" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Defekt:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-16" name="16" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Monitor / Player:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-17" name="17" style="width:100%">
+                           </div>
+                        </div>
+                        
+                        <input type="hidden" id="cell-18" name="18">
+                     </div>
+                     <hr>
+                     <div class="popup-footer">
+                        <div class="row">
+                           <div class="col-6" style="text-align: center;">
+                              <button class="btn btn-secondary" type="submit">Add</button>
+                           </div>
+                           <div class="col-6" style="text-align: center;">
+                              <button class="btn btn-primary" id="next">Add & Next</button>
+                           </div>
+                        </div>
+                     </div>
+                  </form>
+               </div>';
          print '<script>';
             print '
                   function openImagesUploader(id){
                      var form = document.getElementById("popup");
                      form.style.display = "block";
-
                   }
             
-            ';      
+            ';
             // Add new row to the Messung table
+            // print '
+            //       let rowCounter = \'' . $rowsCount . '\';
+            //       let standard = "0000";
+            //       let prufnummer = "0000";
+
+            //       const addRowButton = document.getElementById("add-row");
+            //       const closeButton = document.getElementById("close-popup");
+            //       const rowsCounter = document.getElementById("rows-counter");
+            //       const table = document.querySelector("#pieces-table table tbody");
+
+            //       addRowButton.addEventListener("click", () => {
+            //          document.getElementById("add-row-popup").style.display = "block";
+            //       });
+            //       closeButton.addEventListener("click", () => {
+            //          document.getElementById("add-row-popup").style.display = "none";
+            //       });
+
+            //       const addRowForm = document.getElementById("add-row-form");
+            //       addRowForm.addEventListener("submit", (event) => {
+            //          event.preventDefault();
+
+            //          const cellData = {};
+            //          for (const element of addRowForm.elements) {
+            //             if (element.tagName === "INPUT") {
+            //                if(element.type === "checkbox"){
+            //                   cellData[element.name] = element.checked;
+            //                } else {
+            //                   cellData[element.name] = element.value;
+            //                }
+            //             }
+            //          }
+            //          addRowToTable(cellData);
+            //          const existingInputs = addRowForm.querySelectorAll("input");
+            //          for (const input of existingInputs) {
+            //             if(input.type === "checkbox"){
+            //                input.checked = false;
+            //             } else {
+            //                input.value = "";                     
+            //             }
+            //          }
+            //          document.getElementById("add-row-popup").style.display = "none";
+            //       });
+
+            //       function addRowToTable(cellData) {
+            //          const newRow = document.createElement("tr");
+            //          newRow.classList.add("oddeven");
+            //          const firstCell = document.createElement("td");
+            //          firstCell.textContent = rowCounter;
+            //          newRow.appendChild(firstCell);
+
+            //          for (let i = 1; i < 19; i++) {
+            //             const cell = document.createElement("td");
+
+            //             if ((i >= 6 && i <= 9) || i == 13 || i == 14 || i == 16) {
+            //                // Create checkboxes (unchanged)
+            //                const checkbox = document.createElement("input");
+            //                checkbox.type = "checkbox";
+            //                checkbox.name = "checkbox" + "_" + rowCounter + "_" + i;
+            //                checkbox.checked = cellData[i];
+            //                checkbox.style.width = "100%";
+            //                cell.appendChild(checkbox);
+            //             } else if (i == 10) {
+            //                const textInput = document.createElement("input");
+            //                textInput.type = "text";
+            //                textInput.style.width = "100%";
+            //                textInput.name = "textInput" + "_" + rowCounter + "_" + i;
+
+            //                // Calculate paddedSum with leading zeros using a function
+            //                textInput.value = "A-" + generatePaddedSum(Number(rowCounter) + Number(prufnummer));
+
+            //                cell.appendChild(textInput);
+            //             } else if (i != 18) {
+            //                // Create text inputs (unchanged)
+            //                const textInput = document.createElement("input");
+            //                textInput.type = "text";
+            //                textInput.style.width = "100%";
+            //                textInput.name = "textInput" + "_" + rowCounter + "_" + i;
+            //                textInput.value = cellData[i];
+            //                cell.appendChild(textInput);
+            //             }
+
+            //             newRow.appendChild(cell);
+            //          }
+
+            //          table.appendChild(newRow);
+            //          rowsCounter.value = rowCounter;
+            //          rowCounter++;
+            //       }
+
+            //       function generatePaddedSum(number) {
+            //          return number.toString().padStart(standard.length, "0");
+            //       }
+            //       ';
             print '
                   let rowCounter = \'' . $rowsCount . '\';
                   let standard = "0000";
                   let prufnummer = "0000";
 
                   const addRowButton = document.getElementById("add-row");
+                  const closeButton = document.getElementById("close-popup");
                   const rowsCounter = document.getElementById("rows-counter");
                   const table = document.querySelector("#pieces-table table tbody");
 
                   addRowButton.addEventListener("click", () => {
+                     document.getElementById("add-row-popup").style.display = "block";
+                  });
+                  closeButton.addEventListener("click", () => {
+                     document.getElementById("add-row-popup").style.display = "none";
+                  });
+
+                  const addRowForm = document.getElementById("add-row-form");
+                  const nextButton = document.getElementById("next");
+                  nextButton.addEventListener("click", handleNextClick);
+
+                  function handleNextClick(event) {
+                     event.preventDefault();
+
+                     const cellData = {};
+                     for (const element of addRowForm.elements) {
+                        if (element.tagName === "INPUT") {
+                           if(element.type === "checkbox"){
+                              cellData[element.name] = element.checked;
+                           } else {
+                              cellData[element.name] = element.value;
+                           }
+                        }
+                     }
+                     addRowToTable(cellData);
+
+                     // Clear existing form values (unchanged)
+                     const existingInputs = addRowForm.querySelectorAll("input");
+                     for (const input of existingInputs) {
+                        if(input.type === "checkbox"){
+                           input.checked = false;
+                        } else {
+                           input.value = "";
+                        }
+                     }
+                  }
+
+                  addRowForm.addEventListener("submit", (event) => {
+                     event.preventDefault();
+
+                     const cellData = {};
+                     for (const element of addRowForm.elements) {
+                        if (element.tagName === "INPUT") {
+                           if(element.type === "checkbox"){
+                              cellData[element.name] = element.checked;
+                           } else {
+                              cellData[element.name] = element.value;
+                           }
+                        }
+                     }
+                     addRowToTable(cellData);
+                     const existingInputs = addRowForm.querySelectorAll("input");
+                     for (const input of existingInputs) {
+                        if(input.type === "checkbox"){
+                           input.checked = false;
+                        } else {
+                           input.value = "";
+                        }
+                     }
+                     document.getElementById("add-row-popup").style.display = "none";
+                  });
+
+                  function addRowToTable(cellData) {
                      const newRow = document.createElement("tr");
                      newRow.classList.add("oddeven");
-
                      const firstCell = document.createElement("td");
                      firstCell.textContent = rowCounter;
                      newRow.appendChild(firstCell);
@@ -464,6 +786,7 @@ dol_include_once('/stores/compress.php');
                            const checkbox = document.createElement("input");
                            checkbox.type = "checkbox";
                            checkbox.name = "checkbox" + "_" + rowCounter + "_" + i;
+                           checkbox.checked = cellData[i];
                            checkbox.style.width = "100%";
                            cell.appendChild(checkbox);
                         } else if (i == 10) {
@@ -471,10 +794,8 @@ dol_include_once('/stores/compress.php');
                            textInput.type = "text";
                            textInput.style.width = "100%";
                            textInput.name = "textInput" + "_" + rowCounter + "_" + i;
-
                            // Calculate paddedSum with leading zeros using a function
                            textInput.value = "A-" + generatePaddedSum(Number(rowCounter) + Number(prufnummer));
-
                            cell.appendChild(textInput);
                         } else if (i != 18) {
                            // Create text inputs (unchanged)
@@ -482,36 +803,83 @@ dol_include_once('/stores/compress.php');
                            textInput.type = "text";
                            textInput.style.width = "100%";
                            textInput.name = "textInput" + "_" + rowCounter + "_" + i;
+                           textInput.value = cellData[i];
                            cell.appendChild(textInput);
-                        } 
-                        //    else if (i == 18) {
-                        //    // Create text inputs (unchanged)
-                        //    const btn = document.createElement("button");
-                        //    btn.className = "btn btn-primary";
-                        //    btn.id = i;
-                        //    btn.onclick = i;
-                        //    btn.innerText = "+";
-                        //    cell.appendChild(btn);
-                        // }
-
+                        }
                         newRow.appendChild(cell);
                      }
-
                      table.appendChild(newRow);
                      rowsCounter.value = rowCounter;
-
-                     // Increment counters without modifying paddedSum
                      rowCounter++;
-                     // prufnummer++;
-                  });
+                  }
 
-                  // Function to generate padded sum with leading zeros
                   function generatePaddedSum(number) {
                      return number.toString().padStart(standard.length, "0");
                   }
-
             ';
-            // End add new row to the Messung table
+            // End add new row to the Messung table      
+            // print '
+            //       let rowCounter = \'' . $rowsCount . '\';
+            //       let standard = "0000";
+            //       let prufnummer = "0000";
+
+            //       const addRowButton = document.getElementById("add-row");
+            //       const rowsCounter = document.getElementById("rows-counter");
+            //       const table = document.querySelector("#pieces-table table tbody");
+
+            //       addRowButton.addEventListener("click", () => {
+            //          const newRow = document.createElement("tr");
+            //          newRow.classList.add("oddeven");
+
+            //          const firstCell = document.createElement("td");
+            //          firstCell.textContent = rowCounter;
+            //          newRow.appendChild(firstCell);
+
+            //          for (let i = 1; i < 19; i++) {
+            //             const cell = document.createElement("td");
+
+            //             if ((i >= 6 && i <= 9) || i == 13 || i == 14 || i == 16) {
+            //                // Create checkboxes (unchanged)
+            //                const checkbox = document.createElement("input");
+            //                checkbox.type = "checkbox";
+            //                checkbox.name = "checkbox" + "_" + rowCounter + "_" + i;
+            //                checkbox.style.width = "100%";
+            //                cell.appendChild(checkbox);
+            //             } else if (i == 10) {
+            //                const textInput = document.createElement("input");
+            //                textInput.type = "text";
+            //                textInput.style.width = "100%";
+            //                textInput.name = "textInput" + "_" + rowCounter + "_" + i;
+
+            //                // Calculate paddedSum with leading zeros using a function
+            //                textInput.value = "A-" + generatePaddedSum(Number(rowCounter) + Number(prufnummer));
+
+            //                cell.appendChild(textInput);
+            //             } else if (i != 18) {
+            //                // Create text inputs (unchanged)
+            //                const textInput = document.createElement("input");
+            //                textInput.type = "text";
+            //                textInput.style.width = "100%";
+            //                textInput.name = "textInput" + "_" + rowCounter + "_" + i;
+            //                cell.appendChild(textInput);
+            //             }
+
+            //             newRow.appendChild(cell);
+            //          }
+
+            //          table.appendChild(newRow);
+            //          rowsCounter.value = rowCounter;
+
+            //          // Increment counters without modifying paddedSum
+            //          rowCounter++;
+            //       });
+
+            //       // Function to generate padded sum with leading zeros
+            //       function generatePaddedSum(number) {
+            //          return number.toString().padStart(standard.length, "0");
+            //       }
+
+            // ';
 
             // calculate distance/times
             print '
@@ -1766,48 +2134,6 @@ dol_include_once('/stores/compress.php');
          }';
    //end show/hide ruckbau table
    
-   // print '    
-   //       document.getElementById("generate-pdf").addEventListener("click", () => {
-   //          const { jsPDF } = window.jspdf;
-
-   //          // Create a temporary div to hold the content
-   //          const tempDiv = document.createElement("div");
-   //          tempDiv.innerHTML = document.getElementById("report-body").innerHTML;
-   //          document.body.appendChild(tempDiv);
-
-   //          // Set the temp div to a fixed desktop width
-   //          tempDiv.style.width = "2000px";
-   //          tempDiv.style.position = "absolute";
-   //          tempDiv.style.height = "2000px";
-
-   //          html2canvas(tempDiv, {
-   //             scale: 2,
-   //             useCORS: true,
-   //             logging: true,
-   //             backgroundColor: "#fff"
-   //          }).then(canvas => {
-
-   //             // Remove the temporary div
-   //             document.body.removeChild(tempDiv);
-
-   //             const imgData = canvas.toDataURL("image/jpg");
-
-   //             const pdf = new jsPDF("p", "mm", "a4");
-   //             const pageWidth = 210;
-   //             const pageHeight = 297;
-   //             const padding = 5;
-   //             const imgWidth = pageWidth - 2 * padding;
-   //             const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-
-   //             pdf.addImage(imgData, "PNG", padding, padding, imgWidth, imgHeight);
-
-   //             pdf.save("exported-table.pdf");
-   //          }).catch(error => {
-   //             console.error("Error in html2canvas:", error);
-   //          });
-   //       });';
-
    // draw signatures
    print '
       const canvases = document.getElementsByClassName("signature-canvas");
@@ -1873,14 +2199,14 @@ dol_include_once('/stores/compress.php');
       // Clear canvas
       // Only clear the canvas that was clicked
       print 'function clearCanvas(canvasId) {
-            const canvas = document.getElementById(canvasId);
-            if (canvas) {
-                const context = canvas.getContext("2d");
-                context.clearRect(0, 0, canvas.width, canvas.height);
-            } else {
-                console.warn(`Canvas element with id "${canvasId}" not found`);
-            }
-        }';
+                  const canvas = document.getElementById(canvasId);
+                  if (canvas) {
+                     const context = canvas.getContext("2d");
+                     context.clearRect(0, 0, canvas.width, canvas.height);
+                  } else {
+                     console.warn(`Canvas element with id "${canvasId}" not found`);
+                  }
+               }';
       // end clear canvas
 
       // show/hide save button on scrolling
@@ -1986,17 +2312,18 @@ dol_include_once('/stores/compress.php');
                display: none;
             }
 
-          #popup {
+          #popup, #add-row-popup {
                position: fixed;
                top: 50%;
                left: 50%;
+               width: 40%;
                transform: translate(-50%, -50%);
                background-color: white;
                padding: 20px;
                border: 1px solid #ddd;
                border-radius: 5px;
                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-               z-index: 10; /* Make sure the popup is above other elements */
+               z-index: 999999999; /* Make sure the popup is above other elements */
             }
 
           #popup button {
@@ -2012,6 +2339,9 @@ dol_include_once('/stores/compress.php');
                }
                .group-image {
                   height: 5rem!important;
+               }
+               #add-row-popup {
+                  width: 90%;
                }
             }';
    print '.floating-button {

@@ -86,7 +86,7 @@ $ligne = GETPOST('ligne', 'int');
 $lineid = GETPOST('lineid', 'int');
 
 // Store current page url
-$url_page_current = DOL_URL_ROOT.'/ticket/contact.php';
+$url_page_current = DOL_URL_ROOT.'/ticket/reportOverview.php';
 $object = new Ticket($db);
 
 $formticket = new FormTicket($db);
@@ -301,40 +301,51 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                print '</table>';
             print '</div>';
          print '</div>';
-         print '<div class="container">';
-            print '<div class="row mb-3">';
-               print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-time-departure" class="form-label mb-0">Time Departure: </label>';
+
+         print '<div class="">';
+            print '<div class="row">';
+               print '<div class="col-6 col-md-3">';
+                  print '<div class="row mb-3">';
+                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
+                        print '<label for="input-time-departure" class="form-label mb-0">Time Departure: </label>';
+                     print '</div>';
+                     print '<div class="col-7 col-md-7">';
+                        print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="'.$timeDeparture.'">';
+                     print '</div>';
+                  print '</div>';
                print '</div>';
-               print '<div class="col-6 col-md-9">';
-                  print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="'.$timeDeparture.'">';
+               print '<div class="col-6 col-md-3">';
+                  print '<div class="row mb-3">';
+                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
+                        print '<label for="input-time-arrival" class="form-label mb-0">Time Arrival: </label>';
+                     print '</div>';
+                     print '<div class="col-7 col-md-7">';
+                        print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="'.$timeArrival.'">';
+                     print '</div>';
+                  print '</div>';
                print '</div>';
-            print '</div>';
-            print '<div class="row mb-3">';
-               print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-time-arrival" class="form-label mb-0">Time Arrival: </label>';
+               print '<div class="col-6 col-md-3">';
+                  print '<div class="row mb-3">';
+                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
+                        print '<label class="form-label mb-0">Duration of Trip: </label>';
+                     print '</div>';
+                     print '<div class="col-7 col-md-7 d-flex">';
+                        print '<input type="number" id="input-duration-hours" name="trip-hours" class="form-control me-2" style="max-width: 70px;" placeholder="h" value="'.$tripHours.'">';
+                        print '<span class="align-self-center me-2">h :</span>';
+                        print '<input type="number" id="input-duration-minutes" name="trip-minutes" class="form-control" style="max-width: 70px;" max="60" placeholder="m" value="'.$tripMinutes.'">';
+                        print '<span class="align-self-center me-2">m</span>';
+                     print '</div>';
+                  print '</div>';
                print '</div>';
-               print '<div class="col-6 col-md-9">';
-                  print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="'.$timeArrival.'">';
-               print '</div>';
-            print '</div>';
-            print '<div class="row mb-3">';
-               print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label class="form-label mb-0">Duration of Trip: </label>';
-               print '</div>';
-               print '<div class="col-6 col-md-9 d-flex">';
-                  print '<input type="number" id="input-duration-hours" name="trip-hours" class="form-control me-2" style="max-width: 70px;" placeholder="h" value="'.$tripHours.'">';
-                  print '<span class="align-self-center me-2">h :</span>';
-                  print '<input type="number" id="input-duration-minutes" name="trip-minutes" class="form-control" style="max-width: 70px;" max="60" placeholder="m" value="'.$tripMinutes.'">';
-                  print '<span class="align-self-center me-2">m</span>';
-               print '</div>';
-            print '</div>';
-            print '<div class="row mb-3">';
-               print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-km" class="form-label mb-0">KM: </label>';
-               print '</div>';
-               print '<div class="col-6 col-md-9">';
-                  print '<input type="number" id="input-km" class="form-control" name="km" value="'.$km.'">';
+               print '<div class="col-6 col-md-3">';
+                  print '<div class="row mb-3">';
+                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
+                        print '<label for="input-km" class="form-label mb-0">KM: </label>';
+                     print '</div>';
+                     print '<div class="col-7 col-md-7">';
+                        print '<input type="number" id="input-km" class="form-control" name="km" value="'.$km.'">';
+                     print '</div>';
+                  print '</div>';
                print '</div>';
             print '</div>';
          print '</div>';
@@ -493,23 +504,244 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             print '</div>';
             print '<input id="rows-counter" name="rows-counter" type="hidden" value="'.$rowsCount.'" hidden>';
          print '</div>';
+         print '</div>';
+         print '<div id="add-row-popup" style="display: none;">
+                  <div class="popup-header">
+                     <div class="row">
+                        <div class="col-8">
+                           <h4>Add New Row</h4>
+                        </div>
+                        <div class="col-4" style="text-align: right; color: red">
+                           <h4 id="close-popup">X</h4>
+                        </div>
+                     </div>
+                  </div>
+                  <hr>
+                  <form id="add-row-form">
+                     <div class="popup-body">
+                        <div class="row">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Raum / Standort:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-1" name="1" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Bezeichnung:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-2" name="2" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Hersteller:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-3" name="3" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Typ:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-4" name="4" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">SN Nummer:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-5" name="5" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Einfache:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-6" name="6" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Schwer:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-7" name="7" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Hubsteiger:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-8" name="8" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Reinigung:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-9" name="9" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Prüfzyklus:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-11" name="11" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Schutzklasse:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-12" name="12" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">IO:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-13" name="13" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">mit Mängeln:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-14" name="14" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Mängel im Detail:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-15" name="15" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Defekt:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="checkbox" id="cell-16" name="16" style="width:100%">
+                           </div>
+                        </div>
+                        <div class="row mt-2">
+                           <div class="col-6 col-md-3 d-flex align-items-center">
+                              <label for="cell-1">Monitor / Player:</label>
+                           </div>
+                           <div class="col-6 col-md-9">
+                              <input type="text" id="cell-17" name="17" style="width:100%">
+                           </div>
+                        </div>
+                        <input type="hidden" id="cell-18" name="18">
+                     </div>
+                     <hr>
+                     <div class="popup-footer">
+                        <div class="row">
+                           <div class="col-6" style="text-align: center;">
+                              <button class="btn btn-secondary" type="submit">Save</button>
+                           </div>
+                           <div class="col-6" style="text-align: center;">
+                              <button class="btn btn-primary" id="next">Add & Next</button>
+                           </div>
+                        </div>
+                     </div>
+                  </form>
+               </div>';
 
          $rowsCount += 1;         
-         print '<script>';      
+         print '<script>';
             // Add new row to the Messung table
+
             print '
                   let rowCounter = \'' . $rowsCount . '\';
                   let standard = "0000";
                   let prufnummer = "0000";
 
                   const addRowButton = document.getElementById("add-row");
+                  const closeButton = document.getElementById("close-popup");
                   const rowsCounter = document.getElementById("rows-counter");
                   const table = document.querySelector("#pieces-table table tbody");
 
                   addRowButton.addEventListener("click", () => {
+                     document.getElementById("add-row-popup").style.display = "block";
+                  });
+                  closeButton.addEventListener("click", () => {
+                     document.getElementById("add-row-popup").style.display = "none";
+                  });
+
+                  const addRowForm = document.getElementById("add-row-form");
+                  const nextButton = document.getElementById("next");
+                  nextButton.addEventListener("click", handleNextClick);
+
+                  function handleNextClick(event) {
+                     event.preventDefault();
+
+                     const cellData = {};
+                     for (const element of addRowForm.elements) {
+                        if (element.tagName === "INPUT") {
+                           if(element.type === "checkbox"){
+                              cellData[element.name] = element.checked;
+                           } else {
+                              cellData[element.name] = element.value;
+                           }
+                        }
+                     }
+                     addRowToTable(cellData);
+
+                     // Clear existing form values (unchanged)
+                     const existingInputs = addRowForm.querySelectorAll("input");
+                     for (const input of existingInputs) {
+                        if(input.type === "checkbox"){
+                           input.checked = false;
+                        } else {
+                           input.value = "";
+                        }
+                     }
+                  }
+
+                  addRowForm.addEventListener("submit", (event) => {
+                     event.preventDefault();
+
+                     const cellData = {};
+                     for (const element of addRowForm.elements) {
+                        if (element.tagName === "INPUT") {
+                           if(element.type === "checkbox"){
+                              cellData[element.name] = element.checked;
+                           } else {
+                              cellData[element.name] = element.value;
+                           }
+                        }
+                     }
+                     addRowToTable(cellData);
+                     const existingInputs = addRowForm.querySelectorAll("input");
+                     for (const input of existingInputs) {
+                        if(input.type === "checkbox"){
+                           input.checked = false;
+                        } else {
+                           input.value = "";
+                        }
+                     }
+                     document.getElementById("add-row-popup").style.display = "none";
+                  });
+
+                  function addRowToTable(cellData) {
                      const newRow = document.createElement("tr");
                      newRow.classList.add("oddeven");
-
                      const firstCell = document.createElement("td");
                      firstCell.textContent = rowCounter;
                      newRow.appendChild(firstCell);
@@ -522,6 +754,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                            const checkbox = document.createElement("input");
                            checkbox.type = "checkbox";
                            checkbox.name = "checkbox" + "_" + rowCounter + "_" + i;
+                           checkbox.checked = cellData[i];
                            checkbox.style.width = "100%";
                            cell.appendChild(checkbox);
                         } else if (i == 10) {
@@ -529,10 +762,8 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                            textInput.type = "text";
                            textInput.style.width = "100%";
                            textInput.name = "textInput" + "_" + rowCounter + "_" + i;
-
                            // Calculate paddedSum with leading zeros using a function
                            textInput.value = "A-" + generatePaddedSum(Number(rowCounter) + Number(prufnummer));
-
                            cell.appendChild(textInput);
                         } else if (i != 18) {
                            // Create text inputs (unchanged)
@@ -540,34 +771,19 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                            textInput.type = "text";
                            textInput.style.width = "100%";
                            textInput.name = "textInput" + "_" + rowCounter + "_" + i;
+                           textInput.value = cellData[i];
                            cell.appendChild(textInput);
-                        } 
-                        //    else if (i == 18) {
-                        //    // Create text inputs (unchanged)
-                        //    const btn = document.createElement("button");
-                        //    btn.className = "btn btn-primary";
-                        //    btn.id = i;
-                        //    btn.onclick = i;
-                        //    btn.innerText = "+";
-                        //    cell.appendChild(btn);
-                        // }
-
+                        }
                         newRow.appendChild(cell);
                      }
-
                      table.appendChild(newRow);
                      rowsCounter.value = rowCounter;
-
-                     // Increment counters without modifying paddedSum
                      rowCounter++;
-                     // prufnummer++;
-                  });
+                  }
 
-                  // Function to generate padded sum with leading zeros
                   function generatePaddedSum(number) {
                      return number.toString().padStart(standard.length, "0");
                   }
-
             ';
             // End add new row to the Messung table
 
@@ -1206,8 +1422,8 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      document.body.appendChild(tempDiv);
 
                      // Set the temp div to match A4 aspect ratio
-                     const a4Width = 210; // A4 width in mm
-                     const a4Height = 297; // A4 height in mm
+                     const a4Width = 400; // A4 width in mm
+                     const a4Height = 210; // A4 height in mm
                      const dpi = 160; // Screen resolution
                      const a4WidthPx = Math.floor(a4Width * (dpi / 25.4)); // Convert mm to px
                      const a4HeightPx = Math.floor(a4Height * (dpi / 25.4)); // Convert mm to px
@@ -1227,7 +1443,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
 
                         const imgData = canvas.toDataURL("image/png");
 
-                        const pdf = new jsPDF("p", "mm", "a4");
+                        const pdf = new jsPDF("l", "mm", "a4");
                         const pageWidth = pdf.internal.pageSize.getWidth();
                         const pageHeight = pdf.internal.pageSize.getHeight();
                         const padding = 4;
@@ -1309,21 +1525,24 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          //turn every input into a text field, disable every checkbox and radio button but keep the values. Basically prevent user from changing anything
          print '<script>';
             print 'document.querySelectorAll("input").forEach(input => {
-               if (input.type === "checkbox" || input.type === "radio") {
-                  input.disabled = true;
-               } else {
-                  input.type = "text";
-                  input.disabled = true;
-               }
-            });';
+                     if (input.type === "checkbox" || input.type === "radio") {
+                        input.disabled = true;
+                     } else {
+                        input.type = "text";
+                        input.disabled = true;
+                     }
+                  });';
             print 'document.querySelectorAll("select").forEach(select => {
-               select.disabled = true;
-               select.style.backgroundColor = "#80808026";
-            });';
+                     select.disabled = true;
+                     select.style.backgroundColor = "#80808026";
+                  });';
             print 'document.querySelectorAll("textarea").forEach(textarea => {
-               textarea.disabled = true;
-               textarea.style.backgroundColor = "#80808026";
-            });';
+                     textarea.disabled = true;
+                     textarea.style.backgroundColor = "#80808026";
+                  });';
+            print 'document.querySelectorAll("button").forEach(textarea => {
+                     textarea.disabled = true;
+                  });';
          print '</script>';
 	   } else if($action == "createMail"){
          $workStartValue = "";
@@ -1803,5 +2022,41 @@ print '[class^="ico-"], [class*=" ico-"] {
 			color: red;
 		 }
 		 .ico-times::before { content: "\2716"; }';
+print '.closed {
+         display: none;
+       }
+
+      #popup, #add-row-popup {
+         position: fixed;
+         top: 50%;
+         left: 50%;
+         width: 40%;
+         transform: translate(-50%, -50%);
+         background-color: white;
+         padding: 20px;
+         border: 1px solid #ddd;
+         border-radius: 5px;
+         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+         z-index: 10; /* Make sure the popup is above other elements */
+       }
+
+      #popup button {
+         color: white;
+         padding: 10px 20px;
+         border: none;
+         border-radius: 4px;
+         cursor: pointer;
+       }
+      @media (max-width: 575px) { /* Target screens smaller than 576px (i.e. mobiles) */
+         #popup {
+            width: 100vw; /* Set width to 100% of viewport width */
+         }
+         .group-image {
+            height: 5rem!important;
+         }
+         #add-row-popup {
+            width: 90%;
+         }
+      }';
 print '</style>';
 

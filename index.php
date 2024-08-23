@@ -88,7 +88,10 @@ if (getDolGlobalString('MAIN_APPLICATION_TITLE')) {
 
 llxHeader('', $title);
 
-if($user->socid) {
+$sql = "SELECT COUNT(*) FROM llx_ticket WHERE fk_user_assign = ".$user->id;
+$result = $db->query($sql)->fetch_all()[0];
+// var_dump($result);
+if($user->socid || $result[0] != "0") {
 	//Muhannad code
 	//show user tickets.
 	print load_fiche_titre('&nbsp;', $resultboxes['selectboxlist'], '', 0, '', 'titleforhome');
