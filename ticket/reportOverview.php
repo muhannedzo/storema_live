@@ -68,7 +68,7 @@ print '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2
 print '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>';
 print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.css">';
 print '<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.1/purify.min.js"></script>'; 
-
+require_once('tcpdf/tcpdf.php');
 // Load translation files required by the page
 $langs->loadLangs(array('companies', 'ticket'));
 
@@ -302,53 +302,95 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             print '</div>';
          print '</div>';
 
-         print '<div class="">';
-            print '<div class="row">';
-               print '<div class="col-6 col-md-3">';
-                  print '<div class="row mb-3">';
-                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
-                        print '<label for="input-time-departure" class="form-label mb-0">Time Departure: </label>';
-                     print '</div>';
-                     print '<div class="col-7 col-md-7">';
+         print '<div class="row">';
+            print '<div class="col-lg-6 col-xs-12 div-table-responsive-no-min">';
+               print '<table class="noborder centpercent" id="times-table" style="border: none;">';
+                  print '<tr class="oddeven" style="border: none; background: none">';
+                     print '<td style="border: none;">';
+                        print 'Time Departure:';
+                     print '</td>';
+                     print '<td style="border: none;">';
                         print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="'.$timeDeparture.'">';
-                     print '</div>';
-                  print '</div>';
-               print '</div>';
-               print '<div class="col-6 col-md-3">';
-                  print '<div class="row mb-3">';
-                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
-                        print '<label for="input-time-arrival" class="form-label mb-0">Time Arrival: </label>';
-                     print '</div>';
-                     print '<div class="col-7 col-md-7">';
+                     print '</td>';
+                     print '<td style="border: none;">';
+                        print 'Time Arrival:';
+                     print '</td>';
+                     print '<td style="border: none;">';
                         print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="'.$timeArrival.'">';
-                     print '</div>';
-                  print '</div>';
-               print '</div>';
-               print '<div class="col-6 col-md-3">';
-                  print '<div class="row mb-3">';
-                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
-                        print '<label class="form-label mb-0">Duration of Trip: </label>';
-                     print '</div>';
-                     print '<div class="col-7 col-md-7 d-flex">';
+                     print '</td>';
+                  print '</tr>';
+               print '</table>';
+            print '</div>';
+            print '<div class="col-lg-6 col-xs-12 div-table-responsive-no-min">';
+               print '<table class="noborder centpercent" style="border: none">';
+                  print '<tr class="oddeven" style="border: none; background: none">';
+                     print '<td style="border: none;">';
+                        print 'Duration of Trip:';
+                     print '</td>';
+                     print '<td class="d-flex h-100" style="border: none;">';
                         print '<input type="number" id="input-duration-hours" name="trip-hours" class="form-control me-2" style="max-width: 70px;" placeholder="h" value="'.$tripHours.'">';
                         print '<span class="align-self-center me-2">h :</span>';
                         print '<input type="number" id="input-duration-minutes" name="trip-minutes" class="form-control" style="max-width: 70px;" max="60" placeholder="m" value="'.$tripMinutes.'">';
                         print '<span class="align-self-center me-2">m</span>';
-                     print '</div>';
-                  print '</div>';
-               print '</div>';
-               print '<div class="col-6 col-md-3">';
-                  print '<div class="row mb-3">';
-                     print '<div class="col-5 col-md-5 d-flex align-items-center">';
-                        print '<label for="input-km" class="form-label mb-0">KM: </label>';
-                     print '</div>';
-                     print '<div class="col-7 col-md-7">';
+                     print '</td>';
+                     print '<td style="border: none;">';
+                        print 'KM:';
+                     print '</td>';
+                     print '<td style="border: none;">';
                         print '<input type="number" id="input-km" class="form-control" name="km" value="'.$km.'">';
-                     print '</div>';
-                  print '</div>';
-               print '</div>';
+                     print '</td>';
+                  print '</tr>';
+               print '</table>';
             print '</div>';
          print '</div>';
+
+         // print '<div class="">';
+         //    print '<div class="row">';
+         //       print '<div class="col-6 col-md-3">';
+         //          print '<div class="row mb-3">';
+         //             print '<div class="col-5 col-md-5 d-flex align-items-center">';
+         //                print '<label for="input-time-departure" class="form-label mb-0">Time Departure: </label>';
+         //             print '</div>';
+         //             print '<div class="col-7 col-md-7">';
+         //                print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="'.$timeDeparture.'">';
+         //             print '</div>';
+         //          print '</div>';
+         //       print '</div>';
+         //       print '<div class="col-6 col-md-3">';
+         //          print '<div class="row mb-3">';
+         //             print '<div class="col-5 col-md-5 d-flex align-items-center">';
+         //                print '<label for="input-time-arrival" class="form-label mb-0">Time Arrival: </label>';
+         //             print '</div>';
+         //             print '<div class="col-7 col-md-7">';
+         //                print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="'.$timeArrival.'">';
+         //             print '</div>';
+         //          print '</div>';
+         //       print '</div>';
+         //       print '<div class="col-6 col-md-3">';
+         //          print '<div class="row mb-3">';
+         //             print '<div class="col-5 col-md-5 d-flex align-items-center">';
+         //                print '<label class="form-label mb-0">Duration of Trip: </label>';
+         //             print '</div>';
+         //             print '<div class="col-7 col-md-7 d-flex">';
+         //                print '<input type="number" id="input-duration-hours" name="trip-hours" class="form-control me-2" style="max-width: 70px;" placeholder="h" value="'.$tripHours.'">';
+         //                print '<span class="align-self-center me-2">h :</span>';
+         //                print '<input type="number" id="input-duration-minutes" name="trip-minutes" class="form-control" style="max-width: 70px;" max="60" placeholder="m" value="'.$tripMinutes.'">';
+         //                print '<span class="align-self-center me-2">m</span>';
+         //             print '</div>';
+         //          print '</div>';
+         //       print '</div>';
+         //       print '<div class="col-6 col-md-3">';
+         //          print '<div class="row mb-3">';
+         //             print '<div class="col-5 col-md-5 d-flex align-items-center">';
+         //                print '<label for="input-km" class="form-label mb-0">KM: </label>';
+         //             print '</div>';
+         //             print '<div class="col-7 col-md-7">';
+         //                print '<input type="number" id="input-km" class="form-control" name="km" value="'.$km.'">';
+         //             print '</div>';
+         //          print '</div>';
+         //       print '</div>';
+         //    print '</div>';
+         // print '</div>';
          
 
          $rowsCount = "0";
@@ -440,61 +482,61 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   if($rowsCount > 0){
                      for($i = 1; $i <= $rowsCount; $i++){
                         print '<tr class="oddeven">';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print $i;
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_1" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_2" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_3" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_4" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_5" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="checkbox" name="checkbox_'.$i.'_6" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="checkbox" name="checkbox_'.$i.'_7" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="checkbox" name="checkbox_'.$i.'_8" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="checkbox" name="checkbox_'.$i.'_9" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_10" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_11" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_12" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="checkbox" name="checkbox_'.$i.'_13" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="checkbox" name="checkbox_'.$i.'_14" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_15" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="checkbox" name="checkbox_'.$i.'_16" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               print '<input type="text" name="textInput_'.$i.'_17" style="width:100%">';
                            print '</td>';
-                           print '<td>';
+                           print '<td colspan="1">';
                               // print '<button id="'.$i.'" class="btn btn-primary" onclick="openImagesUploader(this.id)">+</button>';
                            print '</td>';
                         print '</tr>';
@@ -504,6 +546,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             print '</div>';
             print '<input id="rows-counter" name="rows-counter" type="hidden" value="'.$rowsCount.'" hidden>';
          print '</div>';
+         // print '<button onclick="exportToCSV()">Export to CSV</button>';
          print '</div>';
          print '<div id="add-row-popup" style="display: none;">
                   <div class="popup-header">
@@ -663,7 +706,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   </form>
                </div>';
 
-         $rowsCount += 1;         
+         $rowsCount += 1;   
          print '<script>';
             // Add new row to the Messung table
 
@@ -1325,11 +1368,14 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
       }
    print '</div>';
    print '<div class="row mt-3">';
-      print '<div class="col right">';
+      print '<div class="col center">';
          print '<input type="submit" value="Save" id="save-form">';
       print '</div>';
-      print '<div class="col left">';
+      print '<div class="col center">';
          print '<input type="submit" value="PDF" id="generate-pdf">';
+      print '</div>';
+      print '<div class="col center">';
+         print '<input type="submit" value="CSV" id="csv" onclick="exportToCSV()">';
       print '</div>';
    print '</div>';
 
@@ -1410,7 +1456,131 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
 
          print '<script>';
 
+            // export as csv
+            print '
+            function exportToCSV() {
+               const tables = document.getElementById("report-body").querySelectorAll("table:not(#times-table)");
+               const csvContent = [];
+
+               tables.forEach(table => {
+                  const rows = table.querySelectorAll("tr");
+                  rows.forEach(row => {
+                     const csvRow = [];
+                     row.querySelectorAll("td").forEach(cell => {
+                        let cellValue = cell.textContent.trim();
+
+                        if (cellValue !== "") {
+                           let elm = [];
+                           cell.querySelectorAll("input").forEach(inputElement => {
+                              if (inputElement) {
+                                 switch (inputElement.type) {
+                                    case "number":
+                                       elm.push(inputElement.value);
+                                       break;
+                                 }
+                              }
+                           });
+                           if(elm.length > 0){
+                              cellValue = elm.join(":");
+                           } else {
+                              cellValue = cellValue;
+                           }
+                        } else {
+                           cell.querySelectorAll("input").forEach(inputElement => {
+                              if (inputElement) {
+                                 // Handle input elements
+                                 switch (inputElement.type) {
+                                 case "date":
+                                 case "datetime-local":
+                                    const dateObj = new Date(inputElement.value);
+
+                                    cellValue = dateObj.toLocaleString("de-DE", {
+                                       year: "numeric",
+                                       month: "numeric",
+                                       day: "numeric"
+                                    });
+                                    break;
+                                 case "time":
+                                    cellValue = 2;
+                                    break;
+                                 case "number":
+                                    cellValue = inputElement.value;
+                                    break;
+                                 case "checkbox":
+                                    cellValue = inputElement.checked ? "Ja" : "Nein";
+                                    break;
+                                 default:
+                                    cellValue = inputElement.value;
+                                    break;
+                                 }
+                              } else {
+                                 cellValue = "";
+                              }
+                           });
+                        }
+
+                        csvRow.push(cellValue);
+                     });
+                     csvContent.push(csvRow.join(","));
+                  });
+                  csvContent.push(""); // Add a blank line between tables
+               });
+
+               const csvData = csvContent.join("\n");
+               const blob = new Blob([csvData], { type: "text/csv" });
+               const url = URL.createObjectURL(blob);
+
+               const a = document.createElement("a");
+               a.href = url;
+               let ticket = "'.$object->ref.'";
+               a.download = ticket + "-report";
+               a.click();
+               URL.revokeObjectURL(url);
+            }
+            function isValidTime(timeStr) {
+               const timeRegex = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+               return timeRegex.test(timeStr);
+            }
+            ';
+
+            // end export as csv
+
             // generate pdf
+            // print '
+            
+            //    $("#generate-pdf").on("click", function() {
+            //          const formData = new FormData();
+                     
+
+            //          // Add the full HTML content
+            //          formData.append("form", $("#report-body").html());
+                     
+            //          generatePDF(formData, 1);
+            //       });
+
+            //       function generatePDF(formData, redirect) {
+            //          $.ajax({
+            //             url: "test.php",
+            //             type: "POST",
+            //             data: formData,
+            //             processData: false,
+            //             contentType: false,
+            //             success: function(response) {
+            //                   console.log(response);
+            //                   if(redirect == 1){
+            //                      // window.location.href = "index.php";
+            //                   }
+            //             },
+            //             error: function(xhr, status, error) {
+            //                   console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+            //                   if(redirect == 1){
+            //                      // window.location.href = "index.php";
+            //                   }
+            //             }
+            //          });
+            //       }
+            
+            // ';
             print '      
                   document.getElementById("generate-pdf").addEventListener("click", () => {
                      const { jsPDF } = window.jspdf;
