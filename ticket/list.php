@@ -442,6 +442,9 @@ if ($search_societe) {
 if ($search_fk_project > 0) {
 	$sql .= natural_search('fk_project', $search_fk_project, 2);
 }
+if ($projectid > 0) {
+	$sql .= natural_search('fk_project', $projectid, 2);
+}
 if ($search_fk_contract > 0) {
 	$sql .= natural_search('fk_contract', $search_fk_contract, 2);
 }
@@ -749,7 +752,12 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
-print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'?socid='.$socid.'">'."\n";
+// var_dump($projectid);
+if($projectid){
+	print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'?projectid='.$projectid.'">'."\n";
+} else {
+	print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'?socid='.$socid.'">'."\n";
+}
 if ($optioncss != '') {
 	print '<input type="hidden" name="optioncss" value="'.$optioncss.'">';
 }

@@ -1458,89 +1458,89 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
 
             // export as csv
             print '
-            function exportToCSV() {
-               const tables = document.getElementById("report-body").querySelectorAll("table:not(#times-table)");
-               const csvContent = [];
+               function exportToCSV() {
+                  const tables = document.getElementById("report-body").querySelectorAll("table:not(#times-table)");
+                  const csvContent = [];
 
-               tables.forEach(table => {
-                  const rows = table.querySelectorAll("tr");
-                  rows.forEach(row => {
-                     const csvRow = [];
-                     row.querySelectorAll("td").forEach(cell => {
-                        let cellValue = cell.textContent.trim();
+                  tables.forEach(table => {
+                     const rows = table.querySelectorAll("tr");
+                     rows.forEach(row => {
+                        const csvRow = [];
+                        row.querySelectorAll("td").forEach(cell => {
+                           let cellValue = cell.textContent.trim();
 
-                        if (cellValue !== "") {
-                           let elm = [];
-                           cell.querySelectorAll("input").forEach(inputElement => {
-                              if (inputElement) {
-                                 switch (inputElement.type) {
-                                    case "number":
-                                       elm.push(inputElement.value);
-                                       break;
+                           if (cellValue !== "") {
+                              let elm = [];
+                              cell.querySelectorAll("input").forEach(inputElement => {
+                                 if (inputElement) {
+                                    switch (inputElement.type) {
+                                       case "number":
+                                          elm.push(inputElement.value);
+                                          break;
+                                    }
                                  }
-                              }
-                           });
-                           if(elm.length > 0){
-                              cellValue = elm.join(":");
-                           } else {
-                              cellValue = cellValue;
-                           }
-                        } else {
-                           cell.querySelectorAll("input").forEach(inputElement => {
-                              if (inputElement) {
-                                 // Handle input elements
-                                 switch (inputElement.type) {
-                                 case "date":
-                                 case "datetime-local":
-                                    const dateObj = new Date(inputElement.value);
-
-                                    cellValue = dateObj.toLocaleString("de-DE", {
-                                       year: "numeric",
-                                       month: "numeric",
-                                       day: "numeric"
-                                    });
-                                    break;
-                                 case "time":
-                                    cellValue = 2;
-                                    break;
-                                 case "number":
-                                    cellValue = inputElement.value;
-                                    break;
-                                 case "checkbox":
-                                    cellValue = inputElement.checked ? "Ja" : "Nein";
-                                    break;
-                                 default:
-                                    cellValue = inputElement.value;
-                                    break;
-                                 }
+                              });
+                              if(elm.length > 0){
+                                 cellValue = elm.join(":");
                               } else {
-                                 cellValue = "";
+                                 cellValue = cellValue;
                               }
-                           });
-                        }
+                           } else {
+                              cell.querySelectorAll("input").forEach(inputElement => {
+                                 if (inputElement) {
+                                    // Handle input elements
+                                    switch (inputElement.type) {
+                                    case "date":
+                                    case "datetime-local":
+                                       const dateObj = new Date(inputElement.value);
 
-                        csvRow.push(cellValue);
+                                       cellValue = dateObj.toLocaleString("de-DE", {
+                                          year: "numeric",
+                                          month: "numeric",
+                                          day: "numeric"
+                                       });
+                                       break;
+                                    case "time":
+                                       cellValue = 2;
+                                       break;
+                                    case "number":
+                                       cellValue = inputElement.value;
+                                       break;
+                                    case "checkbox":
+                                       cellValue = inputElement.checked ? "Ja" : "Nein";
+                                       break;
+                                    default:
+                                       cellValue = inputElement.value;
+                                       break;
+                                    }
+                                 } else {
+                                    cellValue = "";
+                                 }
+                              });
+                           }
+
+                           csvRow.push(cellValue);
+                        });
+                        csvContent.push(csvRow.join(","));
                      });
-                     csvContent.push(csvRow.join(","));
+                     csvContent.push(""); // Add a blank line between tables
                   });
-                  csvContent.push(""); // Add a blank line between tables
-               });
 
-               const csvData = csvContent.join("\n");
-               const blob = new Blob([csvData], { type: "text/csv" });
-               const url = URL.createObjectURL(blob);
+                  const csvData = csvContent.join("\n");
+                  const blob = new Blob([csvData], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
 
-               const a = document.createElement("a");
-               a.href = url;
-               let ticket = "'.$object->ref.'";
-               a.download = ticket + "-report";
-               a.click();
-               URL.revokeObjectURL(url);
-            }
-            function isValidTime(timeStr) {
-               const timeRegex = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
-               return timeRegex.test(timeStr);
-            }
+                  const a = document.createElement("a");
+                  a.href = url;
+                  let ticket = "'.$object->ref.'";
+                  a.download = ticket + "-report";
+                  a.click();
+                  URL.revokeObjectURL(url);
+               }
+               function isValidTime(timeStr) {
+                  const timeRegex = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+                  return timeRegex.test(timeStr);
+               }
             ';
 
             // end export as csv
