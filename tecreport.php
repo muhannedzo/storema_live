@@ -271,6 +271,12 @@ dol_include_once('/stores/compress.php');
                print '</div>';
             print '</div>';
          print '</div>';
+         print '<div>';
+            print '<label>Additional Notes*</label>';
+            print '<br>';
+            print '<textarea name="additional-notes" required></textarea>';
+         print '</div>';
+         print '<br>';
          
          $rowsCount = "0";
          if($result){
@@ -1340,17 +1346,23 @@ dol_include_once('/stores/compress.php');
                      print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_4" value="4"></td>';
                   print '</tr>';
-                  // print '<tr class="oddeven">';
-                  //    print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten)</td>';
-                  //    print '<td colspan="1"><input type="radio" name="table1" id="table1_5" value="5" class="p2-checkbox"></td>';
-                  // print '</tr>';
+                  print '<tr class="oddeven">';
+                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten)</td>';
+                     print '<td colspan="1"><input type="radio" name="table1" id="table1_5" value="5"></td>';
+                  print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_6" value="6"></td>';
                   print '</tr>';
                print '</table>';
-               Print '<h6 style="color: red; display: none" id="error-text">Error results: </h6>';
-               Print '<input type="hidden" name="p2tests" id="p2tests">';
+               Print '<h6 style="color: red; display: none" id="error-text-p1">P1 Fehler (Umbau): </h6>';
+               print '<input type="hidden" name="p1tests" id="p1tests">';
+               print '<h6 style="color: red; display: none" id="error-text-p2">P2 Fehler (Umbau): <h6>';
+               print '<input type="hidden" name="p2tests" id="p2tests">';
+               Print '<h6 style="color: red; display: none" id="error-text-p1-rollback">P1 Fehler (Rollback): </h6>';
+               print '<input type="hidden" name="p1testsRollback" id="p1testsRollback">';
+               print '<h6 style="color: red; display: none" id="error-text-p2-rollback">P2 Fehler (Rollback): <h6>';
+               print '<input type="hidden" name="p2testsRollback" id="p2testsRollback">';
             print '</div>';
          print '</div>';
          print '<div class="row">';
@@ -1390,14 +1402,14 @@ dol_include_once('/stores/compress.php');
             print '<div class="row">
                         <div class="col">
                            <select style="width: 100%" name="image-type">
-                              <option>serverschrank vorher</option>
-                              <option>serverschrank nachher</option>
-                              <option>arbeitssplaty nachher</option>
-                              <option>seriennummer router</option>
-                              <option>seriennummer firewall</option>
-                              <option>Firewall Rückseite (Beschriftung Patchkabel)</option>
+                              <option selected>Serverschrank vorher</option>
+                              <option>Serverschrank nachher</option>
+                              <option>Arbeitssplatz nachher</option>
+                              <option>Seriennummer router</option>
+                              <option>Seriennummer firewall</option>
+                              <option>Firewall (Beschriftung Patchkabel)</option>
                               <option>Kabeletikett</option>
-                              <option>image abnahmeprotokoll/testprotokoll</option>
+                              <option>Testprotokoll</option>
                            </select>
                         </div>
                         <div class="col">
@@ -1450,198 +1462,406 @@ dol_include_once('/stores/compress.php');
          print '</div>';
 
          print '<script>';
-            print '
-                  let rows2 = document.querySelectorAll(\'#questions-table .oddeven\');
-                  for(let i = 0; i < rows2.length - 4; i++){
-                     const row = rows2[i];
-                     const cells = row.children;
-                     const prio = cells[2].textContent.trim();
-                     if(prio == 2){
-                        const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                        if(testFailed){
-                           const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                           console.log("Wo es hakt" + document.getElementById("p2tests"));
-                           document.getElementById("p2tests").value += secondColumnText+ ", ";
-                           console.log("Found" + secondColumnText);
-                        }
-                     }
-                  }
-                  document.getElementById("p2tests").value = document.getElementById("p2tests").value.slice(0, -2);
+            // print '
+            //       let rows2 = document.querySelectorAll(\'#questions-table .oddeven\');
+            //       for(let i = 0; i < rows2.length - 4; i++){
+            //          const row = rows2[i];
+            //          const cells = row.children;
+            //          const prio = cells[2].textContent.trim();
+            //          if(prio == 2){
+            //             const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+            //             if(testFailed){
+            //                const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+            //                console.log("Wo es hakt" + document.getElementById("p2tests"));
+            //                document.getElementById("p2tests").value += secondColumnText+ ", ";
+            //                console.log("Found" + secondColumnText);
+            //             }
+            //          }
+            //       }
+            //       document.getElementById("p2tests").value = document.getElementById("p2tests").value.slice(0, -2);
             
-            ';
+            // ';
 
             // check P1, P2 table rows
-            print ' 
-                  document.addEventListener("DOMContentLoaded", function(){
+            print '
+            function checkTests() {
+               var opt1 = document.getElementById("table1_1");
+                        var opt2 = document.getElementById("table1_2");
+                        var opt3 = document.getElementById("table1_3");
+                        var opt4 = document.getElementById("table1_4");
+                         var opt5 = document.getElementById("table1_5");
+                        var opt6 = document.getElementById("table1_6");
+                           const rows = document.querySelectorAll(\'#questions-table .oddeven\');
+                           let prio1Failed = false;
+                           let prio1RollbackFailed = false;
+                           let prio2Failed = false;
+                           let prio2RollbackFailed = false;
+                           //console.log(rows.length);
+                           for (let i = 0; i < rows.length; i++) {
+                           //console.log("Iteration: " + i);
+                                    const row = rows[i];
+                                    const cells = row.children;
+                                    
+                                    // console.log(cells.length);
+                                    if(cells.length == 8){
+                                       const prio = cells[2].textContent.trim();
+                                       const notAvailable = cells[5].querySelector(\'input[type="checkbox"]\').checked;
+                                       if(notAvailable){
+                                          // console.log("Not available");
+                                          cells[3].querySelector(\'input[type="radio"]\').disabled = true;
+                                          cells[3].querySelector(\'input[type="radio"]\').checked = false;
+                                          cells[4].querySelector(\'input[type="radio"]\').disabled = true;
+                                          cells[4].querySelector(\'input[type="radio"]\').checked = false;
+                                          cells[6].querySelector(\'input[type="radio"]\').disabled = true;
+                                          cells[6].querySelector(\'input[type="radio"]\').checked = false;
+                                          cells[7].querySelector(\'input[type="radio"]\').disabled = true;
+                                          cells[7].querySelector(\'input[type="radio"]\').checked = false;
+                                          continue;
+                                       } else if(!notAvailable){
+                                          cells[3].querySelector(\'input[type="radio"]\').disabled = false;
+                                          cells[4].querySelector(\'input[type="radio"]\').disabled = false;
+                                          cells[6].querySelector(\'input[type="radio"]\').disabled = false;
+                                          cells[7].querySelector(\'input[type="radio"]\').disabled = false;
+                                       }
+                                       const testPassed = cells[3].querySelector(\'input[type="radio"]\').checked;
+                                       const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                       const rollbackPassed = cells[6].querySelector(\'input[type="radio"]\').checked;
+                                       const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+            
+                                       if (prio === "1") {
+                                          console.log("Prio : 1");
+                                          if (testFailed) {
+                                          // If the current selected prio1 test failed or a previous prio1 failed, set prio1Failed to true
+                                             console.log("Prio 1 test failed");
+                                             prio1Failed = true;
+                                             if (rollbackFailed) {
+                                             // If also the rollback failed then set prio1RollbackFailed to true
+                                                   console.log("Prio 1 rollback failed");
+                                                   prio1RollbackFailed = true;
+                                             }else{
+                                                   //prio1RollbackFailed = false;
+                                             }
+                                          }else if(testPassed){
+                                          // If the current selected prio1 test passed but there have been failed prio1 tests before, set prio1Failed to true
+                                             if(rollbackFailed){
+                                             // If this one passed the umbau but failed rollback then set prio1RollbackFailed to true
+                                                prio1RollbackFailed = true;
+                                             }
+                                          }
+                                       } else if (prio === "2") {
+                                         if(testFailed){
+                                          prio2Failed = true;
+                                          
+                                       }
+                                       if(rollbackFailed){
+                                          prio2RollbackFailed = true;
+                                          
+                                       }
+                                       }
+                                    }
+                                    // console.log(row);
+                                    // console.log(prio);
+                                    // console.log(cells);
+                                    // console.log(testPassed);
+                                    // console.log(testFailed);
+                                    // console.log(rollbackPassed);
+                                    // console.log(rollbackFailed);
+                              
+                              }
+                              
+                              if (prio1Failed) {
+                              // If one prio1 test fails then opt1 is unchecked
+                                    opt1.checked = false;
+                                    if (prio1RollbackFailed) {
+                                    // If one prio1 rollback test fails then opt6 is checked
+                                       opt6.checked = true;
+                                    } else {
+                                    // If there are failed prio1 tests but every prio1 passed rollback then select 4
+                                       if(prio2RollbackFailed == false){
+                                       opt4.checked = true;
+                                    }else{
+                                       opt5.checked = true;
+                                 }
+                                    }
+                              } else if (prio2Failed && prio1Failed == false) {
+                               // If there are failed prio2 and no failed prio1 tests then select opt2
+                                    opt1.checked = false;
+                                    opt2.checked = true;
+                              }else if(prio1Failed == false && prio2Failed == false){
+                              // If there are no failed prio1 and no failed prio2 tests then select opt1
+                                    opt1.checked = true;  
+                              }
+                                    setRequireRadio();
+                                    testTracker();
+                                    checkFormValidity();
+                           //          console.log(prio1Failed + " " + prio1RollbackFailed + " " + prio2Failed);
+                           //  console.log(`opt1: ${opt1}, opt2: ${opt2}, opt3: ${opt3}, opt4: ${opt4}`);
+                        }'
+   ;
+   
+               print '
+                  function setRequireRadio() {
                      var opt1 = document.getElementById("table1_1");
                      var opt2 = document.getElementById("table1_2");
                      var opt3 = document.getElementById("table1_3");
                      var opt4 = document.getElementById("table1_4");
+                     var opt5 = document.getElementById("table1_5");
                      var opt6 = document.getElementById("table1_6");
-         
-         
-               
-                     function checkTests() {
-         
-                        const rows = document.querySelectorAll(\'#questions-table .oddeven\');
-                        let prio1Failed = false;
-                        let prio1RollbackFailed = false;
-                        let prio2Failed = false;
-                        //console.log(rows.length);
-                        for (let i = 0; i < rows.length; i++) {
-                        //console.log("Iteration: " + i);
-                                 const row = rows[i];
-                                 const cells = row.children;
-                                 
-                                 // console.log(cells.length);
-                                 if(cells.length == 8){
-                                    const prio = cells[2].textContent.trim();
-                                    const notAvailable = cells[5].querySelector(\'input[type="checkbox"]\').checked;
-                                    if(notAvailable){
-                                       // console.log("Not available");
-                                       cells[3].querySelector(\'input[type="radio"]\').disabled = true;
-                                       cells[3].querySelector(\'input[type="radio"]\').checked = false;
-                                       cells[4].querySelector(\'input[type="radio"]\').disabled = true;
-                                       cells[4].querySelector(\'input[type="radio"]\').checked = false;
-                                       cells[6].querySelector(\'input[type="radio"]\').disabled = true;
-                                       cells[6].querySelector(\'input[type="radio"]\').checked = false;
-                                       cells[7].querySelector(\'input[type="radio"]\').disabled = true;
-                                       cells[7].querySelector(\'input[type="radio"]\').checked = false;
-                                       continue;
-                                    } else if(!notAvailable){
-                                       cells[3].querySelector(\'input[type="radio"]\').disabled = false;
-                                       cells[4].querySelector(\'input[type="radio"]\').disabled = false;
-                                       cells[6].querySelector(\'input[type="radio"]\').disabled = false;
-                                       cells[7].querySelector(\'input[type="radio"]\').disabled = false;
-                                    }
-                                    const testPassed = cells[3].querySelector(\'input[type="radio"]\').checked;
-                                    const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                                    const rollbackPassed = cells[6].querySelector(\'input[type="radio"]\').checked;
-                                    const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
-         
-                                    if (prio === "1") {
-                                       //console.log("Prio : 1");
-                                       if (testFailed) {
-                                          //console.log("Prio 1 test failed");
-                                          prio1Failed = true;
-                                          if (rollbackFailed) {
-                                                //console.log("Prio 1 rollback failed");
-                                                prio1RollbackFailed = true;
-                                          }
-                                       }else if(testPassed && opt4.checked == true && rollbackFailed == true){
-                                          prio1Failed = true;
-                                          prio1RollbackFailed = true;
-                                       }
-                                    } else if (prio === "2" && testFailed) {
-                                       prio2Failed = true;
-                                    }
-                                 }
-                                 // console.log(row);
-                                 // console.log(prio);
-                                 // console.log(cells);
-                                 // console.log(testPassed);
-                                 // console.log(testFailed);
-                                 // console.log(rollbackPassed);
-                                 // console.log(rollbackFailed);
-                           
-                           }
-         
-                           if (prio1Failed) {
-                                 opt1.checked = false;
-                                 if (prio1RollbackFailed) {
-                                    opt6.checked = true;
-                                 } else {
-                                    opt4.checked = true;
-                                 }
-                           } else if (prio2Failed && prio1Failed == false) {
-                                 opt1.checked = false;
-                                 opt2.checked = true;
-                           }else if(prio1Failed == false && prio2Failed == false){
-                                 opt1.checked = true;
-                                 
-                           }
-                                 testTracker();
-                        //          console.log(prio1Failed + " " + prio1RollbackFailed + " " + prio2Failed);
-                        //  console.log(`opt1: ${opt1}, opt2: ${opt2}, opt3: ${opt3}, opt4: ${opt4}`);
-                     }
-                     checkTests();
-                     document.querySelectorAll(\'#questions-table input[type="radio"]\').forEach(radio => {
-                        radio.addEventListener("change", checkTests);
-                     });
-                     document.querySelectorAll(\'#questions-table input[type="checkbox"]\').forEach(checkbox => {
-                        checkbox.addEventListener("change", checkTests);
-                     });
-         
-                     function testTracker(){
-                        document.getElementById("error-text").style.display = "none";
-                        document.getElementById("error-text-p1").style.display = "none";
-                        toggleVisibility("hide");
-         
-                        let rows = document.querySelectorAll(\'#questions-table .oddeven\');
-                        if(opt1.checked){
-                           document.getElementById("error-text").style.display = "none";
-                        } else if(opt2.checked){
-                           document.getElementById("error-text").style.display = "block";
-                           document.getElementById("error-text").textContent = "Error results: ";
-                           for(let i = 0; i < rows.length - 4; i++){
-                              const row = rows[i];
-                              const cells = row.children;
-                              const prio = cells[2].textContent.trim();
-                              if(prio == 2){
-                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                                 if(testFailed){
-                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                    document.getElementById("error-text").textContent += secondColumnText+ ", ";
-                                 }
-                              }
-                           }
-                           document.getElementById("error-text").textContent = document.getElementById("error-text").textContent.slice(0, -2);
-                        } else if(opt3.checked){
-                           document.getElementById("error-text").style.display = "none";
-                           document.querySelectorAll(\'#questions-table input[type="checkbox"]\').forEach(checkbox => {
-                              checkbox.disabled = true;
-                           });
-                           document.querySelectorAll(\'#questions-table input[type="radio"]\').forEach(radio => {
-                              radio.disabled = true;
-                           });
-                        } else if(opt4.checked){
-                           document.getElementById("error-text").style.display = "block";
-                           document.getElementById("error-text").textContent = "Error results: ";
-                           for(let i = 0; i < rows.length - 4; i++){
-                              const row = rows[i];
-                              const cells = row.children;
-                              const prio = cells[2].textContent.trim();
-                              if(prio == 1){
-                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                                 if(testFailed){
-                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                    document.getElementById("error-text").textContent += secondColumnText+ ", ";
-                                 }
-                              }
-                           }
-                           document.getElementById("error-text").textContent = document.getElementById("error-text").textContent.slice(0, -2);
-                        } else if(opt6.checked){
-                           toggleVisibility("show");
-                           document.getElementById("error-text-p1").style.display = "block";
-                           document.getElementById("error-text-p1").textContent = "Error results: ";
-                           for(let i = 0; i < rows.length - 4; i++){
+                     const rows = document.querySelectorAll(\'#questions-table .oddeven\');
+                     if(opt4.checked || opt6.checked){
+                        for (let i = 0; i < rows.length - 4; i++) {
                            const row = rows[i];
                            const cells = row.children;
                            const prio = cells[2].textContent.trim();
-                           if(prio == 1){
-                              //const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                              const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
-                              if(rollbackFailed){
+                           cells[6].querySelector(\'input[type="radio"]\').required = true;
+                           cells[7].querySelector(\'input[type="radio"]\').required = true;
+                        }
+                     }else{
+                        for (let i = 0; i < rows.length - 4; i++) {
+                           const row = rows[i];
+                           const cells = row.children;
+                           const prio = cells[2].textContent.trim();
+                           cells[6].querySelector(\'input[type="radio"]\').required = false;
+                           cells[7].querySelector(\'input[type="radio"]\').required = false;
+                        }
+                     }
+                  }
+               ';
+   
+               print '
+                  function testTracker() {
+                     var opt1 = document.getElementById("table1_1");
+                     var opt2 = document.getElementById("table1_2");
+                     var opt3 = document.getElementById("table1_3");
+                     var opt4 = document.getElementById("table1_4");
+                     var opt5 = document.getElementById("table1_5");
+                     var opt6 = document.getElementById("table1_6");
+                     document.getElementById("error-text-p1").style.display = "none";
+                     document.getElementById("error-text-p1").textContent = "P1 Fehler (Umbau): ";
+                     document.getElementById("error-text-p2").style.display = "none";
+                     document.getElementById("error-text-p2").textContent = "P2 Fehler (Umbau): ";
+                     document.getElementById("error-text-p1-rollback").style.display = "none";
+                     document.getElementById("error-text-p1-rollback").textContent = "P1 Fehler (Rollback): ";
+                     document.getElementById("error-text-p2-rollback").style.display = "none";
+                     document.getElementById("error-text-p2-rollback").textContent = "P2 Fehler (Rollback): ";
+                    document.getElementById("p1tests").value = "";
+                     document.getElementById("p2tests").value = "";
+                     document.getElementById("p1testsRollback").value = "";
+                     document.getElementById("p2testsRollback").value = "";
+                     toggleVisibility("hide");
+                     let rows = document.querySelectorAll("#questions-table .oddeven");
+   
+                     if (opt1.checked) {
+                        document.getElementById("error-text-p1").style.display = "none";
+                        document.getElementById("error-text-p2").style.display = "none";
+                        document.getElementById("error-text-p1-rollback").style.display = "none";
+                        document.getElementById("error-text-p2-rollback").style.display = "none";
+                     } else if (opt2.checked) {
+                        document.getElementById("error-text-p2").style.display = "block";
+                        document.getElementById("p2tests").value = "";
+                        for (let i = 0; i < rows.length - 4; i++) {
+                              const row = rows[i];
+                              const cells = row.children;
+                              const prio = cells[2].textContent.trim();
+                              if (prio == 2) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                                 }
+                              }
+                        }
+                        if (document.getElementById("error-text-p2").textContent == "P2 Fehler (Umbau): ") {
+                              document.getElementById("error-text-p2").textContent += "-";
+                        }else{
+                         document.getElementById("error-text-p2").textContent = document.getElementById("error-text-p2").textContent.slice(0, -2);
+                        }  
+                              // Remove P2 Fehler (Umbau): from the error text
+                           p2tests.value = document.getElementById("error-text-p2").textContent.replace("P2 Fehler (Umbau): ", "");
+                     } else if (opt3.checked) {
+                        toggleVisibility("show");
+                        // Logic for opt3
+                     } else if (opt4.checked) {
+                        document.getElementById("error-text-p1").style.display = "block";
+                        document.getElementById("error-text-p2").style.display = "block";
+                        //document.getElementById("error-text-p2-rollback").style.display = "block";
+                        for (let i = 0; i < rows.length - 4; i++) {
+                              const row = rows[i];
+                              const cells = row.children;
+                              const prio = cells[2].textContent.trim();
+                              if (prio == 1) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                                 }
+                              }
+                              if (prio == 2) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                                 }
+                                 if (testRollbackFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    //document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                                 }
+                              }
+                        }
+                        
+                        if (document.getElementById("error-text-p1").textContent == "P1 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p1").textContent += "-";
+                     }else{document.getElementById("error-text-p1").textContent = document.getElementById("error-text-p1").textContent.slice(0, -2);}
+                     if (document.getElementById("error-text-p2").textContent == "P2 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p2").textContent += "-";
+                     }else{document.getElementById("error-text-p2").textContent = document.getElementById("error-text-p2").textContent.slice(0, -2);}
+                     //if (document.getElementById("error-text-p2-rollback").textContent == "P2 Fehler (Rollback): ") {
+                      //     document.getElementById("error-text-p2-rollback").textContent += "-";
+                     //}else{document.getElementById("error-text-p2-rollback").textContent = document.getElementById("error-text-p2-rollback").textContent.slice(0, -2);}
+                     document.getElementById("p1tests").value = document.getElementById("error-text-p1").textContent.replace("P1 Fehler (Umbau): ", "");
+                     document.getElementById("p2tests").value = document.getElementById("error-text-p2").textContent.replace("P2 Fehler (Umbau): ", "");
+                     document.getElementById("p2testsRollback").value = document.getElementById("error-text-p2-rollback").textContent.replace("P2 Fehler (Rollback): ", "");
+
+                  } else if(opt5.checked){
+                     document.getElementById("error-text-p1").style.display = "block";
+                     document.getElementById("error-text-p2").style.display = "block";
+                     //document.getElementById("error-text-p1-rollback").style.display = "block";
+                     document.getElementById("error-text-p2-rollback").style.display = "block";
+                     for (let i = 0; i < rows.length - 4; i++) {
+                           const row = rows[i];
+                           const cells = row.children;
+                           const prio = cells[2].textContent.trim();
+                           if (prio == 1) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
                                  const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p1").textContent += secondColumnText+ ", ";
+                                 document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
                               }
                            }
-                        }
-                        document.getElementById("error-text-p1").textContent = document.getElementById("error-text-p1").textContent.slice(0, -2);
+                           if (prio == 2) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                              }
+                              if (testRollbackFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                              }
+                           }
                      }
-         
-                  }
-                  });';
+                     if (document.getElementById("error-text-p1").textContent == "P1 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p1").textContent += "-";
+                     }else{document.getElementById("error-text-p1").textContent = document.getElementById("error-text-p1").textContent.slice(0, -2);}
+                     if (document.getElementById("error-text-p2").textContent == "P2 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p2").textContent += "-";
+                     }else{document.getElementById("error-text-p2").textContent = document.getElementById("error-text-p2").textContent.slice(0, -2);}
+                     if (document.getElementById("error-text-p2-rollback").textContent == "P2 Fehler (Rollback): ") {
+                           document.getElementById("error-text-p2-rollback").textContent += "-";
+                     }else{document.getElementById("error-text-p2-rollback").textContent = document.getElementById("error-text-p2-rollback").textContent.slice(0, -2);}
+                     document.getElementById("p1tests").value = document.getElementById("error-text-p1").textContent.replace("P1 Fehler (Umbau): ", "");
+                     document.getElementById("p2tests").value = document.getElementById("error-text-p2").textContent.replace("P2 Fehler (Umbau): ", "");
+                     document.getElementById("p2testsRollback").value = document.getElementById("error-text-p2-rollback").textContent.replace("P2 Fehler (Rollback): ", "");
+
+                  }else if (opt6.checked) {
+                     toggleVisibility("show");
+                     document.getElementById("error-text-p1").style.display = "block";
+                     document.getElementById("error-text-p2").style.display = "block";
+                     document.getElementById("error-text-p1-rollback").style.display = "block";
+                     document.getElementById("error-text-p2-rollback").style.display = "block";
+                     for (let i = 0; i < rows.length - 4; i++) {
+                           const row = rows[i];
+                           const cells = row.children;
+                           const prio = cells[2].textContent.trim();
+                           if (prio == 1) {
+                              const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              if (rollbackFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p1-rollback").textContent += secondColumnText + ", ";
+                              }
+                              if(testFailed){
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                              }
+                              
+                              
+                           }
+                           if (prio == 2) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                              }
+                              if (testRollbackFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                              }
+                           }
+                     }
+                     if(document.getElementById("error-text-p1").textContent == "P1 Fehler (Umbau): "){
+                           document.getElementById("error-text-p1").textContent += "-";
+                     }else{
+                     document.getElementById("error-text-p1").textContent = document.getElementById("error-text-p1").textContent.slice(0, -2);
+                     }
+                     if(document.getElementById("error-text-p2").textContent == "P2 Fehler (Umbau): "){
+                           document.getElementById("error-text-p2").textContent += "-";
+                     }else{
+                     document.getElementById("error-text-p2").textContent = document.getElementById("error-text-p2").textContent.slice(0, -2);
+                     }
+                     if(document.getElementById("error-text-p1-rollback").textContent == "P1 Fehler (Rollback): "){
+                           document.getElementById("error-text-p1-rollback").textContent += "-";
+                     }else{
+                     document.getElementById("error-text-p1-rollback").textContent = document.getElementById("error-text-p1-rollback").textContent.slice(0, -2);
+                     }
+                     if(document.getElementById("error-text-p2-rollback").textContent == "P2 Fehler (Rollback): "){
+                           document.getElementById("error-text-p2-rollback").textContent += "-";
+                     }else{
+                     document.getElementById("error-text-p2-rollback").textContent = document.getElementById("error-text-p2-rollback").textContent.slice(0, -2);
+                     }
+                     document.getElementById("p1tests").value = document.getElementById("error-text-p1").textContent.replace("P1 Fehler (Umbau): ", "");
+                     document.getElementById("p2tests").value = document.getElementById("error-text-p2").textContent.replace("P2 Fehler (Umbau): ", "");
+                     document.getElementById("p1testsRollback").value = document.getElementById("error-text-p1-rollback").textContent.replace("P1 Fehler (Rollback): ", "");
+                     document.getElementById("p2testsRollback").value = document.getElementById("error-text-p2-rollback").textContent.replace("P2 Fehler (Rollback): ", "");
+
+                  }else{
+                        document.getElementById("error-text-p1").style.display = "none";
+                        document.getElementById("error-text-p2").style.display = "none";
+                        document.getElementById("error-text-p1-rollback").style.display = "none";
+                        document.getElementById("error-text-p2-rollback").style.display = "none";
+                     }
+}';
+   
+               // check P1, P2 table rows
+               print ' 
+                     document.addEventListener("DOMContentLoaded", function(){
+                       
+                        testTracker();
+                        checkFormValidity();
+                        document.querySelectorAll(\'#questions-table input[type="radio"]\').forEach(radio => {
+                           radio.addEventListener("change", checkTests);
+                           // Onclick, if checked uncheck, if unchecked, check
+                        });
+                        document.querySelectorAll(\'#questions-table input[type="checkbox"]\').forEach(checkbox => {
+                           checkbox.addEventListener("change", checkTests);
+                        });
+                        // Attach testTracker and setRequiredRadio to radiobuttons table1_1, table1_2, table1_3, table1_4, table1_6
+                        document.getElementById("table1_1").addEventListener("change", testTracker);
+                        document.getElementById("table1_2").addEventListener("change", testTracker);
+                        document.getElementById("table1_3").addEventListener("change", testTracker);
+                        document.getElementById("table1_4").addEventListener("change", testTracker);
+                        document.getElementById("table1_6").addEventListener("change", testTracker);
+                        document.getElementById("table1_1").addEventListener("change", setRequireRadio);
+                        document.getElementById("table1_2").addEventListener("change", setRequireRadio);
+                        document.getElementById("table1_3").addEventListener("change", setRequireRadio);
+                        document.getElementById("table1_4").addEventListener("change", setRequireRadio);
+                        document.getElementById("table1_6").addEventListener("change", setRequireRadio);
+   
+                     
+                     });';
             // end check P1, P2 table rows
 
             // calculate distance/times
@@ -1791,8 +2011,6 @@ dol_include_once('/stores/compress.php');
        array_push($imagesList, $elm);
     }
  }
-
-
  if(isset($_POST['submit'])) {
 
     $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
@@ -1806,28 +2024,37 @@ dol_include_once('/stores/compress.php');
           
           $file_tmpname = $_FILES['files']['tmp_name'][$key];
           $file_name = $_FILES['files']['name'][$key];
+          $file_names = $_FILES['files']['name'][$key];
+          if($_POST['image-type'] == "Testprotokoll"){
+            $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2];
+          } else if($_POST['image-type'] == "Serverschrank nachher") {
+            $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0];
+          } else {
+            $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type'];
+          }
           $file_size = $_FILES['files']['size'][$key];
           $imageQuality = 20;
           $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
           
-          $filepath = $dir.$file_name;
+          $filepath = $dir.$file_names;
   
 
           if(in_array(strtolower($file_ext), $allowed_types)) {
 
                 if(file_exists($filepath)) {
-                   $fileN = time().$file_name;
-                   $filepath = $dir.$fileN;
+                   unlink($filepath);
+                  //  $fileN = time().$file_names;
+                   $filepath = $dir.$file_names;
                    $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
                    if( $compressedImage) {
-                      array_push($images, $fileN);
+                      array_push($images, $file_names);
                    } else {                    
                       dol_htmloutput_errors("Error uploading {$file_name} <br />");
                    }
                 }else {
                    $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
                    if($compressedImage) {
-                      array_push($images,$file_name);
+                      array_push($images,$file_names);
                    }else {                    
                       dol_htmloutput_errors("Error uploading {$file_name} <br />");
                    }
@@ -1873,14 +2100,16 @@ dol_include_once('/stores/compress.php');
 
 
 
-   // var_dump($encoded_params);
+   // var_dump($result[1]);
    if($result){
       print '<script>';
 
         // Fill fields with data from database
         print '
               let parameters = \'' . $encoded_params . '\';
-              let decodedParameters = JSON.parse(parameters);
+              let param = parameters.replace(/\r/g, "");
+              param = param.replace(/\n/g, "");
+              let decodedParameters = JSON.parse(param);
               console.log($("#pieces-table")); 
               decodedParameters.forEach(param => {
                   const inputElement = document.querySelector(`[name="${param.name}"]`);
@@ -1958,6 +2187,22 @@ dol_include_once('/stores/compress.php');
          function checkFormValidity() {
          const requiredFields = form.querySelectorAll("input[required]");
          let allFieldsFilled = true;
+         const requiredRadio = form.querySelectorAll("input[type=radio][required]");
+
+         requiredRadio.forEach(radio => {
+            const name = radio.name;
+            const radios = form.querySelectorAll(`input[type=radio][name=${name}]`);
+            let radioChecked = false;
+            radios.forEach(radio => {
+               if (radio.checked) {
+                  radioChecked = true;
+               }
+            });
+            if (!radioChecked) {
+               allFieldsFilled = false;
+            }
+         });
+
 
          requiredFields.forEach(field => {
             if (field.value.trim() === "") {
@@ -1982,6 +2227,7 @@ dol_include_once('/stores/compress.php');
          $(".check-all").click(function() {
             var column = $(this).data("column");
             $("." + column + "-radio").prop("checked", true);
+            checkTests();
          });
       });
    ';
@@ -2026,6 +2272,8 @@ dol_include_once('/stores/compress.php');
                   } else {
                      lastSelectedRadio = this; // Update last selected radio button
                   }
+                  setRequireRadio();
+                  checkFormValidity();
                });
          });';
    // End deselect radio button when click on twice
@@ -2323,7 +2571,7 @@ dol_include_once('/stores/compress.php');
                border: 1px solid #ddd;
                border-radius: 5px;
                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-               z-index: 999999999; /* Make sure the popup is above other elements */
+               z-index: 99999999999; /* Make sure the popup is above other elements */
             }
 
           #popup button {

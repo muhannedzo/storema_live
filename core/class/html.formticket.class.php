@@ -3630,7 +3630,64 @@ class FormTicket
 					if ($res) {
 						// Retrieve email of all contacts (internal and external)
 						$contacts = $ticketstat->getInfosTicketInternalContact(1);
+						// var_dump($contacts);
 						$contacts = array_merge($contacts, $ticketstat->getInfosTicketExternalContact(1));
+						$contacts = [
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "it-providermanagement@rossmann.de"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "rollout-vkst4@rossmann.de"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "Filialinfrastruktur@rossmann.de"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "posteingangvkst-hotline@rossmann.de"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "Timo.Woehler@rossmann.de"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "f.mutschler@telonic.de"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "rossmann.rollout@ncrvoyix.com"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "Kristijan.Novakovic@ncrvoyix.com"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
+								"email" => "rollout@sesoco.de"
+							]
+						];
 						// var_dump($contacts);
 		
 						$sendto = array();
@@ -3639,27 +3696,28 @@ class FormTicket
 						if (is_array($contacts) && count($contacts) > 0) {
 							foreach ($contacts as $key => $info_sendto) {
 								if ($info_sendto['email'] != '') {
-									$sendto[] = dol_escape_htmltag(trim($info_sendto['firstname']." ".$info_sendto['lastname'])." <".$info_sendto['email'].">").' <small class="opacitymedium">('.dol_escape_htmltag($info_sendto['libelle']).")</small>";
+									// $sendto[] = dol_escape_htmltag(trim($info_sendto['firstname']." ".$info_sendto['lastname'])." <".$info_sendto['email'].">").' <small class="opacitymedium">('.dol_escape_htmltag($info_sendto['libelle']).")</small>";
+									$sendto[] = dol_escape_htmltag(trim($info_sendto['firstname']." ".$info_sendto['lastname'])." <".$info_sendto['email'].">");
 								}
 							}
 						}
 		
-						if ($ticketstat->origin_email && !in_array($ticketstat->origin_email, $sendto)) {
-							$sendto[] = dol_escape_htmltag($ticketstat->origin_email).' <small class="opacitymedium">('.$langs->trans("TicketEmailOriginIssuer").")</small>";
-						}
+						// if ($ticketstat->origin_email && !in_array($ticketstat->origin_email, $sendto)) {
+						// 	$sendto[] = dol_escape_htmltag($ticketstat->origin_email).' <small class="opacitymedium">('.$langs->trans("TicketEmailOriginIssuer").")</small>";
+						// }
 		
-						if ($ticketstat->fk_soc > 0) {
-							$ticketstat->socid = $ticketstat->fk_soc;
-							$ticketstat->fetch_thirdparty();
+						// if ($ticketstat->fk_soc > 0) {
+						// 	$ticketstat->socid = $ticketstat->fk_soc;
+						// 	$ticketstat->fetch_thirdparty();
 		
-							if (!empty($ticketstat->thirdparty->email) && !in_array($ticketstat->thirdparty->email, $sendto)) {
-								$sendto[] = $ticketstat->thirdparty->email.' <small class="opacitymedium">('.$langs->trans('Customer').')</small>';
-							}
-						}
+						// 	if (!empty($ticketstat->thirdparty->email) && !in_array($ticketstat->thirdparty->email, $sendto)) {
+						// 		$sendto[] = $ticketstat->thirdparty->email.' <small class="opacitymedium">('.$langs->trans('Customer').')</small>';
+						// 	}
+						// }
 		
-						if (getDolGlobalInt('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS')) {
-							$sendto[] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO').' <small class="opacitymedium">(generic email)</small>';
-						}
+						// if (getDolGlobalInt('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS')) {
+						// 	$sendto[] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO').' <small class="opacitymedium">(generic email)</small>';
+						// }
 		
 						// Print recipient list
 						if (is_array($sendto) && count($sendto) > 0) {
@@ -3669,6 +3727,8 @@ class FormTicket
 							print '<div class="warning">'.$langs->trans('WarningNoEMailsAdded').' '.$langs->trans('TicketGoIntoContactTab').'</div>';
 						}
 					}
+					// var_dump($sendto);
+					// var_dump($contacts);
 				print '</div>';
 			print "</div>";
 			print '<br>';

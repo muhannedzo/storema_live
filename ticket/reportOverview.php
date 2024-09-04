@@ -68,7 +68,7 @@ print '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2
 print '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>';
 print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.css">';
 print '<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.1/purify.min.js"></script>'; 
-require_once('tcpdf/tcpdf.php');
+
 // Load translation files required by the page
 $langs->loadLangs(array('companies', 'ticket'));
 
@@ -482,61 +482,61 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   if($rowsCount > 0){
                      for($i = 1; $i <= $rowsCount; $i++){
                         print '<tr class="oddeven">';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print $i;
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_1" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_2" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_3" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_4" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_5" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="checkbox" name="checkbox_'.$i.'_6" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="checkbox" name="checkbox_'.$i.'_7" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="checkbox" name="checkbox_'.$i.'_8" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="checkbox" name="checkbox_'.$i.'_9" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_10" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_11" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_12" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="checkbox" name="checkbox_'.$i.'_13" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="checkbox" name="checkbox_'.$i.'_14" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_15" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="checkbox" name="checkbox_'.$i.'_16" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               print '<input type="text" name="textInput_'.$i.'_17" style="width:100%">';
                            print '</td>';
-                           print '<td colspan="1">';
+                           print '<td>';
                               // print '<button id="'.$i.'" class="btn btn-primary" onclick="openImagesUploader(this.id)">+</button>';
                            print '</td>';
                         print '</tr>';
@@ -546,7 +546,6 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             print '</div>';
             print '<input id="rows-counter" name="rows-counter" type="hidden" value="'.$rowsCount.'" hidden>';
          print '</div>';
-         // print '<button onclick="exportToCSV()">Export to CSV</button>';
          print '</div>';
          print '<div id="add-row-popup" style="display: none;">
                   <div class="popup-header">
@@ -706,7 +705,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   </form>
                </div>';
 
-         $rowsCount += 1;   
+         $rowsCount += 1;         
          print '<script>';
             // Add new row to the Messung table
 
@@ -1048,17 +1047,17 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">Test NR</td>';
                      print '<td colspan="1">Testfalle</td>';
                      print '<td colspan="1">Prio</td>';
-                     print '<td colspan="1"><i class="fa fa-check" style="color:green"></i></td>';
+                     print '<td colspan="1"><i class="fa fa-check check-all" style="color:green" data-column="vk"></i></td>';
                      print '<td colspan="1"><i class="ico-times" role="img" aria-label="Cancel"></i></td>';
                      print '<td colspan="1">NV</td>';
-                     print '<td colspan="1"><i class="fa fa-check center" style="color:green"></i></td>';
+                     print '<td colspan="1"><i class="fa fa-check center" style="color:green" data-column="nu"></i></td>';
                      print '<td colspan="1"><i class="ico-times center" role="img" aria-label="Cancel"></i></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">A1</td>';
                      print '<td colspan="1">Testartikel scannen (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question1vk" id="question1vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question1vk" id="question1vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question1vk" id="question1vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-1"></td>';
                      print '<td colspan="1"><input type="radio" name="question1nu" id="question1nu_1" value="1"></td>';
@@ -1068,7 +1067,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">A2</td>';
                      print '<td colspan="1">Bon Druck und TSE (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question2vk" id="question2vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question2vk" id="question2vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question2vk" id="question2vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-2"></td>';
                      print '<td colspan="1"><input type="radio" name="question2nu" id="question2nu_1" value="1"></td>';
@@ -1078,7 +1077,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">A3</td>';
                      print '<td colspan="1">EC-Zahlung (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question3vk" id="question3vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question3vk" id="question3vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question3vk" id="question3vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-3"></td>';
                      print '<td colspan="1"><input type="radio" name="question3nu" id="question3nu_1" value="1"></td>';
@@ -1088,7 +1087,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">A4</td>';
                      print '<td colspan="1">EC-Diagnose (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question4vk" id="question4vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question4vk" id="question4vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question4vk" id="question4vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-4"></td>';
                      print '<td colspan="1"><input type="radio" name="question4nu" id="question4nu_1" value="1"></td>';
@@ -1098,7 +1097,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">A5</td>';
                      print '<td colspan="1">Gutschein abfragen (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question5vk" id="question5vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question5vk" id="question5vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question5vk" id="question5vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-5"></td>';
                      print '<td colspan="1"><input type="radio" name="question5nu" id="question5nu_1" value="1"></td>';
@@ -1108,7 +1107,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">A6</td>';
                      print '<td colspan="1">Bediener Abmelden (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question6vk" id="question6vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question6vk" id="question6vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question6vk" id="question6vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-6"></td>';
                      print '<td colspan="1"><input type="radio" name="question6nu" id="question6nu_1" value="1"></td>';
@@ -1118,7 +1117,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">B1</td>';
                      print '<td colspan="1">Mit OBF einen Artikel scannen (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question7vk" id="question7vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question7vk" id="question7vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question7vk" id="question7vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-7"></td>';
                      print '<td colspan="1"><input type="radio" name="question7nu" id="question7nu_1" value="1"></td>';
@@ -1128,7 +1127,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">B2</td>';
                      print '<td colspan="1">Mit OBF Etiketten drucken (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question8vk" id="question8vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question8vk" id="question8vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question8vk" id="question8vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-8"></td>';
                      print '<td colspan="1"><input type="radio" name="question8nu" id="question8nu_1" value="1"></td>';
@@ -1138,7 +1137,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">C1</td>';
                      print '<td colspan="1">MO STM (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question9vk" id="question9vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question9vk" id="question9vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question9vk" id="question9vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-9"></td>';
                      print '<td colspan="1"><input type="radio" name="question9nu" id="question9nu_1" value="1"></td>';
@@ -1148,7 +1147,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">C2</td>';
                      print '<td colspan="1">MO HR Portal (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question10vk" id="question10vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question10vk" id="question10vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question10vk" id="question10vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-10"></td>';
                      print '<td colspan="1"><input type="radio" name="question10nu" id="question10nu_1" value="1"></td>';
@@ -1158,7 +1157,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">C3</td>';
                      print '<td colspan="1">MO PEP (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question11vk" id="question11vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question11vk" id="question11vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question11vk" id="question11vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-11"></td>';
                      print '<td colspan="1"><input type="radio" name="question11nu" id="question11nu_1" value="1"></td>';
@@ -1168,7 +1167,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">C4</td>';
                      print '<td colspan="1">MO ProDigi (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question12vk" id="question12vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question12vk" id="question12vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question12vk" id="question12vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-12"></td>';
                      print '<td colspan="1"><input type="radio" name="question12nu" id="question12nu_1" value="1"></td>';
@@ -1178,7 +1177,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">C5</td>';
                      print '<td colspan="1">MO Intranet (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question13vk" id="question13vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question13vk" id="question13vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question13vk" id="question13vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-13"></td>';
                      print '<td colspan="1"><input type="radio" name="question13nu" id="question13nu_1" value="1"></td>';
@@ -1188,7 +1187,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">C6</td>';
                      print '<td colspan="1">MO Korona Backoffice (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question14vk" id="question14vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question14vk" id="question14vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question14vk" id="question14vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-14"></td>';
                      print '<td colspan="1"><input type="radio" name="question14nu" id="question14nu_1" value="1"></td>';
@@ -1198,7 +1197,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">C7</td>';
                      print '<td colspan="1">MO Webportal Instanthaltung (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question15vk" id="question15vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question15vk" id="question15vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question15vk" id="question15vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-15"></td>';
                      print '<td colspan="1"><input type="radio" name="question15nu" id="question15nu_1" value="1"></td>';
@@ -1208,7 +1207,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">D1</td>';
                      print '<td colspan="1">Fototerminals (R/T)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question16vk" id="question16vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question16vk" id="question16vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question16vk" id="question16vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-16"></td>';
                      print '<td colspan="1"><input type="radio" name="question16nu" id="question16nu_1" value="1"></td>';
@@ -1218,7 +1217,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">D2</td>';
                      print '<td colspan="1">EMA (R/T)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question17vk" id="question17vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question17vk" id="question17vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question17vk" id="question17vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-17"></td>';
                      print '<td colspan="1"><input type="radio" name="question17nu" id="question17nu_1" value="1"></td>';
@@ -1228,7 +1227,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">D3</td>';
                      print '<td colspan="1">Telefonie (R/T)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question18vk" id="question18vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question18vk" id="question18vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question18vk" id="question18vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-18"></td>';
                      print '<td colspan="1"><input type="radio" name="question18nu" id="question18nu_1" value="1"></td>';
@@ -1246,7 +1245,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">E1</td>';
                      print '<td colspan="1">ESL (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1"><input type="radio" name="question19vk" id="question19vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question19vk" id="question19vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question19vk" id="question19vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-19"></td>';
                      print '<td colspan="1"><input type="radio" name="question19nu" id="question19nu_1" value="1"></td>';
@@ -1256,7 +1255,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1">E2</td>';
                      print '<td colspan="1">Pfandautomaten (R/T)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1"><input type="radio" name="question20vk" id="question20vk_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question20vk" id="question20vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question20vk" id="question20vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-20"></td>';
                      print '<td colspan="1"><input type="radio" name="question20nu" id="question20nu_1" value="1"></td>';
@@ -1289,12 +1288,23 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_4" value="4"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
+                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).</td>';
+                     print '<td colspan="1"><input type="radio" name="table1" id="table1_5" value="5"></td>';
+                  print '</tr>';
+                  print '<tr class="oddeven">';
                      print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_6" value="6"></td>';
                   print '</tr>';
                print '</table>';
-               Print '<h6 style="color: red; display: none" id="error-text">Error results: <h6>';
-            print '</div>';
+               Print '<h6 style="color: red; display: none" id="error-text-p1">P1 Fehler (Umbau): </h6>';
+               print '<input type="hidden" name="p1tests" id="p1tests">';
+               print '<h6 style="color: red; display: none" id="error-text-p2">P2 Fehler (Umbau): <h6>';
+               print '<input type="hidden" name="p2tests" id="p2tests">';
+               Print '<h6 style="color: red; display: none" id="error-text-p1-rollback">P1 Fehler (Rollback): </h6>';
+               print '<input type="hidden" name="p1testsRollback" id="p1testsRollback">';
+               print '<h6 style="color: red; display: none" id="error-text-p2-rollback">P2 Fehler (Rollback): <h6>';
+               print '<input type="hidden" name="p2testsRollback" id="p2testsRollback">';
+         print '</div>';
          print '</div>';
          print '<div class="row">';
             print '<div class="col-6" id="ruckbau-btn">';
@@ -1304,21 +1314,26 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                print '<table class="noborder centpercent">';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">Fehlgeschlagener P1 Test (bitte Nummer angeben)</td>';
-                     print '<td colspan="1"><input type="radio" name="table2" id="table2_1" value="1"></td>';
+                     print '<td colspan="1"><input type="radio" name="table2" id="table2_1" value="1" onchange="toggleNoteInput()"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">Fehlendes Material</td>';
-                     print '<td colspan="1"><input type="radio" name="table2" id="table2_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="table2" id="table2_2" value="2" onchange="toggleNoteInput()"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">Fehler der Automatisierung / App</td>';
-                     print '<td colspan="1"><input type="radio" name="table2" id="table2_3" value="3"></td>';
+                     print '<td colspan="1"><input type="radio" name="table2" id="table2_3" value="3" onchange="toggleNoteInput()"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">Defekte Hardware</td>';
-                     print '<td colspan="1"><input type="radio" name="table2" id="table2_4" value="4"></td>';
+                     print '<td colspan="1"><input type="radio" name="table2" id="table2_4" value="4" onchange="toggleNoteInput()"></td>';
+                  print '</tr>';
+                  print '<tr class="oddeven">';
+                     print '<td colspan="1">Sonstiges</td>';
+                     print '<td colspan="1"><input type="radio" name="table2" id="table2_5" value="5" onchange="toggleNoteInput()"></td>';
                   print '</tr>';
                print '</table>';
+               Print '<input type="text" id="note-other" style="width:100%; margin-bottom: 15px; display: none" name="note-other">';
                Print '<h6 style="color: red; display: none" id="error-text-p1">Error results: <h6>';
                print '<button id="hide" class="btn btn-primary" onclick="toggleVisibility(this.id)">Hide</button>';
             print '</div>';
@@ -1327,12 +1342,12 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          print '<div class="row">
                      <div class="col">
                         <select style="width: 100%" name="image-type">
-                           <option>serverschrank vorher</option>
-                           <option>serverschrank nachher</option>
-                           <option>arbeitssplaty nachher</option>
-                           <option>seriennummer router</option>
-                           <option>seriennummer firewall</option>
-                           <option>image abnahmeprotokoll/testprotokoll</option>
+                           <option>Serverschrank vorher</option>
+                           <option>Serverschrank nachher</option>
+                           <option>Arbeitssplatz nachher</option>
+                           <option>Seriennummer Router</option>
+                           <option>Seriennummer Firewall</option>
+                           <option>Testprotokoll</option>
                         </select>
                      </div>
                      <div class="col">
@@ -1343,6 +1358,23 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      </div>
                </div>';
          print '<br>';
+         if($result[3]){
+            // print '<div class="container">';
+               print '<div class="row mb-2">';
+               $imagesGroup = json_decode(base64_decode($result[3]));
+               foreach($imagesGroup as $group){
+                  print '<div class="col-12 mt-2" style="background: #aaa;padding: 5px 0 5px 10px;">';
+                     print $group->type;
+                  print '</div>';
+                  foreach($group->images as $image){
+                     print '<div class="col-3 col-md-3 mt-2">';
+                        print '<img class="group-image" src="../formsImages/'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                     print '</div>';
+                  }
+               }
+               print '</div>';
+            // print '</div>';
+         }
          print '<div>';
             print '<label>Additional Notes*</label>';
             print '<br>';
@@ -1365,6 +1397,588 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                print '<br>';
             print '</div>';
          print '</div>';
+         print '
+               <div id="popup" class="closed">
+                  <div class="row">
+                     <div class="col-12">
+                        <img id="popupImage" src="" style="width:100%; height: 40rem">
+                     </div>
+                  </div>
+                  <div class="row mt-2">
+                     <div class="col-12" style="text-align: center">
+                        <button class="btn btn-danger" id="closePopupBtn">Close</button>
+                     </div>
+                  </div>
+               </div>';
+
+         print '<script>';
+            // end check P1, P2 table rows
+            print '
+                  let rows2 = document.querySelectorAll(\'#questions-table .oddeven\');
+                  for(let i = 0; i < rows2.length - 4; i++){
+                     const row = rows2[i];
+                     const cells = row.children;
+                     const prio = cells[2].textContent.trim();
+                     if(prio == 2){
+                        const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                        if(testFailed){
+                           const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                           console.log("Wo es hakt" + document.getElementById("p2tests"));
+                           document.getElementById("p2tests").value += secondColumnText+ ", ";
+                           console.log("Found" + secondColumnText);
+                        }
+                     }
+                  }
+                  document.getElementById("p2tests").value = document.getElementById("p2tests").value.slice(0, -2);
+            
+            ';
+            // end check P1, P2 table rows
+   
+            // Show full image
+            print '
+               function showImageFull(src){
+                  const openPopupBtn = document.getElementById("openPopupBtn");
+                  const closePopupBtn = document.getElementById("closePopupBtn");
+                  const popup = document.getElementById("popup");
+                  const popupSrc = document.getElementById("popupImage");
+
+                  popupSrc.src = src;
+                  popup.classList.remove("closed");
+
+                  closePopupBtn.addEventListener("click", function() {
+                     popup.classList.add("closed");
+                  });
+               }
+            ';
+            // End show full image
+            print '
+            function checkTests() {
+            var opt1 = document.getElementById("table1_1");
+                     var opt2 = document.getElementById("table1_2");
+                     var opt3 = document.getElementById("table1_3");
+                     var opt4 = document.getElementById("table1_4");
+                     var opt5 = document.getElementById("table1_5");
+                     var opt6 = document.getElementById("table1_6");
+                        const rows = document.querySelectorAll(\'#questions-table .oddeven\');
+                        let prio1Failed = false;
+                        let prio1RollbackFailed = false;
+                        let prio2Failed = false;
+                        let prio2RollbackFailed = false;
+                        //console.log(rows.length);
+                        for (let i = 0; i < rows.length; i++) {
+                        //console.log("Iteration: " + i);
+                                 const row = rows[i];
+                                 const cells = row.children;
+                                 
+                                 // console.log(cells.length);
+                                 if(cells.length == 8){
+                                    const prio = cells[2].textContent.trim();
+                                    const notAvailable = cells[5].querySelector(\'input[type="checkbox"]\').checked;
+                                    if(notAvailable){
+                                       // console.log("Not available");
+                                       cells[3].querySelector(\'input[type="radio"]\').disabled = true;
+                                       cells[3].querySelector(\'input[type="radio"]\').checked = false;
+                                       cells[4].querySelector(\'input[type="radio"]\').disabled = true;
+                                       cells[4].querySelector(\'input[type="radio"]\').checked = false;
+                                       cells[6].querySelector(\'input[type="radio"]\').disabled = true;
+                                       cells[6].querySelector(\'input[type="radio"]\').checked = false;
+                                       cells[7].querySelector(\'input[type="radio"]\').disabled = true;
+                                       cells[7].querySelector(\'input[type="radio"]\').checked = false;
+                                       continue;
+                                    } else if(!notAvailable){
+                                       cells[3].querySelector(\'input[type="radio"]\').disabled = false;
+                                       cells[4].querySelector(\'input[type="radio"]\').disabled = false;
+                                       cells[6].querySelector(\'input[type="radio"]\').disabled = false;
+                                       cells[7].querySelector(\'input[type="radio"]\').disabled = false;
+                                    }
+                                    const testPassed = cells[3].querySelector(\'input[type="radio"]\').checked;
+                                    const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                    const rollbackPassed = cells[6].querySelector(\'input[type="radio"]\').checked;
+                                    const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+         
+                                    if (prio === "1") {
+                                       console.log("Prio : 1");
+                                       if (testFailed) {
+                                       // If the current selected prio1 test failed or a previous prio1 failed, set prio1Failed to true
+                                          console.log("Prio 1 test failed");
+                                          prio1Failed = true;
+                                          if (rollbackFailed) {
+                                          // If also the rollback failed then set prio1RollbackFailed to true
+                                                console.log("Prio 1 rollback failed");
+                                                prio1RollbackFailed = true;
+                                          }else{
+                                                //prio1RollbackFailed = false;
+                                          }
+                                       }else if(testPassed){
+                                       // If the current selected prio1 test passed but there have been failed prio1 tests before, set prio1Failed to true
+                                          if(rollbackFailed){
+                                          // If this one passed the umbau but failed rollback then set prio1RollbackFailed to true
+                                             prio1RollbackFailed = true;
+                                          }
+                                       }
+                                    } else if (prio === "2") {
+                                       console.log("Prio : 2");
+
+                                       if(testFailed){
+                                          prio2Failed = true;
+                                          console.log("Prio 2 test failed");
+                                       }
+                                       if(rollbackFailed){
+                                          prio2RollbackFailed = true;
+                                          console.log("Prio 2 rollback failed");
+                                          console.log(prio2RollbackFailed);
+                                       }
+                                    }
+                                 }
+                                 // console.log(row);
+                                 // console.log(prio);
+                                 // console.log(cells);
+                                 // console.log(testPassed);
+                                 // console.log(testFailed);
+                                 // console.log(rollbackPassed);
+                                 // console.log(rollbackFailed);
+                           
+                           }
+                           console.log("Prio 1 failed? " + prio1Failed);
+                           console.log("Prio 1 rollback failed? " + prio1RollbackFailed);
+                           console.log("Prio 2 failed? " + prio2Failed);
+                           console.log("Prio 2 rollback failed? " + prio2RollbackFailed);
+                           if (prio1Failed) {
+                           // If one prio1 test fails then opt1 is unchecked
+                                 opt1.checked = false;
+                                 if (prio1RollbackFailed) {
+                                 // If one prio1 rollback test fails then opt6 is checked
+                                    opt6.checked = true;
+                                 } else {
+                                 // If there are failed prio1 tests but every prio1 passed rollback then select 4
+                                    if(prio2RollbackFailed == false){
+                                       opt4.checked = true;
+                                    }else{
+                                       opt5.checked = true;
+                                    } 
+                                 }
+                           } else if (prio2Failed && prio1Failed == false) {
+                            // If there are failed prio2 and no failed prio1 tests then select opt2
+                                 opt1.checked = false;
+                                 opt2.checked = true;
+                           }else if(prio1Failed == false && prio2Failed == false){
+                           // If there are no failed prio1 and no failed prio2 tests then select opt1
+                                 opt1.checked = true;  
+                           }
+                                 //setRequireRadio();
+                                 testTracker();
+                                 //checkFormValidity();
+                        //          console.log(prio1Failed + " " + prio1RollbackFailed + " " + prio2Failed);
+                        //  console.log(`opt1: ${opt1}, opt2: ${opt2}, opt3: ${opt3}, opt4: ${opt4}`);
+                     }'
+;
+
+            print '
+               function setRequireRadio() {
+                  var opt1 = document.getElementById("table1_1");
+                  var opt2 = document.getElementById("table1_2");
+                  var opt3 = document.getElementById("table1_3");
+                  var opt4 = document.getElementById("table1_4");
+                  var opt5 = document.getElementById("table1_5");
+                  var opt6 = document.getElementById("table1_6");
+                  const rows = document.querySelectorAll(\'#questions-table .oddeven\');
+                  if(opt4.checked || opt6.checked){
+                     for (let i = 0; i < rows.length - 4; i++) {
+                        const row = rows[i];
+                        const cells = row.children;
+                        const prio = cells[2].textContent.trim();
+                        cells[6].querySelector(\'input[type="radio"]\').required = true;
+                        cells[7].querySelector(\'input[type="radio"]\').required = true;
+                     }
+                  }else{
+                     for (let i = 0; i < rows.length - 4; i++) {
+                        const row = rows[i];
+                        const cells = row.children;
+                        const prio = cells[2].textContent.trim();
+                        cells[6].querySelector(\'input[type="radio"]\').required = false;
+                        cells[7].querySelector(\'input[type="radio"]\').required = false;
+                     }
+                  }
+               }
+            ';
+
+            print '
+               function testTracker() {
+                  var opt1 = document.getElementById("table1_1");
+                  var opt2 = document.getElementById("table1_2");
+                  var opt3 = document.getElementById("table1_3");
+                  var opt4 = document.getElementById("table1_4");
+                  var opt5 = document.getElementById("table1_5");
+                  var opt6 = document.getElementById("table1_6");
+                  document.getElementById("error-text-p1").style.display = "none";
+                  document.getElementById("error-text-p1").textContent = "P1 Fehler (Umbau): ";
+                  document.getElementById("error-text-p2").style.display = "none";
+                  document.getElementById("error-text-p2").textContent = "P2 Fehler (Umbau): ";
+                  document.getElementById("error-text-p1-rollback").style.display = "none";
+                  document.getElementById("error-text-p1-rollback").textContent = "P1 Fehler (Rollback): ";
+                  document.getElementById("error-text-p2-rollback").style.display = "none";
+                  document.getElementById("error-text-p2-rollback").textContent = "P2 Fehler (Rollback): ";
+                  document.getElementById("p1tests").value = "";
+                  document.getElementById("p2tests").value = "";
+                  document.getElementById("p1testsRollback").value = "";
+                  document.getElementById("p2testsRollback").value = "";
+                  toggleVisibility("hide");
+                  let rows = document.querySelectorAll("#questions-table .oddeven");
+
+                  if (opt1.checked) {
+                     document.getElementById("error-text-p1").style.display = "none";
+                     document.getElementById("error-text-p2").style.display = "none";
+                     document.getElementById("error-text-p1-rollback").style.display = "none";
+                     document.getElementById("error-text-p2-rollback").style.display = "none";
+                  } else if (opt2.checked) {
+                     document.getElementById("error-text-p2").style.display = "block";
+                     document.getElementById("p2tests").value = "";
+                     for (let i = 0; i < rows.length - 4; i++) {
+                           const row = rows[i];
+                           const cells = row.children;
+                           const prio = cells[2].textContent.trim();
+                           if (prio == 2) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                              }
+                           }
+                     }
+                     if (document.getElementById("error-text-p2").textContent == "P2 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p2").textContent += "-";
+                     }else{
+                      document.getElementById("error-text-p2").textContent = document.getElementById("error-text-p2").textContent.slice(0, -2);
+                     }  
+                           // Remove P2 Fehler (Umbau): from the error text
+                     p2tests.value = document.getElementById("error-text-p2").textContent.replace("P2 Fehler (Umbau): ", "");
+                  } else if (opt3.checked) {
+                     toggleVisibility("show");
+                     // Logic for opt3
+
+                  } else if (opt4.checked) {
+                     document.getElementById("error-text-p1").style.display = "block";
+                     document.getElementById("error-text-p2").style.display = "block";
+                     //document.getElementById("error-text-p2-rollback").style.display = "block";
+                     for (let i = 0; i < rows.length - 4; i++) {
+                           const row = rows[i];
+                           const cells = row.children;
+                           const prio = cells[2].textContent.trim();
+                           if (prio == 1) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                              }
+                           }
+                           if (prio == 2) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                              }
+                              if (testRollbackFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 //document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                              }
+                           }
+                     }
+                     
+                     if (document.getElementById("error-text-p1").textContent == "P1 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p1").textContent += "-";
+                     }else{document.getElementById("error-text-p1").textContent = document.getElementById("error-text-p1").textContent.slice(0, -2);}
+                     if (document.getElementById("error-text-p2").textContent == "P2 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p2").textContent += "-";
+                     }else{document.getElementById("error-text-p2").textContent = document.getElementById("error-text-p2").textContent.slice(0, -2);}
+                     //if (document.getElementById("error-text-p2-rollback").textContent == "P2 Fehler (Rollback): ") {
+                      //     document.getElementById("error-text-p2-rollback").textContent += "-";
+                     //}else{document.getElementById("error-text-p2-rollback").textContent = document.getElementById("error-text-p2-rollback").textContent.slice(0, -2);}
+                     document.getElementById("p1tests").value = document.getElementById("error-text-p1").textContent.replace("P1 Fehler (Umbau): ", "");
+                     document.getElementById("p2tests").value = document.getElementById("error-text-p2").textContent.replace("P2 Fehler (Umbau): ", "");
+                     document.getElementById("p2testsRollback").value = document.getElementById("error-text-p2-rollback").textContent.replace("P2 Fehler (Rollback): ", "");
+
+                  } else if(opt5.checked){
+                     document.getElementById("error-text-p1").style.display = "block";
+                     document.getElementById("error-text-p2").style.display = "block";
+                     //document.getElementById("error-text-p1-rollback").style.display = "block";
+                     document.getElementById("error-text-p2-rollback").style.display = "block";
+                     for (let i = 0; i < rows.length - 4; i++) {
+                           const row = rows[i];
+                           const cells = row.children;
+                           const prio = cells[2].textContent.trim();
+                           if (prio == 1) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                              }
+                           }
+                           if (prio == 2) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                              }
+                              if (testRollbackFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                              }
+                           }
+                     }
+                     if (document.getElementById("error-text-p1").textContent == "P1 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p1").textContent += "-";
+                     }else{document.getElementById("error-text-p1").textContent = document.getElementById("error-text-p1").textContent.slice(0, -2);}
+                     if (document.getElementById("error-text-p2").textContent == "P2 Fehler (Umbau): ") {
+                           document.getElementById("error-text-p2").textContent += "-";
+                     }else{document.getElementById("error-text-p2").textContent = document.getElementById("error-text-p2").textContent.slice(0, -2);}
+                     if (document.getElementById("error-text-p2-rollback").textContent == "P2 Fehler (Rollback): ") {
+                           document.getElementById("error-text-p2-rollback").textContent += "-";
+                     }else{document.getElementById("error-text-p2-rollback").textContent = document.getElementById("error-text-p2-rollback").textContent.slice(0, -2);}
+                     document.getElementById("p1tests").value = document.getElementById("error-text-p1").textContent.replace("P1 Fehler (Umbau): ", "");
+                     document.getElementById("p2tests").value = document.getElementById("error-text-p2").textContent.replace("P2 Fehler (Umbau): ", "");
+                     document.getElementById("p2testsRollback").value = document.getElementById("error-text-p2-rollback").textContent.replace("P2 Fehler (Rollback): ", "");
+
+                  }else if (opt6.checked) {
+                     toggleVisibility("show");
+                     document.getElementById("error-text-p1").style.display = "block";
+                     document.getElementById("error-text-p2").style.display = "block";
+                     document.getElementById("error-text-p1-rollback").style.display = "block";
+                     document.getElementById("error-text-p2-rollback").style.display = "block";
+                     for (let i = 0; i < rows.length - 4; i++) {
+                           const row = rows[i];
+                           const cells = row.children;
+                           const prio = cells[2].textContent.trim();
+                           if (prio == 1) {
+                              const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              if (rollbackFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p1-rollback").textContent += secondColumnText + ", ";
+                              }
+                              if(testFailed){
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                              }
+                              
+                              
+                           }
+                           if (prio == 2) {
+                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                              const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                              if (testFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                              }
+                              if (testRollbackFailed) {
+                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                 document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                              }
+                           }
+                     }
+                     if(document.getElementById("error-text-p1").textContent == "P1 Fehler (Umbau): "){
+                           document.getElementById("error-text-p1").textContent += "-";
+                     }else{
+                     document.getElementById("error-text-p1").textContent = document.getElementById("error-text-p1").textContent.slice(0, -2);
+                     }
+                     if(document.getElementById("error-text-p2").textContent == "P2 Fehler (Umbau): "){
+                           document.getElementById("error-text-p2").textContent += "-";
+                     }else{
+                     document.getElementById("error-text-p2").textContent = document.getElementById("error-text-p2").textContent.slice(0, -2);
+                     }
+                     if(document.getElementById("error-text-p1-rollback").textContent == "P1 Fehler (Rollback): "){
+                           document.getElementById("error-text-p1-rollback").textContent += "-";
+                     }else{
+                     document.getElementById("error-text-p1-rollback").textContent = document.getElementById("error-text-p1-rollback").textContent.slice(0, -2);
+                     }
+                     if(document.getElementById("error-text-p2-rollback").textContent == "P2 Fehler (Rollback): "){
+                           document.getElementById("error-text-p2-rollback").textContent += "-";
+                     }else{
+                     document.getElementById("error-text-p2-rollback").textContent = document.getElementById("error-text-p2-rollback").textContent.slice(0, -2);
+                     }
+                     document.getElementById("p1tests").value = document.getElementById("error-text-p1").textContent.replace("P1 Fehler (Umbau): ", "");
+                     document.getElementById("p2tests").value = document.getElementById("error-text-p2").textContent.replace("P2 Fehler (Umbau): ", "");
+                     document.getElementById("p1testsRollback").value = document.getElementById("error-text-p1-rollback").textContent.replace("P1 Fehler (Rollback): ", "");
+                     document.getElementById("p2testsRollback").value = document.getElementById("error-text-p2-rollback").textContent.replace("P2 Fehler (Rollback): ", "");
+
+                  }else{
+                        document.getElementById("error-text-p1").style.display = "none";
+                        document.getElementById("error-text-p2").style.display = "none";
+                        document.getElementById("error-text-p1-rollback").style.display = "none";
+                        document.getElementById("error-text-p2-rollback").style.display = "none";
+                     }
+}';
+
+            // check P1, P2 table rows
+            print ' 
+                  document.addEventListener("DOMContentLoaded", function(){
+                    
+                     testTracker();
+                     //checkFormValidity();
+                     document.querySelectorAll(\'#questions-table input[type="radio"]\').forEach(radio => {
+                        radio.addEventListener("change", checkTests);
+                        // Onclick, if checked uncheck, if unchecked, check
+                     });
+                     document.querySelectorAll(\'#questions-table input[type="checkbox"]\').forEach(checkbox => {
+                        checkbox.addEventListener("change", checkTests);
+                     });
+                     // Attach testTracker and setRequiredRadio to radiobuttons table1_1, table1_2, table1_3, table1_4, table1_6
+                     document.getElementById("table1_1").addEventListener("change", testTracker);
+                     document.getElementById("table1_2").addEventListener("change", testTracker);
+                     document.getElementById("table1_3").addEventListener("change", testTracker);
+                     document.getElementById("table1_4").addEventListener("change", testTracker);
+                     document.getElementById("table1_6").addEventListener("change", testTracker);
+                     document.getElementById("table1_1").addEventListener("change", setRequireRadio);
+                     document.getElementById("table1_2").addEventListener("change", setRequireRadio);
+                     document.getElementById("table1_3").addEventListener("change", setRequireRadio);
+                     document.getElementById("table1_4").addEventListener("change", setRequireRadio);
+                     document.getElementById("table1_6").addEventListener("change", setRequireRadio);
+
+                  
+                  });';
+            // end check P1, P2 table rows
+
+            // calculate distance/times
+               print '
+               document.addEventListener("DOMContentLoaded", function() {
+                     const arrivalInput = document.getElementById("input-time-arrival");
+                     const departureInput = document.getElementById("input-time-departure");
+                     const workStartInput = document.getElementById("input-work-start");
+                     const workEndInput = document.getElementById("input-work-end");
+                     const durationHoursInput = document.getElementById("input-duration-hours");
+                     const durationMinutesInput = document.getElementById("input-duration-minutes");
+               
+                     function floorTimeToNearest15(date) {
+                        const minutes = date.getMinutes();
+                        date.setMinutes(minutes - (minutes % 15), 0, 0); // floor to nearest 15 minutes
+                        return date;
+                     }
+               
+                     function ceilTimeToNearest15(date) {
+                        const minutes = date.getMinutes();
+                        date.setMinutes(minutes + (15 - (minutes % 15)) % 15, 0, 0); // ceil to nearest 15 minutes
+                        return date;
+                     }
+               
+                     function calculateDuration(endTime, startTime) {
+                        let duration = (endTime - startTime) / (1000 * 60); // duration in minutes
+                        const hours = Math.floor(duration / 60);
+                        const minutes = duration % 60;
+                        return { hours, minutes };
+                     }
+               
+                     function updateDuration() {
+                        if (arrivalInput.value && departureInput.value) {
+                           let arrivalTime = new Date();
+                           let departureTime = new Date();
+               
+                           const [arrHours, arrMinutes] = arrivalInput.value.split(":").map(Number);
+                           const [depHours, depMinutes] = departureInput.value.split(":").map(Number);
+               
+                           arrivalTime.setHours(arrHours, arrMinutes, 0, 0);
+                           departureTime.setHours(depHours, depMinutes, 0, 0);
+               
+                        if(arrivalTime < departureTime) {
+                              alert("Ankunftszeit kann nicht vor Abfahrtszeit sein!");
+                              return;
+                           }
+               
+                           const { hours, minutes } = calculateDuration(arrivalTime, departureTime);
+                           durationHoursInput.value = hours;
+                           durationMinutesInput.value = minutes;
+                        }
+                        
+                     }
+               
+                     arrivalInput.addEventListener("blur", function() {
+                        if (arrivalInput.value) {
+                           let arrivalTime = new Date();
+                           const [hours, minutes] = arrivalInput.value.split(":").map(Number);
+                           arrivalTime.setHours(hours, minutes, 0, 0);
+                           arrivalTime = floorTimeToNearest15(arrivalTime);
+                           arrivalInput.value = arrivalTime.toTimeString().substring(0, 5);
+                           workStartInput.value = arrivalTime.toTimeString().substring(0, 5);
+                           updateDuration();
+                        }
+                     });
+               
+                     departureInput.addEventListener("blur", function() {
+                        if (departureInput.value) {
+                           let departureTime = new Date();
+                           const [hours, minutes] = departureInput.value.split(":").map(Number);
+                           departureTime.setHours(hours, minutes, 0, 0);
+                           departureTime = floorTimeToNearest15(departureTime);
+                           departureInput.value = departureTime.toTimeString().substring(0, 5);
+                           updateDuration();
+                        }
+                     });
+               
+                     workEndInput.addEventListener("blur", function() {
+                        if (workEndInput.value) {
+                           let workEndTime = new Date();
+                           const [hours, minutes] = workEndInput.value.split(":").map(Number);
+                           workEndTime.setHours(hours, minutes, 0, 0);
+                           workEndTime = ceilTimeToNearest15(workEndTime);
+                           workEndInput.value = workEndTime.toTimeString().substring(0, 5);
+                        }
+                     });
+               
+                     workStartInput.addEventListener("blur", function() {
+                        if (workStartInput.value) {
+                           let workStartTime = new Date();
+                           const [hours, minutes] = workStartInput.value.split(":").map(Number);
+                           workStartTime.setHours(hours, minutes, 0, 0);
+                           workStartTime = floorTimeToNearest15(workStartTime);
+                           workStartInput.value = workStartTime.toTimeString().substring(0, 5);
+                           arrivalInput.value = workStartTime.toTimeString().substring(0, 5);
+                           updateDuration();
+                        }
+                     });
+                  });';
+            // end calculate distance/times  
+            // show/hide ruckbau table
+            print '
+                     function toggleVisibility(id) {
+                        var button = document.getElementById("ruckbau-btn");
+                        var table = document.getElementById("ruckbau-table");
+                        if(id == "show"){
+                           button.style.display = "none";
+                           table.style.display = "block";
+                        } else {
+                           button.style.display = "block";
+                           table.style.display = "none";
+                        }
+                     }
+            '; 
+            //end show/hide ruckbau table
+
+            // Show note input field when checking Sonstiges field
+            print '
+            function toggleNoteInput() {
+               const noteInput = document.getElementById("note-other");
+               const selectedRadio = document.querySelector(\'input[name="table2"]:checked\');
+
+               if (selectedRadio && selectedRadio.value === "5") {
+                  noteInput.style.display = "block";
+               } else {
+                  noteInput.style.display = "none";
+               }
+            }
+         ';
+         // End show note input field when checking Sonstiges field
+         // Check all done VKST 4.0
+            print '
+            $(document).ready(function() {
+               toggleNoteInput();
+               $(".check-all").click(function() {
+                  var column = $(this).data("column");
+                  $("." + column + "-radio").prop("checked", true);
+               });
+            });
+         ';
+         // End check all done VKST 4.0
+         print '</script>';   
       }
    print '</div>';
    print '<div class="row mt-3">';
@@ -1380,28 +1994,20 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
    print '</div>';
 
 
-
-
-
-
-
-
-
    print '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>';
    print '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>';
    print '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.3.2/jspdf.plugin.autotable.min.js"></script>';
    $parameters = json_decode(base64_decode($result[1]));
    $images = json_decode(base64_decode($result[3]));
    $encoded_params = json_encode($parameters);
-   // var_dump($encoded_params);
    if($result[1] ){
       print '<script>';
-
          // auto fill inputs 
          print '
-               
                let parameters = \'' . $encoded_params . '\';
-               let decodedParameters = JSON.parse(parameters);
+               let param = parameters.replace(/\r/g, "");
+               param = param.replace(/\n/g, "");
+               let decodedParameters = JSON.parse(param);
       
                decodedParameters.forEach(param => {
                   const inputElement = document.querySelector(`[name="${param.name}"]`);
@@ -1409,13 +2015,15 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      // Set the value based on the input type
                      switch (inputElement.type) {
                         case "text":
-                        case "textarea":
                         case "select-one":
                         case "number":
                         case "time":
                         case "date":
                            // updated from inputElement.value = param.value to this one so the pdf will show it
                            inputElement.setAttribute("value", param.value);
+                        break;
+                        case "textarea":
+                           inputElement.value = param.value;
                         break;
                         case "checkbox":
                            if(param.value === "1"){
@@ -1456,131 +2064,95 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
 
          print '<script>';
 
-            // export as csv
+         // export as csv
             print '
-               function exportToCSV() {
-                  const tables = document.getElementById("report-body").querySelectorAll("table:not(#times-table)");
-                  const csvContent = [];
+            function exportToCSV() {
+               const tables = document.getElementById("report-body").querySelectorAll("table:not(#times-table)");
+               const csvContent = [];
 
-                  tables.forEach(table => {
-                     const rows = table.querySelectorAll("tr");
-                     rows.forEach(row => {
-                        const csvRow = [];
-                        row.querySelectorAll("td").forEach(cell => {
-                           let cellValue = cell.textContent.trim();
+               tables.forEach(table => {
+                  const rows = table.querySelectorAll("tr");
+                  rows.forEach(row => {
+                     const csvRow = [];
+                     row.querySelectorAll("td").forEach(cell => {
+                        let cellValue = cell.textContent.trim();
 
-                           if (cellValue !== "") {
-                              let elm = [];
-                              cell.querySelectorAll("input").forEach(inputElement => {
-                                 if (inputElement) {
-                                    switch (inputElement.type) {
-                                       case "number":
-                                          elm.push(inputElement.value);
-                                          break;
-                                    }
-                                 }
-                              });
-                              if(elm.length > 0){
-                                 cellValue = elm.join(":");
-                              } else {
-                                 cellValue = cellValue;
-                              }
-                           } else {
-                              cell.querySelectorAll("input").forEach(inputElement => {
-                                 if (inputElement) {
-                                    // Handle input elements
-                                    switch (inputElement.type) {
-                                    case "date":
-                                    case "datetime-local":
-                                       const dateObj = new Date(inputElement.value);
-
-                                       cellValue = dateObj.toLocaleString("de-DE", {
-                                          year: "numeric",
-                                          month: "numeric",
-                                          day: "numeric"
-                                       });
-                                       break;
-                                    case "time":
-                                       cellValue = 2;
-                                       break;
+                        if (cellValue !== "") {
+                           let elm = [];
+                           cell.querySelectorAll("input").forEach(inputElement => {
+                              if (inputElement) {
+                                 switch (inputElement.type) {
                                     case "number":
-                                       cellValue = inputElement.value;
+                                       elm.push(inputElement.value);
                                        break;
-                                    case "checkbox":
-                                       cellValue = inputElement.checked ? "Ja" : "Nein";
-                                       break;
-                                    default:
-                                       cellValue = inputElement.value;
-                                       break;
-                                    }
-                                 } else {
-                                    cellValue = "";
                                  }
-                              });
+                              }
+                           });
+                           if(elm.length > 0){
+                              cellValue = elm.join(":");
+                           } else {
+                              cellValue = cellValue;
                            }
+                        } else {
+                           cell.querySelectorAll("input").forEach(inputElement => {
+                              if (inputElement) {
+                                 // Handle input elements
+                                 switch (inputElement.type) {
+                                 case "date":
+                                 case "datetime-local":
+                                    const dateObj = new Date(inputElement.value);
 
-                           csvRow.push(cellValue);
-                        });
-                        csvContent.push(csvRow.join(","));
+                                    cellValue = dateObj.toLocaleString("de-DE", {
+                                       year: "numeric",
+                                       month: "numeric",
+                                       day: "numeric"
+                                    });
+                                    break;
+                                 case "time":
+                                    cellValue = 2;
+                                    break;
+                                 case "number":
+                                    cellValue = inputElement.value;
+                                    break;
+                                 case "checkbox":
+                                    cellValue = inputElement.checked ? "Ja" : "Nein";
+                                    break;
+                                 default:
+                                    cellValue = inputElement.value;
+                                    break;
+                                 }
+                              } else {
+                                 cellValue = "";
+                              }
+                           });
+                        }
+
+                        csvRow.push(cellValue);
                      });
-                     csvContent.push(""); // Add a blank line between tables
+                     csvContent.push(csvRow.join(","));
                   });
+                  csvContent.push(""); // Add a blank line between tables
+               });
 
-                  const csvData = csvContent.join("\n");
-                  const blob = new Blob([csvData], { type: "text/csv" });
-                  const url = URL.createObjectURL(blob);
+               const csvData = csvContent.join("\n");
+               const blob = new Blob([csvData], { type: "text/csv" });
+               const url = URL.createObjectURL(blob);
 
-                  const a = document.createElement("a");
-                  a.href = url;
-                  let ticket = "'.$object->ref.'";
-                  a.download = ticket + "-report";
-                  a.click();
-                  URL.revokeObjectURL(url);
-               }
-               function isValidTime(timeStr) {
-                  const timeRegex = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
-                  return timeRegex.test(timeStr);
-               }
+               const a = document.createElement("a");
+               a.href = url;
+               let ticket = "'.$object->ref.'";
+               a.download = ticket + "-report";
+               a.click();
+               URL.revokeObjectURL(url);
+            }
+            function isValidTime(timeStr) {
+               const timeRegex = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+               return timeRegex.test(timeStr);
+            }
             ';
-
-            // end export as csv
+         // end export as csv
 
             // generate pdf
-            // print '
-            
-            //    $("#generate-pdf").on("click", function() {
-            //          const formData = new FormData();
-                     
-
-            //          // Add the full HTML content
-            //          formData.append("form", $("#report-body").html());
-                     
-            //          generatePDF(formData, 1);
-            //       });
-
-            //       function generatePDF(formData, redirect) {
-            //          $.ajax({
-            //             url: "test.php",
-            //             type: "POST",
-            //             data: formData,
-            //             processData: false,
-            //             contentType: false,
-            //             success: function(response) {
-            //                   console.log(response);
-            //                   if(redirect == 1){
-            //                      // window.location.href = "index.php";
-            //                   }
-            //             },
-            //             error: function(xhr, status, error) {
-            //                   console.error("Request failed with status: " + xhr.status + ", Error: " + error);
-            //                   if(redirect == 1){
-            //                      // window.location.href = "index.php";
-            //                   }
-            //             }
-            //          });
-            //       }
-            
-            // ';
             print '      
                   document.getElementById("generate-pdf").addEventListener("click", () => {
                      const { jsPDF } = window.jspdf;
@@ -1632,6 +2204,21 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      });
                   });';
             // end generate pdf 
+
+            // Deselct radio button when click on twice
+               print '
+               let lastSelectedRadio = null;
+               document.querySelectorAll(\'input[type="radio"]\').forEach(radio => {
+                     radio.addEventListener("click", function(event) {
+                        if (this === lastSelectedRadio) {
+                           this.checked = false; // Deselect the radio button
+                           lastSelectedRadio = null; // Reset last selected radio button
+                        } else {
+                           lastSelectedRadio = this; // Update last selected radio button
+                        }
+                     });
+               });';
+            // End deselect radio button when click on twice
             
             //save form
             print '$("#save-form").on("click", function() {
@@ -1700,6 +2287,9 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      } else {
                         input.type = "text";
                         input.disabled = true;
+                        if(input.name === "p1tests" || input.name === "p2tests" || input.name === "p1testsRollback" || input.name === "p2testsRollback"){
+                           input.type = "hidden";
+                        }
                      }
                   });';
             print 'document.querySelectorAll("select").forEach(select => {
@@ -1722,6 +2312,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          $p2tests = "";
          $serverImages = [];
          $documentImages = [];
+         $table1 = "";
          foreach ($parameters as $item) {
             if ($item->name === 'work-start') {
                $workStartValue = $item->value;
@@ -1730,7 +2321,20 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                $workEndValue = $item->value;
             }
             if ($item->name === 'p2tests') {
+               
                $p2tests = $item->value;
+            }
+            if($item->name === 'p1tests'){
+               
+               $p1tests = $item->value;
+            }
+            if($item->name === 'p1testsRollback'){
+               
+               $p1testsRollback = $item->value;
+            }
+            if($item->name === 'p2testsRollback'){
+               
+               $p2testsRollback = $item->value;
             }
             if ($item->name === 'table2') {
                $table2Checked = $item->value;
@@ -1739,12 +2343,17 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                $otherNote = $item->value;
                break;
             }
+            if($item->name === 'table1'){
+               $table1 = $item->value;
+            }
+            
+            
          }
          foreach ($images as $group) {
-            if ($group->type === 'serverschrank nachher') {
+            if ($group->type === 'serverschrank nachher' || $group->type === 'Serverschrank nachher') {
                $serverImages = $group->images;
             }
-            if ($group->type === 'image abnahmeprotokoll/testprotokoll') {
+            if ($group->type === 'image abnahmeprotokoll/testprotokoll' || $group->type === 'Testprotokoll') {
                $documentImages = $group->images;
                break;
             }
@@ -1756,6 +2365,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   document.getElementById("reportOptions").style.display = "none";
                   document.getElementById("save-form").style.display = "none";
                   document.getElementById("generate-pdf").style.display = "none";
+                  document.getElementById("csv").style.display = "none";
 
 
                   
@@ -1818,7 +2428,42 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                               <td>Fehlgeschlagene P2 Tests</td>
                               <td>'.$p2tests.'</td>
                         </tr>
-                     </table>';
+                      ';
+            if($table1 == "4"){
+               $s .= '<tr>
+                        <td>Fehlgeschlagene P1 Tests</td>
+                        <td>'.$p1tests.'</td>
+                     </tr>';
+            }
+            if($table1 == "5"){
+               $s .= '<tr>
+                        <td>Fehlgeschlagene P1 Tests</td>
+                        <td>'.$p1tests.'</td>
+                     </tr>';
+               $s .= '<tr>
+                        <td>Fehlgeschlagene P2 Tests (Rollback)</td>
+                        <td>'.$p2testsRollback.'</td>
+                     </tr>';
+            }
+            if($table1 == "6"){
+               $s .= '<tr>
+                        <td>Fehlgeschlagene P1 Tests</td>
+                        <td>'.$p1tests.'</td>
+                     </tr>';
+               $s .= '<tr>
+                        <td>Fehlgeschlagene P2 Tests</td>
+                        <td>'.$p2tests.'</td>
+                     </tr>';
+               $s .= '<tr>
+                        <td>Fehlgeschlagene P1 Tests (Rollback)</td>
+                        <td>'.$p1testsRollback.'</td>
+                     </tr>';
+               $s .= '<tr>
+                        <td>Fehlgeschlagene P2 Tests (Rollback)</td>
+                        <td>'.$p2testsRollback.'</td>
+                     </tr>';
+            }
+            $s .= '</table>';
             $s .= '</div>';
          $s .= '</div><br>';
          $s .= '<hr>';
@@ -1882,99 +2527,124 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          $emailContent = '';
          
          $emailContent .= '<div class="col-12">';
-            $emailContent .= '
-                  <table class="noborder centpercent" id="body-table" style="width:95%">
-                     <tr>
-                           <th><b>Zustand</b></th>
-                           <th><b>Betreff</b></th>
-                           <th><b>Inhalt</b></th>
-                     </tr>
-                     <tr>
-                        <td>
-                           <ul>
-                              <li>Umbau wurde erfolgreich abgeschlossen</li>
-                              <li>Alle Tests wurden erfolgreich durchgeführt</li>
-                           </ul>
-                        </td>
-                        <td>
-                           VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH
-                        </td>
-                        <td>
-                           Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen
-                        </td>
-                     </tr>
-                     <tr>
-                        <td>
-                           <ul>
-                              <li>Umbau wurde erfolgreich abgeschlossen</li>
-                              <li>Es ist mindestes ein P2 Tests fehlgeschlagen</li>
-                           </ul>
-                        </td>
-                        <td>
-                           VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH, offene Themen
-                        </td>
-                        <td>
-                           Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).
-                        </td>
-                     </tr>
-                     <tr>
-                        <td>
-                           <ul>
-                              <li>Der Umbau konnte nicht stattfinden / wurde vor Beginn abgebrochen</li>
-                           </ul>
-                        </td>
-                        <td>
-                           VKST4.0 - '.$store->b_number.' NICHT ERFOLGT
-                        </td>
-                        <td>
-                           Der Umbau in VKST '.$store->b_number.' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.
-                        </td>
-                     </tr>
-                     <tr>
-                        <td>
-                           <ul>
-                              <li>Der Umbau auf VKST4.0 konnte nicht erfolgreich durchgeführt werden</li>
-                              <li>Nach Rollback konnten alle Tests erfolgreich durchgeführt werden</li>
-                           </ul>
-                        </td>
-                        <td>
-                           VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH
-                        </td>
-                        <td>
-                           Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.
-                        </td>
-                     </tr>
-                     <tr>
-                        <td>
-                           <ul>
-                              <li>Es wurde ein Rollback erfolgreich durchgeführt</li>
-                              <li>Nach Rollback ist mindestens ein P2 Tests fehlgeschlagen</li>
-                           </ul>
-                        </td>
-                        <td>
-                           VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH, offene Themen
-                        </td>
-                        <td>
-                           Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).
-                        </td>
-                     </tr>
-                     <tr>
-                        <td>
-                           <ul>
-                              <li>Der Rollback war nicht erfolgreich</li>
-                              <li>Projektleitstand wurde informiert</li>
-                           </ul>
-                        </td>
-                        <td>
-                           VKST4.0 - '.$store->b_number.' ROLLBACK FEHLSCHLAG
-                        </td>
-                        <td>
-                           Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.
-                        </td>
-                     </tr>
-                  </table>';
-         $emailContent .= '</div><br>';
-         $emailContent .= '<p>Sehr geehrtes VKST4.0 Projektteam,</p><br>';
+         $success = 'Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen';
+         $failedP2 = 'Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).';
+         $notstarted = 'Der Umbau in VKST '.$store->b_number.' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.';
+         $rollbackSuccess = 'Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.';
+         $rollbackP2Failed = 'Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).';
+         $rollbackFailed = 'Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.'; 
+            // $emailContent .= '
+            //       <table class="noborder centpercent" id="body-table" style="width:95%">
+            //          <tr>
+            //                <th><b>Zustand</b></th>
+            //                <th><b>Betreff</b></th>
+            //                <th><b>Inhalt</b></th>
+            //          </tr>
+            //          <tr>
+            //             <td>
+            //                <ul>
+            //                   <li>Umbau wurde erfolgreich abgeschlossen</li>
+            //                   <li>Alle Tests wurden erfolgreich durchgeführt</li>
+            //                </ul>
+            //             </td>
+            //             <td>
+            //                VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH
+            //             </td>
+            //             <td>
+            //                Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen
+            //             </td>
+            //          </tr>
+            //          <tr>
+            //             <td>
+            //                <ul>
+            //                   <li>Umbau wurde erfolgreich abgeschlossen</li>
+            //                   <li>Es ist mindestes ein P2 Tests fehlgeschlagen</li>
+            //                </ul>
+            //             </td>
+            //             <td>
+            //                VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH, offene Themen
+            //             </td>
+            //             <td>
+            //                Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).
+            //             </td>
+            //          </tr>
+            //          <tr>
+            //             <td>
+            //                <ul>
+            //                   <li>Der Umbau konnte nicht stattfinden / wurde vor Beginn abgebrochen</li>
+            //                </ul>
+            //             </td>
+            //             <td>
+            //                VKST4.0 - '.$store->b_number.' NICHT ERFOLGT
+            //             </td>
+            //             <td>
+            //                Der Umbau in VKST '.$store->b_number.' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.
+            //             </td>
+            //          </tr>
+            //          <tr>
+            //             <td>
+            //                <ul>
+            //                   <li>Der Umbau auf VKST4.0 konnte nicht erfolgreich durchgeführt werden</li>
+            //                   <li>Nach Rollback konnten alle Tests erfolgreich durchgeführt werden</li>
+            //                </ul>
+            //             </td>
+            //             <td>
+            //                VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH
+            //             </td>
+            //             <td>
+            //                Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.
+            //             </td>
+            //          </tr>
+            //          <tr>
+            //             <td>
+            //                <ul>
+            //                   <li>Es wurde ein Rollback erfolgreich durchgeführt</li>
+            //                   <li>Nach Rollback ist mindestens ein P2 Tests fehlgeschlagen</li>
+            //                </ul>
+            //             </td>
+            //             <td>
+            //                VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH, offene Themen
+            //             </td>
+            //             <td>
+            //                Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).
+            //             </td>
+            //          </tr>
+            //          <tr>
+            //             <td>
+            //                <ul>
+            //                   <li>Der Rollback war nicht erfolgreich</li>
+            //                   <li>Projektleitstand wurde informiert</li>
+            //                </ul>
+            //             </td>
+            //             <td>
+            //                VKST4.0 - '.$store->b_number.' ROLLBACK FEHLSCHLAG
+            //             </td>
+            //             <td>
+            //                Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.
+            //             </td>
+            //          </tr>
+            //       </table>';
+         //$emailContent .= '</div><br>';
+         $emailContent .= '<p>Sehr geehrtes VKST4.0 Projektteam,</p>';
+         if($table1 == "1"){
+            $emailContent .= $success.'';
+         }
+         if($table1 == "2"){
+            $emailContent .= $failedP2.'';
+         }
+         if($table1 == "3"){
+            $emailContent .= $notstarted.'';
+         }
+         if($table1 == "4"){
+            $emailContent .= $rollbackSuccess.'';
+         }
+         if($table1 == "5"){
+            $emailContent .= $rollbackP2Failed.'';
+         }
+         if($table1 == "6"){
+            $emailContent .= $rollbackFailed.'';
+         }
+         $emailContent .= '<br>';
          $emailContent .= '<br>';
          $emailContent .= $s;
          $emailContent .= $ruckbaus;
@@ -2126,6 +2796,25 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          $formticket->backtopage = $backtopage;
 
          $formticket->showMessageFormReport('100%', $emailContent);
+          // Automatically fill in the subject based on selected option
+          print '<script>
+          if('.$table1.' == 1){
+             // Get subject input field with name subject
+             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH";
+          }else if('.$table1.' == 2){
+             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH, offene Themen";
+          }else if('.$table1.' == 3){
+             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' NICHT ERFOLGT";
+          }else if('.$table1.' == 4){  
+             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH";
+          }else if('.$table1.' == 5){
+             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH, offene Themen";
+          }else if('.$table1.' == 6){
+             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK FEHLSCHLAG";
+          }
+         // Add margin left to that input 
+         document.querySelector(\'input[name="subject"]\').style.marginLeft = "10px";
+       </script>';
          print '</div>';
       }
    } else {
@@ -2134,6 +2823,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
       print 'document.getElementById("reportOptions").style.display = "none";';
       print 'document.getElementById("save-form").style.display = "none";';
       print 'document.getElementById("generate-pdf").style.display = "none";';
+      print 'document.getElementById("csv").style.display = "none";';
       print '</script>';
       print "Noch kein Bericht vorhanden";
    }

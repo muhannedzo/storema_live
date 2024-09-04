@@ -391,7 +391,7 @@ if ($object->id > 0) {
 							$file_tmpname = $_FILES['files']['tmp_name'][$key];
 							$file_name = $_FILES['files']['name'][$key];
 							$file_size = $_FILES['files']['size'][$key];
-							$imageQuality = 80;
+							$imageQuality = 20;
 							$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
 							
 							// Set upload file path
@@ -518,7 +518,7 @@ if ($object->id > 0) {
 							$file_tmpname = $_FILES['files']['tmp_name'][$key];
 							$file_name = $_FILES['files']['name'][$key];
 							$file_size = $_FILES['files']['size'][$key];
-							$imageQuality = 80;
+							$imageQuality = 20;
 							$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
 							
 							// Set upload file path

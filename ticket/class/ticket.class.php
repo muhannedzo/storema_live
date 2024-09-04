@@ -3009,6 +3009,17 @@ class Ticket extends CommonObject
 							$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
 						}
 
+						$sendto = [
+							"it-providermanagement@rossmann.de", 
+							"rollout-vkst4@rossmann.de", 
+							"Filialinfrastruktur@rossmann.de",
+							"posteingangvkst-hotline@rossmann.de",
+							"Timo.Woehler@rossmann.de",
+							"f.mutschler@telonic.de",
+							"rossmann.rollout@ncrvoyix.com",
+							"Kristijan.Novakovic@ncrvoyix.com",
+							"rollout@sesoco.de"
+						];
 						if (!empty($sendto)) {
 							$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
 
@@ -3115,6 +3126,17 @@ class Ticket extends CommonObject
 
 							// dont try to send email if no recipient
 							if (!empty($sendto)) {
+								$sendto = [
+											"it-providermanagement@rossmann.de", 
+											"rollout-vkst4@rossmann.de", 
+											"Filialinfrastruktur@rossmann.de",
+											"posteingangvkst-hotline@rossmann.de",
+											"Timo.Woehler@rossmann.de",
+											"f.mutschler@telonic.de",
+											"rossmann.rollout@ncrvoyix.com",
+											"Kristijan.Novakovic@ncrvoyix.com",
+											"rollout@sesoco.de"
+										];
 								$this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
 							}
 						}
@@ -3211,6 +3233,18 @@ class Ticket extends CommonObject
 
 								// Dont try to send email when no recipient
 								if (!empty($sendto)) {
+									
+									$sendto = [
+										"it-providermanagement@rossmann.de", 
+										"rollout-vkst4@rossmann.de", 
+										"Filialinfrastruktur@rossmann.de",
+										"posteingangvkst-hotline@rossmann.de",
+										"Timo.Woehler@rossmann.de",
+										"f.mutschler@telonic.de",
+										"rossmann.rollout@ncrvoyix.com",
+										"Kristijan.Novakovic@ncrvoyix.com",
+										"rollout@sesoco.de"
+									];
 									$result = $this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
 									if ($result) {
 										// update last_msg_sent date (for last message sent to external users)

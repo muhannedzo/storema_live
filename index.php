@@ -128,7 +128,7 @@ if($user->socid || $result[0] != "0") {
 	$sql .= ' WHERE t.entity IN ('.getEntity('ticket').')';
 	$sql .= ' AND fk_user_assign = '.$user->id;
 	$sql .= ' AND t.fk_statut != 8';
-	$sql .= $db->order("t.datec", "DESC");
+	$sql .= $db->order("te.dateofuse", "ASC");
 
 	$result = $db->query($sql);
 
