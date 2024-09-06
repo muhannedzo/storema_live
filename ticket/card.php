@@ -237,7 +237,7 @@ if (empty($reshook)) {
 			$object->category_code 				= GETPOST("category_code", 'alpha');
 			$object->category_label 			= $langs->trans($langs->getLabelFromKey($db, $object->category_code, 'c_ticket_category', 'code', 'label'));
 			$object->severity_code 				= GETPOST("severity_code", 'alpha');
-			$object->severity_label 			= $langs->trans($langs->getLabelFromKey($db, $object->severity_code, 'c_ticket_severity', 'code', 'label'));
+			$object->severity_label 			= $langs->trans($langs->getLabelFromKey($db, $object->severity_code, 'c_ticket_severity', 'code', 'code'));
 			$object->fk_user_create 			= $user->id;
 			$object->email_from 				= $user->email;
 			$object->origin_email 				= null;
@@ -682,10 +682,10 @@ if (empty($reshook)) {
 	if ($action == "change_property" && GETPOST('btn_update_ticket_prop', 'alpha') && $permissiontoadd) {
 		$object->fetch(GETPOST('id', 'int'), '', GETPOST('track_id', 'alpha'));
 
-		$object->type_code = GETPOST('update_value_type', 'aZ09');
-		$object->severity_code = GETPOST('update_value_severity', 'aZ09');
-		$object->category_code = GETPOST('update_value_category', 'aZ09');
-
+		$object->type_code = GETPOST('update_value_type');
+		$object->severity_code = GETPOST('update_value_severity');
+		$object->category_code = GETPOST('update_value_category');
+		
 		$ret = $object->update($user);
 		if ($ret > 0) {
 			setEventMessages($langs->trans('TicketUpdated'), null, 'mesgs');
@@ -1383,7 +1383,7 @@ if ($action == 'create' || $action == 'presend') {
 			print '<td>';
 			print $langs->trans('TicketSeverity');
 			print '</td><td>';
-			$formticket->selectSeveritiesTickets($object->severity_code, 'update_value_severity', '', 2);
+			$formticket->selectSeveritiesTickets($object->severity_code, 'update_value_severity', '', 1);
 			print '</td>';
 			print '</tr>';
 		} else {
@@ -1404,7 +1404,7 @@ if ($action == 'create' || $action == 'presend') {
 			// Severity
 			print '<tr><td>'.$langs->trans("TicketSeverity").'</td><td>';
 			if (!empty($object->severity_code)) {
-				print $langs->getLabelFromKey($db, $object->severity_code, 'c_ticket_severity', 'code', 'label', $object->severity_code);
+				print $langs->getLabelFromKey($db, $object->severity_code, 'c_ticket_severity', 'code', 'code', $object->severity_code);
 			}
 			print '</td></tr>';
 		}

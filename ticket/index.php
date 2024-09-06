@@ -413,7 +413,7 @@ if ($user->hasRight('ticket', 'read')) {
 
 				// Severity = Priority
 				print '<td class="nowrap">';
-				$s = $langs->getLabelFromKey($db, 'TicketSeverityShort'.$objp->severity_code, 'c_ticket_severity', 'code', 'label', $objp->severity_code);
+				$s = $langs->getLabelFromKey($db, 'TicketSeverityShort'.$objp->severity_code, 'c_ticket_severity', 'code', 'code', $objp->severity_code);
 				print '<span title="'.dol_escape_htmltag($s).'">'.$s.'</span>';
 				//print $objp->severity_label;
 				print "</td>";

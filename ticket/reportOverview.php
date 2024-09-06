@@ -391,6 +391,12 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          //       print '</div>';
          //    print '</div>';
          // print '</div>';
+         print '<div>';
+            print '<label>Additional Notes</label>';
+            print '<br>';
+            print '<textarea name="additional-notes" required style="height:100px"></textarea>';
+         print '</div>';
+         print '<br>';
          
 
          $rowsCount = "0";
@@ -2068,7 +2074,9 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             print '
             function exportToCSV() {
                const tables = document.getElementById("report-body").querySelectorAll("table:not(#times-table)");
+               const textareas = document.getElementById("report-body").querySelectorAll("textarea");
                const csvContent = [];
+               
 
                tables.forEach(table => {
                   const rows = table.querySelectorAll("tr");
@@ -2132,6 +2140,18 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      csvContent.push(csvRow.join(","));
                   });
                   csvContent.push(""); // Add a blank line between tables
+               });
+               textareas.forEach(textarea => {
+                  // Find the closest label
+                  const label = textarea.previousElementSibling; // Assuming sibling relationship
+
+                  // Check if label exists and has text content
+                  if (label && label.textContent.trim() !== "") {
+                     csvContent.push(label.textContent.trim()); // Add label content
+                  }
+
+                  csvContent.push(textarea.value.trim()); // Add textarea content
+                  csvContent.push(""); // Add a blank line
                });
 
                const csvData = csvContent.join("\n");
@@ -2305,6 +2325,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   });';
          print '</script>';
 	   } else if($action == "createMail"){
+         // var_dump($object->array_options["options_dateofuse"]);
          $workStartValue = "";
          $workEndValue = "";
          $otherNote = "";
@@ -2313,6 +2334,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          $serverImages = [];
          $documentImages = [];
          $table1 = "";
+         $ticketDate = $object->array_options["options_dateofuse"] ? date("d.m.y", $object->array_options["options_dateofuse"]) : "";
          foreach ($parameters as $item) {
             if ($item->name === 'work-start') {
                $workStartValue = $item->value;
@@ -2358,7 +2380,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                break;
             }
          }
-         print '<div id="mail-body">Sehr geehrtes VKST4.0 Projektteam,</div>';
+         print '<div id="mail-body">Sehr geehrtes VKST4.0 Projektteam,';
          print '<div id="options-body"></div>';
          print '<script>	
                   document.getElementById("report-body").style.display = "none";
@@ -2371,7 +2393,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   
                   const rows = Array.from(document.querySelectorAll("#options-table.noborder.centpercent tr.oddeven"));
                   console.log(rows);
-                  let selectedOptionText = \'\';
+                  let selectedOptionText = "";
 
                   rows.forEach(row => {
                      console.log(row);
@@ -2383,7 +2405,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   });
 
                   if (selectedOptionText) {
-                     document.getElementById(\'options-body\').innerHTML += `${selectedOptionText}`;
+                     document.getElementById("options-body").innerHTML += `${selectedOptionText}`;
 
                   }
                </script>';
@@ -2414,7 +2436,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                         </tr>
                         <tr>
                               <td>Datum</td>
-                              <td>'.date("d.m.y H:i", $object->datec).'</td>
+                              <td>'.$ticketDate.'</td>
                         </tr>
                         <tr>
                               <td>Uhrzeit Start</td>
@@ -2798,23 +2820,23 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          $formticket->showMessageFormReport('100%', $emailContent);
           // Automatically fill in the subject based on selected option
           print '<script>
-          if('.$table1.' == 1){
-             // Get subject input field with name subject
-             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH";
-          }else if('.$table1.' == 2){
-             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH, offene Themen";
-          }else if('.$table1.' == 3){
-             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' NICHT ERFOLGT";
-          }else if('.$table1.' == 4){  
-             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH";
-          }else if('.$table1.' == 5){
-             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH, offene Themen";
-          }else if('.$table1.' == 6){
-             document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK FEHLSCHLAG";
-          }
-         // Add margin left to that input 
-         document.querySelector(\'input[name="subject"]\').style.marginLeft = "10px";
-       </script>';
+                  if('.$table1.' == 1){
+                     // Get subject input field with name subject
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH";
+                  }else if('.$table1.' == 2){
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH, offene Themen";
+                  }else if('.$table1.' == 3){
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' NICHT ERFOLGT";
+                  }else if('.$table1.' == 4){  
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH";
+                  }else if('.$table1.' == 5){
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH, offene Themen";
+                  }else if('.$table1.' == 6){
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK FEHLSCHLAG";
+                  }
+                  // Add margin left to that input 
+                  document.querySelector(\'input[name="subject"]\').style.marginLeft = "10px";
+               </script>';
          print '</div>';
       }
    } else {

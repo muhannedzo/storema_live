@@ -278,7 +278,7 @@ if (empty($reshook)) {
 				foreach($stores as $store){
 					$defaultref = $ticketstat->getDefaultRef();
 					$trackid = 'tic'.$object->id.bin2hex(random_bytes(10));
-					$ticketsubject = 'Rollout '.$object->ref;
+					$ticketsubject = 'Rollout '.$object->title;
 					$query = "INSERT INTO `llx_ticket` (`entity`, `ref`, `track_id`, `fk_soc`, `fk_project`, `fk_user_create`, `subject`, `message`, `fk_statut`, `type_code`, `category_code`, `severity_code`, `datec`)"; 
 					$query .= " VALUES ('1', '" . $defaultref . "', '". $trackid ."', '" . $object->socid . "', '".$object->id."', '".$user->id."', '".$ticketsubject."', '".$object->description."', '0', 'Roll', 'INSTA OT', 'Termin', '".date("Y-m-d H:i:s")."')";
 					$db->query($query, 'ddl');
@@ -430,7 +430,7 @@ if (empty($reshook)) {
 			foreach($storesDef as $store){
 				$defaultref = $ticketstat->getDefaultRef();
 				$trackid = 'tic'.$object->id.bin2hex(random_bytes(10));
-				$ticketsubject = 'Rollout '.$object->ref;
+				$ticketsubject = 'Rollout '.$object->title;
 				$query = "INSERT INTO `llx_ticket` (`entity`, `ref`, `track_id`, `fk_soc`, `fk_project`, `fk_user_create`, `subject`, `message`, `fk_statut`, `type_code`, `category_code`, `severity_code`, `datec`)"; 
 				$query .= " VALUES ('1', '" . $defaultref . "', '". $trackid ."', '" . $object->socid . "', '".$object->id."', '".$user->id."', '".$ticketsubject."', '".$object->description."', '0', 'Roll', 'INSTA OT', 'Termin', '".date("Y-m-d H:i:s")."')";
 				$db->query($query, 'ddl');
@@ -1012,7 +1012,7 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 
 	// Severity => Priority
 	print '<tr><td><span class="fieldrequired"><label for="selectseverity_code">'.$langs->trans("TicketSeverity").'</span></label></td><td>';
-	$formticket->selectSeveritiesTickets('', 'options_severity', '', 2, 1, 1);
+	$formticket->selectSeveritiesTickets('', 'options_severity', '', 1, 1, 1);
 	print '</td></tr>';
 
 	// Description
@@ -1622,7 +1622,7 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 
 		// Severity => Priority
 		print '<tr><td><span class="fieldrequired"><label for="selectseverity_code">'.$langs->trans("TicketSeverity").'</span></label></td><td>';
-		$formticket->selectSeveritiesTickets($object->array_options["options_severity"], 'options_severity', '', 2, 1, 1);
+		$formticket->selectSeveritiesTickets($object->array_options["options_severity"], 'options_severity', '', 1, 1, 1);
 		print '</td></tr>';
 
 		// Description
@@ -1792,7 +1792,6 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 		print dol_get_fiche_head($head, 'project', $langs->trans("Project"), -1, ($object->public ? 'projectpub' : 'project'));
 
 		// Project card
-
 		if (!empty($_SESSION['pageforbacktolist']) && !empty($_SESSION['pageforbacktolist']['project'])) {
 			$tmpurl = $_SESSION['pageforbacktolist']['project'];
 			$tmpurl = preg_replace('/__SOCID__/', $object->socid, $tmpurl);

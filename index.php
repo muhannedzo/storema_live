@@ -141,7 +141,7 @@ if($user->socid || $result[0] != "0") {
 
 		print '<div class="div-table-responsive-no-min">';
 		print '<table class="noborder centpercent">';
-		print '<tr class="liste_titre"><th colspan="6">Your Tickets</th>';
+		print '<tr class="liste_titre"><th colspan="6">'.$langs->trans("yourtickets").'</th>';
 		print '</tr>';
 		if ($num > 0) {
 			while ($i < $num) {
@@ -202,7 +202,7 @@ if($user->socid || $result[0] != "0") {
 				print "</td>";
 
 				print '<td class="nowraponall right">';
-				print '<a class="btn" href="./tecreport.php?id='.$object->id.'">report</a>';
+				print '<a class="btn" href="./tecreport.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
 				print "</td>";
 				print '<td class="nowraponall">';
 				print "</td>";
@@ -218,7 +218,7 @@ if($user->socid || $result[0] != "0") {
 			
 			$db->free($result);
 		} else {
-			print '<tr><td colspan="6"><span class="opacitymedium">'.$langs->trans('No Tickets for you!').'</span></td></tr>';
+			print '<tr><td colspan="6"><span class="opacitymedium">'.$langs->trans('noticketsforyou').'</span></td></tr>';
 		}
 
 		print "</table>";

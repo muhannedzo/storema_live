@@ -91,7 +91,7 @@ dol_include_once('/stores/compress.php');
 
  llxHeader("", $langs->trans("Report"));
  
- print load_fiche_titre($langs->trans("Ticket Report - ").$project->title, '', '');
+ print load_fiche_titre($langs->trans("TicketReport").$project->title, '', '');
  //////////////////////////////////////////////////////////////////////////////////////////
 
  //task message
@@ -229,7 +229,7 @@ dol_include_once('/stores/compress.php');
                print '<div class="col-6 col-md-3">';
                   print '<div class="row mb-3">';
                      print '<div class="col-5 col-md-5 d-flex align-items-center">';
-                        print '<label for="input-time-departure" class="form-label mb-0">Time Departure: </label>';
+                        print '<label for="input-time-departure" class="form-label mb-0">'.$langs->trans("timedeparture").'</label>';
                      print '</div>';
                      print '<div class="col-7 col-md-7">';
                         print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="">';
@@ -239,7 +239,7 @@ dol_include_once('/stores/compress.php');
                print '<div class="col-6 col-md-3">';
                   print '<div class="row mb-3">';
                      print '<div class="col-5 col-md-5 d-flex align-items-center">';
-                        print '<label for="input-time-arrival" class="form-label mb-0">Time Arrival: </label>';
+                        print '<label for="input-time-arrival" class="form-label mb-0">'.$langs->trans("timearraival").'</label>';
                      print '</div>';
                      print '<div class="col-7 col-md-7">';
                         print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="">';
@@ -249,7 +249,7 @@ dol_include_once('/stores/compress.php');
                print '<div class="col-6 col-md-3">';
                   print '<div class="row mb-3">';
                      print '<div class="col-5 col-md-5 d-flex align-items-center">';
-                        print '<label class="form-label mb-0">Duration of Trip: </label>';
+                        print '<label class="form-label mb-0">'.$langs->trans("tripduration").'</label>';
                      print '</div>';
                      print '<div class="col-7 col-md-7 d-flex">';
                         print '<input type="number" id="input-duration-hours" name="trip-hours" class="form-control me-2" style="max-width: 70px;" placeholder="h" value="">';
@@ -272,9 +272,9 @@ dol_include_once('/stores/compress.php');
             print '</div>';
          print '</div>';
          print '<div>';
-            print '<label>Additional Notes*</label>';
+            print '<label>'.$langs->trans("additionalnotes").'</label>';
             print '<br>';
-            print '<textarea name="additional-notes" required></textarea>';
+            print '<textarea name="additional-notes" required style="height:100px"></textarea>';
          print '</div>';
          print '<br>';
          
@@ -449,7 +449,7 @@ dol_include_once('/stores/compress.php');
                   <div class="popup-header">
                      <div class="row">
                         <div class="col-8">
-                           <h4>Add New Row</h4>
+                           <h4>'.$langs->trans("addnewrow").'</h4>
                         </div>
                         <div class="col-4" style="text-align: right; color: red">
                            <h4 id="close-popup">X</h4>
@@ -594,10 +594,10 @@ dol_include_once('/stores/compress.php');
                      <div class="popup-footer">
                         <div class="row">
                            <div class="col-6" style="text-align: center;">
-                              <button class="btn btn-secondary" type="submit">Add</button>
+                              <button class="btn btn-secondary" type="submit">'.$langs->trans("add").'</button>
                            </div>
                            <div class="col-6" style="text-align: center;">
-                              <button class="btn btn-primary" id="next">Add & Next</button>
+                              <button class="btn btn-primary" id="next">'.$langs->trans("addnext").'</button>
                            </div>
                         </div>
                      </div>
@@ -967,31 +967,31 @@ dol_include_once('/stores/compress.php');
       } else {
          print '<div class="row">';
             print '<div class="col-6">';
-               print '<label>Ticket Number*</label>';
+               print '<label>'.$langs->trans("ticketnumber").'</label>';
                print '<br>';
                print '<input class="textfield" type="text" name="ticket-number" value="'.$object->ref.'" required>';
             print '</div>';
             print '<div class="col-6">';
-               print '<label>Store*</label>';
+               print '<label>'.$langs->trans("store").'</label>';
                print '<br>';
                print '<input class="textfield" type="text" name="store-number" value="'.$store->b_number.'" required>';
             print '</div>';
          print '</div>';
          print '<br>';
          print '<div>';
-            print '<label>Street*</label>';
+            print '<label>'.$langs->trans("street").'</label>';
             print '<br>';
             print '<input class="textfield" type="text" name="street" value="'.$store->street.' '.$store->house_number.', '. $store->zip_code.' '. $store->city.'" required>';
          print '</div>';
          print '<br>';
          print '<div>';
-            print '<label>Phonenumber*</label>';
+            print '<label>'.$langs->trans("phonenumber").'</label>';
             print '<br>';
             print '<input class="textfield" type="text" name="phonenumber" value="'.$store->phone.'" required>';
          print '</div>';
          print '<br>';
          print '<div class="task-message">';
-            print 'Task Message:';
+            print $langs->trans("taskmessage");
             print '<br>';
             print $object->message;
             print '<br>';
@@ -1001,7 +1001,7 @@ dol_include_once('/stores/compress.php');
          print '<div class="container">';
             print '<div class="row mb-3">';
                print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-time-departure" class="form-label mb-0">Time Departure: </label>';
+                  print '<label for="input-time-departure" class="form-label mb-0">'.$langs->trans("timedeparture").'</label>';
                print '</div>';
                print '<div class="col-6 col-md-9">';
                   print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="">';
@@ -1009,7 +1009,7 @@ dol_include_once('/stores/compress.php');
             print '</div>';
             print '<div class="row mb-3">';
                print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-time-arrival" class="form-label mb-0">Time Arrival: </label>';
+                  print '<label for="input-time-arrival" class="form-label mb-0">'.$langs->trans("timearraival").'</label>';
                print '</div>';
                print '<div class="col-6 col-md-9">';
                   print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="">';
@@ -1017,7 +1017,7 @@ dol_include_once('/stores/compress.php');
             print '</div>';
             print '<div class="row mb-3">';
                print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label class="form-label mb-0">Duration of Trip: </label>';
+                  print '<label class="form-label mb-0">'.$langs->trans("tripduration").'</label>';
                print '</div>';
                print '<div class="col-6 col-md-9 d-flex">';
                   print '<input type="number" id="input-duration-hours" name="trip-hours" class="form-control me-2" style="max-width: 70px;" placeholder="h" value="">';
@@ -1028,7 +1028,7 @@ dol_include_once('/stores/compress.php');
             print '</div>';
             print '<div class="row mb-3">';
                print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-km" class="form-label mb-0">KM: </label>';
+                  print '<label for="input-km" class="form-label mb-0">'.$langs->trans("km").'</label>';
                print '</div>';
                print '<div class="col-6 col-md-9">';
                   print '<input type="number" id="input-km" class="form-control" name="km" value="">';
@@ -1036,7 +1036,7 @@ dol_include_once('/stores/compress.php');
             print '</div>';
             print '<div class="row mb-3">';
                print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-work-start" class="form-label mb-0">Work Start: </label>';
+                  print '<label for="input-work-start" class="form-label mb-0">'.$langs->trans("workstart").'</label>';
                print '</div>';
                print '<div class="col-6 col-md-9">';
                   print '<input type="time" id="input-work-start" name="work-start" class="form-control" value="">';
@@ -1044,7 +1044,7 @@ dol_include_once('/stores/compress.php');
             print '</div>';
             print '<div class="row mb-3">';
                print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                  print '<label for="input-work-end" class="form-label mb-0">Work End: </label>';
+                  print '<label for="input-work-end" class="form-label mb-0">'.$langs->trans("workend").'</label>';
                print '</div>';
                print '<div class="col-6 col-md-9">';
                   print '<input type="time" id="input-work-end" name="work-end" class="form-control" value="">';
@@ -1413,10 +1413,10 @@ dol_include_once('/stores/compress.php');
                            </select>
                         </div>
                         <div class="col">
-                           <input style="width: 100%" type="file" name="files[]" multiple>
+                           <input style="width: 100%" type="file" name="files[]">
                         </div>
                         <div class="col">
-                           <input style="width: 100%" type="submit" name="submit" value="Upload">
+                           <input style="width: 100%" type="submit" name="submit" value="'.$langs->trans("upload").'">
                         </div>
                   </div>';
          print '</form>';
@@ -1430,8 +1430,13 @@ dol_include_once('/stores/compress.php');
                      print $group->type;
                   print '</div>';
                   foreach($group->images as $image){
-                     print '<div class="col-3 col-md-3 mt-2">';
+                     print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
                         print '<img class="group-image" src="formsImages/'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                           print '<input type="hidden" name="image" value="'.$image.'">';
+                           print '<input type="hidden" name="image-group" value="'.$group->type.'">';
+                           print '<input type="submit" name="delete-image" class="btn btn-danger" id="'.$image.','.$group->type.'" style="font-size: 10px; padding: 5px;" value="'.$langs->trans("delete").'">';
+                        print '</form>';
                      print '</div>';
                   }
                }
@@ -1439,7 +1444,7 @@ dol_include_once('/stores/compress.php');
             // print '</div>';
          }
          print '<div>';
-            print '<label>Additional Notes*</label>';
+            print '<label>'.$langs->trans("additionalnotes").'</label>';
             print '<br>';
             print '<textarea name="additional-notes" required></textarea>';
          print '</div>';
@@ -1448,14 +1453,14 @@ dol_include_once('/stores/compress.php');
             print '<div class="col" style="text-align: center;">';
                print '<canvas id="signatureCanvasSesoco" class="signature-canvas" name="signatureCanvasSesoco"></canvas>';
                print '<br>';
-               print '<input type="text" name="employee-name" placeholder="Name of Technician" value="'.$user->firstname.' '.$user->lastname.'">';
+               print '<input type="text" name="employee-name" placeholder="'.$langs->trans("nameoftechnician").'" value="'.$user->firstname.' '.$user->lastname.'">';
                print '<i class="ico-times clearCanvas" role="img" aria-label="Cancel"  onClick="clearCanvas(\'signatureCanvasSesoco\')"></i>';
                print '<br>';
             print '</div>';
             print '<div class="col" style="text-align: center;">';
                print '<canvas id="signatureCanvasCustomer" class="signature-canvas" name="signatureCanvasCustomer"></canvas>';
                print '<br>';
-               print '<input type="text" name="customer-name" placeholder="Name of Customer">';
+               print '<input type="text" name="customer-name" placeholder="'.$langs->trans("nameofcustomer").'">';
                print '<i class="ico-times clearCanvas" role="img" aria-label="Cancel"  onClick="clearCanvas(\'signatureCanvasCustomer\')"></i>';
                print '<br>';
             print '</div>';
@@ -1969,10 +1974,10 @@ dol_include_once('/stores/compress.php');
    print '</div>';
    print '<div class="row mt-3">';
       print '<div class="col right">';
-         print '<input type="submit" value="Save" id="save-form" disabled>';
+         print '<input type="submit" value="'.$langs->trans("save").'" id="save-form" disabled>';
       print '</div>';
       print '<div class="col left">';
-         print '<input type="submit" value="Close" id="close-btn">';
+         print '<input type="submit" value="'.$langs->trans("close").'" id="close-btn">';
       print '</div>';
    print '</div>'; 
    print '
@@ -1992,7 +1997,7 @@ dol_include_once('/stores/compress.php');
    print '<button class="floating-button" id="floating-save-form">
             <i class="material-icons">Save</i>
           </button>';
-
+ 
  $dir = DOL_DOCUMENT_ROOT.'/formsImages/';
  if(!is_dir($dir)){
     mkdir($dir);
@@ -2011,8 +2016,23 @@ dol_include_once('/stores/compress.php');
        array_push($imagesList, $elm);
     }
  }
- if(isset($_POST['submit'])) {
 
+ 
+ if(isset($_POST['delete-image'])) {
+
+   $imagesList = array_filter($imagesList, function ($object) {
+      return $object->type !== $_POST["image-group"];
+   });
+   $filepath = $dir.$_POST["image"];
+   $list = json_encode($imagesList);
+   $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+   $db->query($sql,0,'ddl');
+   unlink($filepath);
+   print '<script>window.location.href = window.location.href;
+   </script>';
+ }
+
+ if(isset($_POST['submit'])) {
     $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
      
     $maxsize = 1024 * 1024;
@@ -2020,50 +2040,50 @@ dol_include_once('/stores/compress.php');
     if(!empty(array_filter($_FILES['files']['name']))) {
        
   
-       foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+      foreach ($_FILES['files']['tmp_name'] as $key => $value) {
           
-          $file_tmpname = $_FILES['files']['tmp_name'][$key];
-          $file_name = $_FILES['files']['name'][$key];
-          $file_names = $_FILES['files']['name'][$key];
-          if($_POST['image-type'] == "Testprotokoll"){
-            $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2];
-          } else if($_POST['image-type'] == "Serverschrank nachher") {
-            $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0];
-          } else {
-            $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type'];
-          }
-          $file_size = $_FILES['files']['size'][$key];
-          $imageQuality = 20;
-          $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
-          
-          $filepath = $dir.$file_names;
-  
+         $file_tmpname = $_FILES['files']['tmp_name'][$key];
+         $file_name = $_FILES['files']['name'][$key];
+         $file_names = $_FILES['files']['name'][$key];
+         $file_size = $_FILES['files']['size'][$key];
+         $imageQuality = 20;
+         $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+         if($_POST['image-type'] == "Testprotokoll"){
+           $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
+         } else if($_POST['image-type'] == "Serverschrank nachher") {
+           $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0].".".$file_ext;
+         } else {
+           $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type'].".".$file_ext;
+         }
+         
+         $filepath = $dir.$file_names;
+ 
 
-          if(in_array(strtolower($file_ext), $allowed_types)) {
+         if(in_array(strtolower($file_ext), $allowed_types)) {
 
-                if(file_exists($filepath)) {
-                   unlink($filepath);
-                  //  $fileN = time().$file_names;
-                   $filepath = $dir.$file_names;
-                   $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
-                   if( $compressedImage) {
-                      array_push($images, $file_names);
-                   } else {                    
-                      dol_htmloutput_errors("Error uploading {$file_name} <br />");
-                   }
-                }else {
-                   $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
-                   if($compressedImage) {
-                      array_push($images,$file_names);
-                   }else {                    
-                      dol_htmloutput_errors("Error uploading {$file_name} <br />");
-                   }
-                }      
-          }else {
-             dol_htmloutput_errors("Error uploading {$file_name} ");
-             dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
-          }
-       }
+               if(file_exists($filepath)) {
+                  unlink($filepath);
+                 //  $fileN = time().$file_names;
+                  $filepath = $dir.$file_names;
+                  $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
+                  if( $compressedImage) {
+                     array_push($images, $file_names);
+                  } else {                    
+                     dol_htmloutput_errors("Error uploading {$file_name} <br />");
+                  }
+               }else {
+                  $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
+                  if($compressedImage) {
+                     array_push($images,$file_names);
+                  }else {                    
+                     dol_htmloutput_errors("Error uploading {$file_name} <br />");
+                  }
+               }      
+         }else {
+            dol_htmloutput_errors("Error uploading {$file_name} ");
+            dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+         }
+      }
     }else {
        dol_htmloutput_errors("No files selected.");
     }
