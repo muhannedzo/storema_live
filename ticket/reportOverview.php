@@ -1373,8 +1373,13 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print $group->type;
                   print '</div>';
                   foreach($group->images as $image){
-                     print '<div class="col-3 col-md-3 mt-2">';
+                     print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
                         print '<img class="group-image" src="../formsImages/'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                           print '<input type="hidden" name="image" value="'.$image.'">';
+                           print '<input type="hidden" name="image-group" value="'.$group->type.'">';
+                           print '<input type="submit" name="delete-image" class="btn btn-danger" id="'.$image.','.$group->type.'" style="font-size: 10px; padding: 5px;" value="'.$langs->trans("delete").'">';
+                        print '</form>';
                      print '</div>';
                   }
                }
@@ -2000,6 +2005,41 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
    print '</div>';
 
 
+ 
+   $dir = DOL_DOCUMENT_ROOT.'/formsImages/';
+   if(!is_dir($dir)){
+      mkdir($dir);
+   }
+   
+   $imagesList = array();
+   $images = array();
+
+   $sql = 'SELECT images FROM llx_tec_forms WHERE fk_ticket = '.$object->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.' AND fk_user = '.$object->fk_user_assign.';';
+   // var_dump($object);
+   $list = $db->query($sql)->fetch_row();
+  
+   if($list[0 != null]) {
+  
+      $arr = json_decode(base64_decode($list[0]));
+      foreach($arr as $elm){
+         array_push($imagesList, $elm);
+      }
+   }
+
+   if(isset($_POST['delete-image'])) {
+      // var_dump(1);
+      $imagesList = array_filter($imagesList, function ($object) {
+         return $object->type !== $_POST["image-group"];
+      });
+      $filepath = $dir.$_POST["image"];
+      $list = json_encode($imagesList);
+      $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$object->id.' AND fk_user = '.$object->fk_user_assign.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+      // var_dump($sql);
+      $db->query($sql,0,'ddl');
+      unlink($filepath);
+      print '<script>window.location.href = window.location.href;
+      </script>';
+   }
    print '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>';
    print '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>';
    print '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.3.2/jspdf.plugin.autotable.min.js"></script>';
