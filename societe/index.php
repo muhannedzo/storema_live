@@ -31,7 +31,16 @@
 require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formother.class.php';
-
+require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formadmin.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+require_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
+require_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
 
 // Load translation files required by the page
 $langs->load("companies");
@@ -148,6 +157,14 @@ if ($result) {
 	dol_print_error($db);
 }
 
+$customerSql = "SELECT * FROM ".MAIN_DB_PREFIX."societe WHERE client = 1";
+$CustomerResult = $db->query($customerSql);
+$CustomerNum = $db->num_rows($CustomerResult);
+
+$noncustomerSql = "SELECT * FROM ".MAIN_DB_PREFIX."societe WHERE client = 2";
+$noncustomerResult = $db->query($noncustomerSql);
+$noncustomerNum = $db->num_rows($noncustomerResult);
+
 $thirdpartygraph = '<div class="div-table-responsive-no-min">';
 $thirdpartygraph .= '<table class="noborder nohover centpercent">'."\n";
 $thirdpartygraph .= '<tr class="liste_titre"><th colspan="2">'.$langs->trans("Statistics").'</th></tr>';
@@ -155,16 +172,16 @@ if (!empty($conf->use_javascript_ajax) && ((round($third['prospect']) ? 1 : 0) +
 	$thirdpartygraph .= '<tr><td class="center" colspan="2">';
 	$dataseries = array();
 	if (isModEnabled('societe') && $user->hasRight('societe', 'lire') && !getDolGlobalString('SOCIETE_DISABLE_PROSPECTS') && !getDolGlobalString('SOCIETE_DISABLE_PROSPECTS_STATS')) {
-		$dataseries[] = array($langs->transnoentitiesnoconv("Prospects"), round($third['prospect']));
+		$dataseries[] = array($langs->transnoentitiesnoconv("Prospects")." [".round($third['prospect'])."]", round($third['prospect']));
 	}
 	if (isModEnabled('societe') && $user->hasRight('societe', 'lire') && !getDolGlobalString('SOCIETE_DISABLE_CUSTOMERS') && !getDolGlobalString('SOCIETE_DISABLE_CUSTOMERS_STATS')) {
-		$dataseries[] = array($langs->transnoentitiesnoconv("Customers"), round($third['customer']));
+		$dataseries[] = array($langs->transnoentitiesnoconv("Customers")." [".round($third['customer'])."]", round($third['customer']));
 	}
 	if (((isModEnabled('fournisseur') && $user->hasRight('fournisseur', 'lire') && !getDolGlobalString('MAIN_USE_NEW_SUPPLIERMOD')) || (isModEnabled('supplier_order') && $user->hasRight('supplier_order', 'lire')) || (isModEnabled('supplier_invoice') && $user->hasRight('supplier_invoice', 'lire'))) && !getDolGlobalString('SOCIETE_DISABLE_SUPPLIERS_STATS')) {
-		$dataseries[] = array($langs->transnoentitiesnoconv("Suppliers"), round($third['supplier']));
+		$dataseries[] = array($langs->transnoentitiesnoconv("Suppliers")." [".round($third['supplier'])."]", round($third['supplier']));
 	}
 	if (isModEnabled('societe')) {
-		$dataseries[] = array($langs->transnoentitiesnoconv("Others"), round($third['other']));
+		$dataseries[] = array($langs->transnoentitiesnoconv("Others")." [".round($third['other'])."]", round($third['other']));
 	}
 	include_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
 	$dolgraph = new DolGraph();
@@ -276,7 +293,7 @@ if (isModEnabled('categorie') && getDolGlobalString('CATEGORY_GRAPHSTATS_ON_THIR
 /*
  * Latest modified third parties
  */
-$max = 15;
+$max = 6;
 $sql = "SELECT s.rowid, s.nom as name, s.email, s.client, s.fournisseur";
 $sql .= ", s.code_client";
 $sql .= ", s.code_fournisseur";
@@ -384,6 +401,314 @@ if ($result) {
 	dol_print_error($db);
 }
 
+
+///////////////////////////////////// all Branches
+
+	/*
+
+	* Branches
+
+	*/
+
+	$sql = "SELECT
+					COUNT(DISTINCT lb.rowid) AS total_branches,
+					ls.nom AS societe_name,
+					COUNT(DISTINCT lb.rowid) AS branches_per_societe,
+					lb.country_id,
+					COUNT(DISTINCT lb.rowid) AS branches_per_country
+			FROM
+					llx_stores_branch lb
+			JOIN
+					llx_societe ls ON lb.fk_soc = ls.rowid
+			Where 	ls.client = 1	
+			GROUP BY
+					ls.rowid, lb.country_id;";
+
+	$sql1 = "SELECT COUNT(*) AS total_num FROM llx_stores_branch where country_id !='';";
+	
+	$result1 = $db->query($sql1);
+	$objpp = $db->fetch_object($result1);
+	
+	$allClients = "";
+	$result = $db->query($sql);
+	
+	if ($result) {
+		$num = $db->num_rows($result);
+		$i = 0;
+
+		if ($num > 0) {
+			$finalArray = [];
+			$uniqueCountries = [];
+			$totalNum = 0;
+
+			while ($objp = $db->fetch_object($result)) {
+				$societe = $objp->societe_name;
+				$country = $objp->country_id;
+				$branchesPerCountry = $objp->branches_per_country;
+				$totalNum += $branchesPerCountry;
+	
+				$foundCompany = false;
+				foreach ($finalArray as &$companyData) {
+					if ($companyData['company'] === $societe) {
+						$foundCompany = true;
+						$companyData['countries'][] = [
+							'country_id' => $country,
+							'numberOfBranches' => $branchesPerCountry,
+						];
+						break;
+					}
+				}
+
+				if (!$foundCompany) {
+	
+					$finalArray[] = [
+						'company' => $societe,
+						'countries' => [
+							[
+								'country_id' => $country,
+								'numberOfBranches' => $branchesPerCountry,
+							],
+						],
+					];
+				}
+	
+				if (!isset($uniqueCountries[$country])) {
+					$uniqueCountries[$country] = 0;
+				}
+	
+				$uniqueCountries[$country] += $branchesPerCountry;
+				$i++;
+			}
+	
+			$resultArrays = [
+				'companies' => $finalArray,
+				'countries' => $uniqueCountries,
+			];
+	
+			$severitiesData = $resultArrays['companies'];	
+			$uniqueCountries = $resultArrays['countries'];
+	
+			$valuesPerRow = 4;
+			$colspanOpenTickets = 2;
+
+			$allClients .= '<div class="div-table-responsive-no-min">';
+				$allClients .= '<table class="noborder centpercent">';
+					$allClients .= '<tr class="liste_titre">';
+						$allClients .= '<th colspan="30">Branches Per Country ('.$totalNum.')</th>';
+					$allClients .= '</tr>';
+				$allClients .= '<tr class="liste_titre" style="background-color: white">';
+					$allClients .= '<th colspan="' . $colspanOpenTickets . '"></th>'; 
+					$count = 0;
+					foreach ($uniqueCountries as $country => $totalTickets) { 
+						$allClients .= '<th colspan="' . ($valuesPerRow * 2) - 2 . '">' . getCountry($country, "all")["code"] . '</th>';
+						$allClients .= '<th>'.$totalTickets.'</th>';
+						$count++;
+						if ($count % $valuesPerRow == 0) {
+							$allClients .= '</tr><tr class="liste_titre" style="background-color: white">';
+							$allClients .= '<th colspan="' . $colspanOpenTickets . '"></th>'; 
+						}
+					}
+
+					$remainingCells = $valuesPerRow - ($count % $valuesPerRow);
+					if ($remainingCells < $valuesPerRow) {
+						$allClients .= str_repeat('<th colspan="' . $colspanOpenTickets . '"></th><th colspan="' . $valuesPerRow * 2 . '"></th>', $remainingCells);
+					}
+				$allClients .= '</tr>';
+		}		
+		// If no tickets, display a message
+		if ($num == 0) {
+			$allClients .= '<tr style="background-color: white"><td colspan="' . ($colspanOpenTickets + $valuesPerRow * 2 + $colspanOpenTickets) . '"><span class="opacitymedium">'.$langs->trans('No Tickets').'</span></td></tr>';
+		}		
+	
+		$db->free($result);
+		$allClients .= '</div>';
+		$allClients .= '</table>';
+		$allClients .= '</div>';
+	} else {
+		dol_print_error($db);
+	}
+ /////////////////////////////////////end all Branches
+ 
+ ///////////////////////////////////// all tickets by year
+ 
+ /*
+  * all ticket by year
+  */
+	$currentDate = new DateTime();
+  	$currentYear = $currentDate->format('Y');
+  	$dateString = $currentYear;
+  	$stringtoshow = '<script type="text/javascript">
+  						jQuery(document).ready(function() {
+	  						jQuery("#idsubimgDOLUSERCOOKIE_ticket_by_status").click(function() {
+		  						jQuery("#idfilterDOLUSERCOOKIE_ticket_by_status").toggle();
+	  						});
+  						});
+  					</script>';
+  	$stringtoshow .= '<div class="center hideobject" id="idfilterDOLUSERCOOKIE_ticket_by_status">';
+  		$stringtoshow .= '<form class="flat formboxfilter" method="POST" action="'.$_SERVER["PHP_SELF"].'">';
+			$stringtoshow .= '<input type="hidden" name="token" value="'.newToken().'">';
+			$stringtoshow .= '<input type="hidden" name="action" value="refresh">';
+  			$stringtoshow .= '<input type="hidden" name="DOL_AUTOSET_COOKIE" value="DOLUSERCOOKIE_ticket_by_status:year,shownb,showtot">';
+  			$stringtoshow .= $langs->trans("Year").' <input class="flat" type="number" name="year" min="1900" max="2100" step="1" placeholder="YYYY">';
+  			$stringtoshow .= '<input type="image" alt="'.$langs->trans("Refresh").'" src="'.img_picto($langs->trans("Refresh"), 'refresh.png', '', '', 1).'">';
+  		$stringtoshow .= '</form>';
+  	$stringtoshow .= '</div>';
+  	$allTickets = ""; 
+  	$allTickets .= '<div class="div-table-responsive-no-min">';
+  		$allTickets .= '<table class="noborder centpercent">';
+  			if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["year"])) {
+	  			$dateString = $_POST["year"];
+  			}
+	 		$sql = "SELECT 
+					 		ts.label,
+					 		t.severity_code,
+					 		COUNT(DISTINCT t.rowid) AS severity_count,
+					 		s.country_id
+			 		FROM llx_ticket t
+					 		LEFT JOIN llx_c_ticket_severity ts on ts.code = t.severity_code
+					 		LEFT JOIN llx_ticket_extrafields te on te.fk_object = t.rowid 
+					 		LEFT JOIN llx_stores_branch s on s.rowid = te.fk_store
+					 		LEFT JOIN llx_societe soc on t.fk_soc = soc.rowid
+			 		WHERE t.fk_statut != 8 AND soc.client = 1    
+			 		GROUP BY s.country_id, t.severity_code
+			 		ORDER BY
+				 		CASE
+					 		WHEN t.severity_code LIKE 'NBD%' THEN 1
+					 		WHEN t.severity_code LIKE 'SBD%' THEN 2
+					 		WHEN t.severity_code IN ('Fix Ter', 'Termin', 'NEO', 'Close Store') THEN 3
+					 		ELSE 4
+				 		END, t.severity_code";   
+				 // WHERE t.fk_statut != 8 AND soc.client = 1 AND CAST(t.datec AS DATE) BETWEEN CAST('".$dateString."-01-01' AS DATE) AND CAST('".$dateString."-12-31' AS DATE)
+ 			$result = $db->query($sql);
+ 			if ($result) {
+	 			$num = $db->num_rows($result);
+	 			$i = 0;
+	 			if ($num > 0) { 
+		 			$finalArray = [];
+		 			$uniqueCountries = [];
+		 			$totalNum = 0;
+		 			while ($objp = $db->fetch_object($result)) {
+			 			$severity = $objp->severity_code;
+			 			$country = $objp->country_id;
+			 			$ticketsPerCountry = $objp->severity_count;
+			 			$totalNum += $ticketsPerCountry; 
+			 			$foundSeverity = false;
+			 			foreach ($finalArray as &$severityData) {
+				 			if ($severityData['severity'] === $severity) {
+					 			$foundSeverity = true;
+					 			$severityData['countries'][] = [
+						 			'country_id' => $country,
+						 			'numberOfTickets' => $ticketsPerCountry,
+					 			];
+					 			break;
+				 			}
+			 			}
+ 
+			 			if (!$foundSeverity) {
+				 			$finalArray[] = [
+					 			'severity' => $severity,
+					 			'countries' => [
+						 			[
+							 			'country_id' => $country,
+							 			'numberOfTickets' => $ticketsPerCountry,
+						 			],
+					 			],
+				 			];
+			 			}
+ 
+			 			if (!isset($uniqueCountries[$country])) {
+				 			$uniqueCountries[$country] = 0;
+			 			}
+ 
+			 			$uniqueCountries[$country] += $ticketsPerCountry;
+			 			$i++;
+		 			}
+		 			$resultArrays = [
+			 			'severities' => $finalArray,
+			 			'countries' => $uniqueCountries,
+		 			];
+ 
+		 			$severitiesData = $resultArrays['severities'];
+		 			$uniqueCountries = $resultArrays['countries'];
+		 			$jj = 0;
+		 			foreach ($uniqueCountries as $country => $totalBranches) {
+			 			$jj++;
+		 			}
+		 			$kk = $jj - 4;
+		 			$tt = $jj - $kk + 2;
+		 			// $allTickets .= '<tr class="liste_titre">';
+		 			// $allTickets .= '<th colspan="'.$kk.'">Current Tickets that open on</th>';
+		 			// $allTickets .= '<th colspan="'.$tt.'">Datum: '.$dateString.''.img_picto('', 'filter.png', 'id="idsubimgDOLUSERCOOKIE_ticket_by_status" class="linkobject"').'</th>';
+		 			// $allTickets .= '</tr>';
+		 			// $jj += 2;
+		 			// $allTickets .= '<tr><td colspan="'.$jj.'" class="center">';
+		 			// $allTickets .= $stringtoshow;
+		 			$allTickets .= '<tr class="liste_titre">';
+		 				$allTickets .= '<th></th>';
+		 				$allTickets .= '<th style="background-color:#9bcbff">All</th>';
+						foreach ($uniqueCountries as $country => $totalBranches) {	
+							$allTickets .= '<th style="background-color:#9bcbff">' . getCountry($country, "all")["code"] . '</th>';
+						}
+ 
+		 				// $allTickets .= '<th></th>';
+		 			$allTickets .= '</tr>';
+		 			// number of tickets per the country
+		 			// $allTickets .= '<tr class="liste_titre">';
+		 			// $allTickets .= '<th></th>';
+		 			// foreach ($uniqueCountries as $country => $totalBranches) {
+		 				// 	$allTickets .= '<th>'.$totalBranches.'</th>';
+		 			// }
+		 			// // $allTickets .= '<th></th>';
+		 			// $allTickets .= '</tr>';
+		 			$processedCompanies = [];
+		 			for ($i=0; $i< count($severitiesData); $i++) {
+			 			if (!in_array($severitiesData[$i]['severity'], $processedCompanies)) {
+				 			$allTickets .= '<tr class="oddeven">';
+				 			$sumOfBranches = array_sum(array_column($severitiesData[$i]['countries'], 'numberOfTickets'));
+				 			if (strpos($severitiesData[$i]['severity'], "NBD") !== false) {
+					 			$allTickets .= '<td style="background-color: #9bcbff">' . $severitiesData[$i]['severity'] . '</td>';
+				 			} elseif(strpos($severitiesData[$i]['severity'], "SBD") !== false){
+					 			$allTickets .= '<td style="background-color: #e94b4b">' . $severitiesData[$i]['severity'] . '</td>';
+						 	} else {
+					 			$allTickets .= '<td style="background-color: #d28e54">' . $severitiesData[$i]['severity'] . '</td>';
+				 			}
+				 			// number of tickets for the ticket severity
+				 			$allTickets .= '<td style="background-color: #f7f72df7" class="center">'.$sumOfBranches.'</td>';
+				 			foreach ($uniqueCountries as $country => $totalBranches) {
+					 			$ticketsForCountry = 0;
+					 			foreach ($severitiesData[$i]['countries'] as $countryData) {
+						 			if ($countryData['country_id'] == $country) {
+							 			$ticketsForCountry = $countryData['numberOfTickets'];
+							 		break;
+						 			}
+					 			}
+					 			$ticketsForCountry = $ticketsForCountry == 0 ? '' : $ticketsForCountry;  
+					 			$allTickets .= '<td class="center">' . $ticketsForCountry . '</td>';
+				 			}
+
+				 			// $sumOfBranches = array_sum(array_column($severitiesData[$i]['countries'], 'numberOfTickets'));
+				 			// $allTickets .= '<td></td>';
+				 			$allTickets .= '</tr>';
+				 			$processedCompanies[] = $severitiesData[$i]['company'];
+			 			}
+		 			}
+	 			}else {
+		 			$allTickets .= '<tr class="liste_titre">';
+		 			$allTickets .= '<th colspan="4">Current Tickets that open on</th>';
+		 			$allTickets .= '<th colspan="2">Datum: '.$dateString.''.img_picto('', 'filter.png', 'id="idsubimgDOLUSERCOOKIE_ticket_by_status" class="linkobject"').'</th>';
+		 			$allTickets .= '</tr>';
+		 			$jj += 1;
+		 			$allTickets .= '<tr><td colspan="6" class="center">';
+		 			$allTickets .= $stringtoshow;
+		 			$allTickets .= '<tr><td colspan="6"><span class="opacitymedium">'.$langs->trans('No Tickets For Customers').'</span></td></tr>';
+	 			}
+	 			$db->free($result);
+	 			$allTickets .= '</table>';
+	 			$allTickets .= '</div>';
+ 			} else {
+	 			dol_print_error($db);
+ 			}
+ /////////////////////////////////////end all tickets by year
 //print '</div></div></div>';
 
 // boxes
@@ -394,6 +719,10 @@ $boxlist = '<div class="twocolumns">';
 
 $boxlist .= '<div class="firstcolumn fichehalfleft boxhalfleft" id="boxhalfleft">';
 $boxlist .= $thirdpartygraph;
+// $boxlist .= '<br>';
+// $boxlist .= $allVendors;
+$boxlist .= '<br>';
+$boxlist .= $allTickets;
 $boxlist .= '<br>';
 $boxlist .= $thirdpartycateggraph;
 $boxlist .= '<br>';
@@ -401,6 +730,8 @@ $boxlist .= $resultboxes['boxlista'];
 $boxlist .= '</div>'."\n";
 
 $boxlist .= '<div class="secondcolumn fichehalfright boxhalfright" id="boxhalfright">';
+$boxlist .= $allClients;
+$boxlist .= '<br>';
 $boxlist .= $lastmodified;
 $boxlist .= '<br>';
 $boxlist .= $resultboxes['boxlistb'];

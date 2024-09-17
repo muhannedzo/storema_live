@@ -1331,27 +1331,27 @@ dol_include_once('/stores/compress.php');
             print '<div class="col-lg-6 col-xs-12 div-table-responsive-no-min" id="pieces-table">';
                print '<table class="noborder centpercent">';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST'.$store->b_number.' wurde erfolgreich abgeschlossen Wenn alles erfolgreich.</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' wurde erfolgreich abgeschlossen Wenn alles erfolgreich.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_1" value="1"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_3" value="3"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_4" value="4"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten)</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen werden. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten)</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_5" value="5"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_6" value="6"></td>';
                   print '</tr>';
                print '</table>';
@@ -1401,7 +1401,7 @@ dol_include_once('/stores/compress.php');
          print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
             print '<div class="row">
                         <div class="col">
-                           <select style="width: 100%" name="image-type">
+                           <select id="images-types-selector" style="width: 100%" name="image-type">
                               <option selected>Serverschrank vorher</option>
                               <option>Serverschrank nachher</option>
                               <option>Arbeitssplatz nachher</option>
@@ -1466,6 +1466,30 @@ dol_include_once('/stores/compress.php');
             print '</div>';
          print '</div>';
 
+         if($result[2]){
+
+            $imagesGroup = json_decode(base64_decode($result[2]));
+            print '<script>';
+               print '
+                  let images = \'' . base64_decode($result[2]) . '\';
+                  let imagesList = JSON.parse(images);
+                  var selector = document.getElementById("images-types-selector");
+                  var options = selector.options;
+
+                  for (var i = 0; i < imagesList.length; i++) {
+                     var imageType = imagesList[i].type;
+                     for (var j = 0; j < options.length; j++) {
+                        if (options[j].value === imageType) {
+                           options[j].disabled = true;
+                           break; // Exit the inner loop if a match is found
+                        }
+                     }
+                  }
+
+               ';
+            print '</script>';
+
+         }
          print '<script>';
             // print '
             //       let rows2 = document.querySelectorAll(\'#questions-table .oddeven\');
@@ -2060,7 +2084,27 @@ dol_include_once('/stores/compress.php');
  
 
          if(in_array(strtolower($file_ext), $allowed_types)) {
-
+            //Karim test
+            if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
+               $exif = exif_read_data($file_tmpname);
+               if (!empty($exif['Orientation'])) {
+                   $image = imagecreatefromjpeg($file_tmpname);
+                   switch ($exif['Orientation']) {
+                       case 3:
+                           $image = imagerotate($image, 180, 0);
+                           break;
+                       case 6:
+                           $image = imagerotate($image, -90, 0);
+                           break;
+                       case 8:
+                           $image = imagerotate($image, 90, 0);
+                           break;
+                   }
+                   imagejpeg($image, $file_tmpname, 90); // Save the rotated image
+                   imagedestroy($image);
+               }
+           }
+///
                if(file_exists($filepath)) {
                   unlink($filepath);
                  //  $fileN = time().$file_names;
@@ -2105,6 +2149,107 @@ dol_include_once('/stores/compress.php');
          </script>';
     }
  }
+// if (isset($_POST['submit'])) {
+//    $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
+//    $maxsize = 1024 * 1024;
+
+//    if (!empty(array_filter($_FILES['files']['name']))) {
+//       foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+//          $file_tmpname = $_FILES['files']['tmp_name'][$key];
+//          $file_name = $_FILES['files']['name'][$key];
+//          $file_names = $_FILES['files']['name'][$key];
+//          $file_size = $_FILES['files']['size'][$key];
+//          $imageQuality = 20;
+//          $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+
+//          // Handle custom file naming based on image-type
+//          if ($_POST['image-type'] == "Testprotokoll") {
+//             $file_names = date("d.m.y", $object->array_options["options_dateofuse"]) . "_" . $store->city . "_VKST_" . explode("-", $store->b_number)[2] . "." . $file_ext;
+//          } else if ($_POST['image-type'] == "Serverschrank nachher") {
+//             $file_names = "VKST_" . explode("-", $store->b_number)[2] . "_" . explode(" ", $_POST['image-type'])[0] . "." . $file_ext;
+//          } else {
+//             $file_names = "VKST_" . explode("-", $store->b_number)[2] . "_" . $_POST['image-type'] . "." . $file_ext;
+//          }
+
+//          $filepath = $dir . $file_names;
+
+//          // Check if the file type is allowed
+//          if (in_array(strtolower($file_ext), $allowed_types)) {
+
+//             // Read EXIF data if the image is a JPEG
+//             if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
+//                $exif = exif_read_data($file_tmpname);
+
+//                // Check if the image has orientation information
+//                if (!empty($exif['Orientation'])) {
+//                   $image = imagecreatefromjpeg($file_tmpname);
+
+//                   switch ($exif['Orientation']) {
+//                      case 3:
+//                         $image = imagerotate($image, 180, 0); // Rotate 180 degrees
+//                         break;
+//                      case 6:
+//                         $image = imagerotate($image, -90, 0); // Rotate 90 degrees counter-clockwise
+//                         break;
+//                      case 8:
+//                         $image = imagerotate($image, 90, 0); // Rotate 90 degrees clockwise
+//                         break;
+//                   }
+
+//                   // Save the corrected image
+//                   imagejpeg($image, $filepath, $imageQuality);
+//                   imagedestroy($image);
+
+//                   // If successful, add the image to the list
+//                   array_push($images, $file_names);
+//                } else {
+//                   // If no orientation metadata, just compress as usual
+//                   $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
+//                   if ($compressedImage) {
+//                      array_push($images, $file_names);
+//                   } else {
+//                      dol_htmloutput_errors("Error uploading {$file_name} <br />");
+//                   }
+//                }
+//             } else {
+//                // Non-JPEG images are processed normally
+//                if (file_exists($filepath)) {
+//                   unlink($filepath); // Remove existing file if present
+//                }
+
+//                $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
+//                if ($compressedImage) {
+//                   array_push($images, $file_names);
+//                } else {
+//                   dol_htmloutput_errors("Error uploading {$file_name} <br />");
+//                }
+//             }
+//          } else {
+//             dol_htmloutput_errors("Error uploading {$file_name} ({$file_ext} file type is not allowed)<br />");
+//          }
+//       }
+//    } else {
+//       dol_htmloutput_errors("No files selected.");
+//    }
+
+//    $node = [
+//       "type" => $_POST['image-type'],
+//       "images" => $images
+//    ];
+//    array_push($imagesList, $node);
+//    $list = json_encode($imagesList);
+
+//    // Update or insert image data into the database
+//    if ($result) {
+//       $sql = 'UPDATE llx_tec_forms SET images = "' . base64_encode($list) . '" WHERE fk_ticket = ' . $ticketId . ' AND fk_user = ' . $user->id . ' AND fk_store = ' . $storeid . ' AND fk_soc = ' . $object->fk_soc . ';';
+//       $db->query($sql, 0, 'ddl');
+//       print '<script>window.location.href = window.location.href;</script>';
+//    } else {
+//       $sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("' . $ticketId . '", "' . $user->id . '", "' . $object->fk_soc . '", "' . $storeid . '", "' . base64_encode($list) . '")';
+//       $db->query($sql, 0, 'ddl');
+//       print '<script>window.location.href = window.location.href;</script>';
+//    }
+// }
 
 
 

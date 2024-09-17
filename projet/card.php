@@ -2334,6 +2334,10 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 				}
 			}
 
+			// Reports Mail
+			print dolGetButtonAction('', $langs->trans('Reports Mail'), 'default', $_SERVER['PHP_SELF']. '?action=reportsMail&token='.newToken().'&id='.$object->id, '', 1);
+			
+
 			// Accounting Report
 			/*
 			$accouting_module_activated = isModEnabled('comptabilite') || isModEnabled('accounting');
@@ -2438,6 +2442,67 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 
 	if (GETPOST('modelselected')) {
 		$action = 'presend';
+	}
+
+	if ($action == 'reportsMail') {
+		$sql = "SELECT f.rowid, f.fk_ticket, f.parameters, t.fk_statut, t.ref FROM llx_tec_forms f";
+		$sql .= " LEFT JOIN llx_ticket t on t.rowid = f.fk_ticket";
+		$sql .= " WHERE t.fk_project = ".$object->id;
+		$sql .= " ORDER BY t.fk_statut DESC";
+		$results = $db->query($sql)->fetch_all();
+		
+		print '<table id="questions-table" class="noborder centpercent">';
+			foreach($results as $result) {
+				$parameters = json_decode(base64_decode($result[2]));
+				$p2tests = "-";
+				$p1tests = "-";
+				$p1testsRollback = "-";
+				$p2testsRollback = "-";
+				$table2Checked = "";
+				$table1 = "";
+				$otherNote = "-";
+				foreach ($parameters as $item) {
+					if ($item->name === 'p2tests') {
+						$p2tests = $item->value;
+					}
+					if($item->name === 'p1tests'){
+						$p1tests = $item->value;
+					}
+					if($item->name === 'p1testsRollback'){
+						$p1testsRollback = $item->value;
+					}
+					if($item->name === 'p2testsRollback'){
+						$p2testsRollback = $item->value;
+					}
+					if ($item->name === 'table2') {
+						$table2Checked = $item->value;
+					}
+					if($item->name === 'table1'){
+						$table1 = $item->value;
+					}
+					if ($item->name === 'note-other') {
+						$otherNote = $item->value;
+						break;
+					}
+				}
+				print '<tr class="oddeven">';
+					print '<td>';
+						print $result[4];
+					print '</td>';
+					print '<td>';
+						print $result[3] == 8 ? 'Finished and Closed' : 'Not finished';
+					print '</td>';
+					print '<td>';
+						print 'P1 Fehler (Umbau): '.$p1tests.'<br>';
+						print 'P1 Fehler (Rollback): '.$p1testsRollback.'<br>';
+						print 'P2 Fehler (Umbau): '.$p2tests.'<br>';
+						print 'P2 Fehler (Rollback): '.$p2testsRollback.'<br>';
+						print 'Sonstiges: '.$otherNote;
+					print '</td>';
+				print '</tr>';
+			}
+		print '</table>';
+
 	}
 
 	if ($action != 'presend') {

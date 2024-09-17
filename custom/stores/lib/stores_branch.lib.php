@@ -35,7 +35,7 @@ function branchPrepareHead($object)
 
 	$showtabofpagecontact = 0;
 	$showtabofpagenote = 0;
-	$showtabofpagedocument = 0;
+	$showtabofpagedocument = 1;
 	$showtabofpageagenda = 0;
 	$showtabofpagepos = 1;
 	$showtabofpagemedia = 1;

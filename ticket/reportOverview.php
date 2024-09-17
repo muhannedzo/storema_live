@@ -394,7 +394,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          print '<div>';
             print '<label>Additional Notes</label>';
             print '<br>';
-            print '<textarea name="additional-notes" required style="height:100px"></textarea>';
+            print '<textarea name="additional-notes" required style="height:150px"></textarea>';
          print '</div>';
          print '<br>';
          
@@ -928,7 +928,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          print '<div>';
             print '<label>Street*</label>';
             print '<br>';
-            print '<input class="textfield" type="text" name="street" value="'.$store->street.','. $store->zip_code.' '. $store->city.'" required disabled>';
+            print '<input class="textfield" type="text" name="street" value="'.$store->street.' '.$store->house_number.', '. $store->zip_code.' '. $store->city.'" required disabled>';
          print '</div>';
          print '<br>';
          print '<div>';
@@ -1278,27 +1278,27 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             print '<div class="col-lg-6 col-xs-12 div-table-responsive-no-min" id="pieces-table">';
                print '<table class="noborder centpercent" id="options-table">';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST'.$store->b_number.' wurde erfolgreich abgeschlossen Wenn alles erfolgreich.</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' wurde erfolgreich abgeschlossen Wenn alles erfolgreich.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_1" value="1"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_3" value="3"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_4" value="4"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_5" value="5"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
-                     print '<td colspan="1">Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.</td>';
+                     print '<td colspan="1">Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen werden. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.</td>';
                      print '<td colspan="1"><input type="radio" name="table1" id="table1_6" value="6"></td>';
                   print '</tr>';
                print '</table>';
@@ -2363,6 +2363,9 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             print 'document.querySelectorAll("button").forEach(textarea => {
                      textarea.disabled = true;
                   });';
+            // However, enable the close button for popup images
+            print 'document.getElementById("closePopupBtn").disabled = false;';
+            
          print '</script>';
 	   } else if($action == "createMail"){
          // var_dump($object->array_options["options_dateofuse"]);
@@ -2417,7 +2420,6 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             }
             if ($group->type === 'image abnahmeprotokoll/testprotokoll' || $group->type === 'Testprotokoll') {
                $documentImages = $group->images;
-               break;
             }
          }
          print '<div id="mail-body">Sehr geehrtes VKST4.0 Projektteam,';
@@ -2454,14 +2456,18 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                $s .= '<b id="ssss">VKST-Details</b>';
             $s .= '</div>';
             $s .= '<div class="col-12">';
-               $s .= '<table class="noborder centpercent" id="header-table" style="width:50%">
+               $s .= '<table  border="1" cellpadding="1" cellspacing="1" class="noborder centpercent" id="header-table" style="width:50%">
                         <tr>
-                              <td>VKST-ID:</td>
-                              <td>'.$store->b_number.'</td>
+                              <td style="width:150px">VKST-ID:</td>
+                              <td style="width:150px">'.explode("-", $store->b_number)[2].'</td>
                         </tr>
                         <tr>
-                              <td>Adresse:</td>
-                              <td>'.$store->street.','. $store->zip_code.' '. $store->city.'</td>
+                              <td style="width:150px">Ticketnummer:</td>
+                              <td style="width:150px">'.$object->ref.'</td>
+                        </tr>
+                        <tr>
+                              <td style="width:150px">Adresse:</td>
+                              <td style="width:150px">'.$store->street.' '.$store->house_number.', '. $store->zip_code.' '. $store->city.'</td>
                         </tr>
                      </table>';
             $s .= '</div><br>';
@@ -2469,60 +2475,74 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                $s .= '<b>Umbaudetails</b>';
             $s .= '</div>';
             $s .= '<div class="col-12">';
-               $s .= '<table class="noborder centpercent" id="body-table" style="width:50%">
+               $s .= '<table border="1" cellpadding="1" cellspacing="1" class="noborder centpercent" id="body-table" style="width:50%">
                         <tr>
-                              <td>Techniker (Nachname, Vorname)</td>
-                              <td>'.$techName.'</td>
+                              <td style="width:150px">Techniker</td>
+                              <td style="width:150px">'.$techName.'</td>
                         </tr>
                         <tr>
-                              <td>Datum</td>
-                              <td>'.$ticketDate.'</td>
+                              <td style="width:150px">Datum</td>
+                              <td style="width:150px">'.$ticketDate.'</td>
                         </tr>
                         <tr>
-                              <td>Uhrzeit Start</td>
-                              <td>'.$workStartValue.'</td>
+                              <td style="width:150px">Uhrzeit Start</td>
+                              <td style="width:150px">'.$workStartValue.'</td>
                         </tr>
                         <tr>
-                              <td>Uhrzeit Ende</td>
-                              <td>'.$workEndValue.'</td>
+                              <td style="width:150px">Uhrzeit Ende</td>
+                              <td style="width:150px">'.$workEndValue.'</td>
                         </tr>
-                        <tr>
-                              <td>Fehlgeschlagene P2 Tests</td>
-                              <td>'.$p2tests.'</td>
+                        ';
+            if($table1 == "2"){
+               $s .= '<tr>
+                              <td style="width:150px">Fehlgeschlagene P2 Tests</td>
+                              <td style="width:150px">'.$p2tests.'</td>
                         </tr>
                       ';
+            }
             if($table1 == "4"){
                $s .= '<tr>
-                        <td>Fehlgeschlagene P1 Tests</td>
-                        <td>'.$p1tests.'</td>
+                        <td style="width:150px">Fehlgeschlagene P1 Tests</td>
+                        <td style="width:150px">'.$p1tests.'</td>
                      </tr>';
+                     $s .= '<tr>
+                           <td style="width:150px">Fehlgeschlagene P2 Tests</td>
+                           <td style="width:150px">'.$p2tests.'</td>
+                        </tr>
+                      ';
             }
             if($table1 == "5"){
                $s .= '<tr>
-                        <td>Fehlgeschlagene P1 Tests</td>
-                        <td>'.$p1tests.'</td>
+                        <td style="width:150px">Fehlgeschlagene P1 Tests</td>
+                        <td style="width:150px">'.$p1tests.'</td>
                      </tr>';
                $s .= '<tr>
-                        <td>Fehlgeschlagene P2 Tests (Rollback)</td>
-                        <td>'.$p2testsRollback.'</td>
+                           <td style="width:150px">Fehlgeschlagene P2 Tests</td>
+                           <td style="width:150px">'.$p2tests.'</td>
+                        </tr>
+                      ';
+               $s .= '<tr>
+                        <td style="width:150px">Fehlgeschlagene P2 Tests (Rollback)</td>
+                        <td style="width:150px">'.$p2testsRollback.'</td>
                      </tr>';
             }
             if($table1 == "6"){
                $s .= '<tr>
-                        <td>Fehlgeschlagene P1 Tests</td>
-                        <td>'.$p1tests.'</td>
+                        <td style="width:150px">Fehlgeschlagene P1 Tests</td>
+                        <td style="width:150px">'.$p1tests.'</td>
                      </tr>';
                $s .= '<tr>
-                        <td>Fehlgeschlagene P2 Tests</td>
-                        <td>'.$p2tests.'</td>
+                           <td style="width:150px">Fehlgeschlagene P2 Tests</td>
+                           <td style="width:150px">'.$p2tests.'</td>
+                        </tr>
+                      ';
+               $s .= '<tr>
+                        <td style="width:150px">Fehlgeschlagene P1 Tests (Rollback)</td>
+                        <td style="width:150px">'.$p1testsRollback.'</td>
                      </tr>';
                $s .= '<tr>
-                        <td>Fehlgeschlagene P1 Tests (Rollback)</td>
-                        <td>'.$p1testsRollback.'</td>
-                     </tr>';
-               $s .= '<tr>
-                        <td>Fehlgeschlagene P2 Tests (Rollback)</td>
-                        <td>'.$p2testsRollback.'</td>
+                        <td style="width:150px">Fehlgeschlagene P2 Tests (Rollback)</td>
+                        <td style="width:150px">'.$p2testsRollback.'</td>
                      </tr>';
             }
             $s .= '</table>';
@@ -2589,12 +2609,12 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          $emailContent = '';
          
          $emailContent .= '<div class="col-12">';
-         $success = 'Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen';
-         $failedP2 = 'Der Umbau in VKST '.$store->b_number.' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).';
-         $notstarted = 'Der Umbau in VKST '.$store->b_number.' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.';
-         $rollbackSuccess = 'Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.';
-         $rollbackP2Failed = 'Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).';
-         $rollbackFailed = 'Der Umbau in VKST '.$store->b_number.' konnte nicht abgeschlossen. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.'; 
+         $success = 'Der Umbau in VKST-'.explode("-", $store->b_number)[2].' wurde erfolgreich abgeschlossen';
+         $failedP2 = 'Der Umbau in VKST-'.explode("-", $store->b_number)[2].' wurde erfolgreich abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).';
+         $notstarted = 'Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht gestartet werden. Die Gründe sind unter "Sonstiges" zu finden.';
+         $rollbackSuccess = 'Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen werden. Der Rollback auf VKST3.0 war erfolgreich.';
+         $rollbackP2Failed = 'Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen. Mindestens 1 P2 Test konnte nicht erfolgreich durchgeführt werden (siehe unten).';
+         $rollbackFailed = 'Der Umbau in VKST-'.explode("-", $store->b_number)[2].' konnte nicht abgeschlossen. Auch der Rollback war erfolglos. Der Technikerleitstand wurde bereits informiert.'; 
             // $emailContent .= '
             //       <table class="noborder centpercent" id="body-table" style="width:95%">
             //          <tr>
@@ -2731,7 +2751,8 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
 
          $emailContent .= 'Mit freundlichen Grüßen,';
          $emailContent .= '<br>';
-         $emailContent .= $techName;
+         // $emailContent .= $techName;
+         $emailContent .= 'SESOCO Team';
          if ($object->fk_soc > 0) {
             $object->fetch_thirdparty();
          }
@@ -2862,17 +2883,17 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
           print '<script>
                   if('.$table1.' == 1){
                      // Get subject input field with name subject
-                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH";
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - *VKST-'.explode("-", $store->b_number)[2].'* Ende ERFOLGREICH";
                   }else if('.$table1.' == 2){
-                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' Ende ERFOLGREICH, offene Themen";
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - *VKST-'.explode("-", $store->b_number)[2].'* Ende ERFOLGREICH, offene Themen";
                   }else if('.$table1.' == 3){
-                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' NICHT ERFOLGT";
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - *VKST-'.explode("-", $store->b_number)[2].'* NICHT ERFOLGT";
                   }else if('.$table1.' == 4){  
-                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH";
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - *VKST-'.explode("-", $store->b_number)[2].'* ROLLBACK ERFOLGREICH";
                   }else if('.$table1.' == 5){
-                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK ERFOLGREICH, offene Themen";
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - *VKST-'.explode("-", $store->b_number)[2].'* ROLLBACK ERFOLGREICH, offene Themen";
                   }else if('.$table1.' == 6){
-                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - '.$store->b_number.' ROLLBACK FEHLSCHLAG";
+                     document.querySelector(\'input[name="subject"]\').value = "VKST4.0 - *VKST-'.explode("-", $store->b_number)[2].'* ROLLBACK FEHLSCHLAG";
                   }
                   // Add margin left to that input 
                   document.querySelector(\'input[name="subject"]\').style.marginLeft = "10px";
@@ -2936,7 +2957,7 @@ print '.signature-canvas {
 			 border: 1px solid #ccc;
 		 }';
 print '#input-time {
-			width: 100px
+			width: 150px
 		 }';
 print '[class^="ico-"], [class*=" ico-"] {
 			font: normal 1em/1 Arial, sans-serif;
