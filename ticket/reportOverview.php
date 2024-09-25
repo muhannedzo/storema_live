@@ -1222,7 +1222,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   print '<tr class="oddeven">';
                      print '<td colspan="1">D2</td>';
                      print '<td colspan="1">EMA (R/T)</td>';
-                     print '<td colspan="1" class="prio">1</td>';
+                     print '<td colspan="1" class="prio">2</td>';
                      print '<td colspan="1"><input type="radio" name="question17vk" id="question17vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1"><input type="radio" name="question17vk" id="question17vk_2" value="2"></td>';
                      print '<td colspan="1"><input type="checkbox" name="table1-check-17"></td>';
@@ -1348,11 +1348,14 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          print '<div class="row">
                      <div class="col">
                         <select style="width: 100%" name="image-type">
+                           <option selected disabled>Bildtyp auswählen</option>
                            <option>Serverschrank vorher</option>
                            <option>Serverschrank nachher</option>
                            <option>Arbeitssplatz nachher</option>
-                           <option>Seriennummer Router</option>
-                           <option>Seriennummer Firewall</option>
+                           <option>Seriennummer router</option>
+                           <option>Seriennummer firewall</option>
+                           <option>Firewall (Beschriftung Patchkabel)</option>
+                           <option>Kabeletikett</option>
                            <option>Testprotokoll</option>
                         </select>
                      </div>
@@ -1594,20 +1597,24 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   var opt6 = document.getElementById("table1_6");
                   const rows = document.querySelectorAll(\'#questions-table .oddeven\');
                   if(opt4.checked || opt6.checked){
-                     for (let i = 0; i < rows.length - 4; i++) {
+                     for (let i = 0; i < rows.length; i++) {
                         const row = rows[i];
                         const cells = row.children;
-                        const prio = cells[2].textContent.trim();
-                        cells[6].querySelector(\'input[type="radio"]\').required = true;
-                        cells[7].querySelector(\'input[type="radio"]\').required = true;
+                        if(cells.length == 8){
+                           const prio = cells[2].textContent.trim();
+                           cells[6].querySelector(\'input[type="radio"]\').required = true;
+                           cells[7].querySelector(\'input[type="radio"]\').required = true;
+                        }
                      }
                   }else{
-                     for (let i = 0; i < rows.length - 4; i++) {
+                     for (let i = 0; i < rows.length; i++) {
                         const row = rows[i];
                         const cells = row.children;
-                        const prio = cells[2].textContent.trim();
-                        cells[6].querySelector(\'input[type="radio"]\').required = false;
-                        cells[7].querySelector(\'input[type="radio"]\').required = false;
+                        if(cells.length == 8){
+                           const prio = cells[2].textContent.trim();
+                           cells[6].querySelector(\'input[type="radio"]\').required = false;
+                           cells[7].querySelector(\'input[type="radio"]\').required = false;
+                        }   
                      }
                   }
                }
@@ -1644,15 +1651,17 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   } else if (opt2.checked) {
                      document.getElementById("error-text-p2").style.display = "block";
                      document.getElementById("p2tests").value = "";
-                     for (let i = 0; i < rows.length - 4; i++) {
+                     for (let i = 0; i < rows.length; i++) {
                            const row = rows[i];
                            const cells = row.children;
-                           const prio = cells[2].textContent.trim();
-                           if (prio == 2) {
-                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                              if (testFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                           if(cells.length == 8){
+                              const prio = cells[2].textContent.trim();
+                              if (prio == 2) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                                 }
                               }
                            }
                      }
@@ -1671,27 +1680,29 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      document.getElementById("error-text-p1").style.display = "block";
                      document.getElementById("error-text-p2").style.display = "block";
                      //document.getElementById("error-text-p2-rollback").style.display = "block";
-                     for (let i = 0; i < rows.length - 4; i++) {
+                     for (let i = 0; i < rows.length; i++) {
                            const row = rows[i];
                            const cells = row.children;
-                           const prio = cells[2].textContent.trim();
-                           if (prio == 1) {
-                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                              if (testFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                           if(cells.length == 8){
+                              const prio = cells[2].textContent.trim();
+                              if (prio == 1) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                                 }
                               }
-                           }
-                           if (prio == 2) {
-                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                              const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
-                              if (testFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
-                              }
-                              if (testRollbackFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 //document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                              if (prio == 2) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                                 }
+                                 if (testRollbackFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    //document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                                 }
                               }
                            }
                      }
@@ -1714,27 +1725,29 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      document.getElementById("error-text-p2").style.display = "block";
                      //document.getElementById("error-text-p1-rollback").style.display = "block";
                      document.getElementById("error-text-p2-rollback").style.display = "block";
-                     for (let i = 0; i < rows.length - 4; i++) {
+                     for (let i = 0; i < rows.length; i++) {
                            const row = rows[i];
                            const cells = row.children;
-                           const prio = cells[2].textContent.trim();
-                           if (prio == 1) {
-                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                              if (testFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                           if(cells.length == 8){
+                              const prio = cells[2].textContent.trim();
+                              if (prio == 1) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                                 }
                               }
-                           }
-                           if (prio == 2) {
-                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                              const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
-                              if (testFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
-                              }
-                              if (testRollbackFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                              if (prio == 2) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                                 }
+                                 if (testRollbackFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                                 }
                               }
                            }
                      }
@@ -1757,34 +1770,36 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      document.getElementById("error-text-p2").style.display = "block";
                      document.getElementById("error-text-p1-rollback").style.display = "block";
                      document.getElementById("error-text-p2-rollback").style.display = "block";
-                     for (let i = 0; i < rows.length - 4; i++) {
+                     for (let i = 0; i < rows.length; i++) {
                            const row = rows[i];
                            const cells = row.children;
-                           const prio = cells[2].textContent.trim();
-                           if (prio == 1) {
-                              const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
-                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                              if (rollbackFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p1-rollback").textContent += secondColumnText + ", ";
+                           if(cells.length == 8){
+                              const prio = cells[2].textContent.trim();
+                              if (prio == 1) {
+                                 const rollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 if (rollbackFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p1-rollback").textContent += secondColumnText + ", ";
+                                 }
+                                 if(testFailed){
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
+                                 }
+                                 
+                                 
                               }
-                              if(testFailed){
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p1").textContent += secondColumnText + ", ";
-                              }
-                              
-                              
-                           }
-                           if (prio == 2) {
-                              const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
-                              const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
-                              if (testFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
-                              }
-                              if (testRollbackFailed) {
-                                 const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
-                                 document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                              if (prio == 2) {
+                                 const testFailed = cells[4].querySelector(\'input[type="radio"]\').checked;
+                                 const testRollbackFailed = cells[7].querySelector(\'input[type="radio"]\').checked;
+                                 if (testFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p2").textContent += secondColumnText + ", ";
+                                 }
+                                 if (testRollbackFailed) {
+                                    const secondColumnText = row.querySelector("td:nth-child(1)").textContent.trim();
+                                    document.getElementById("error-text-p2-rollback").textContent += secondColumnText + ", ";
+                                 }
                               }
                            }
                      }

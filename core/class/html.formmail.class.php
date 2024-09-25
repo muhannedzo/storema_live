@@ -374,7 +374,7 @@ class FormMail extends Form
 	public function get_form($addfileaction = 'addfile', $removefileaction = 'removefile')
 	{
 		// phpcs:enable
-		global $conf, $langs, $user, $hookmanager, $form;
+		global $conf, $langs, $user, $hookmanager, $form, $db;
 
 		// Required to show preview wof mail attachments
 		require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
@@ -459,9 +459,14 @@ class FormMail extends Form
 			}
 
 
+			$mailType = GETPOST('type');
 			$out .= "\n".'<!-- Begin form mail type='.$this->param["models"].' --><div id="mailformdiv"></div>'."\n";
 			if ($this->withform == 1) {
-				$out .= '<form method="POST" name="mailform" id="mailform" enctype="multipart/form-data" action="'.$this->param["returnurl"].'#formmail">'."\n";
+				$returnUrl = $this->param["returnurl"];
+				if($mailType){
+					$returnUrl .= '&type=reportsMail'; 
+				}
+				$out .= '<form method="POST" name="mailform" id="mailform" enctype="multipart/form-data" action="'.$returnUrl.'#formmail">'."\n";
 
 				$out .= '<a id="formmail" name="formmail"></a>';
 				$out .= '<input style="display:none" type="submit" id="sendmailhidden" name="sendmail">';
@@ -577,315 +582,440 @@ class FormMail extends Form
 			}
 
 			// From
-			if (!empty($this->withfrom)) {
-				if (!empty($this->withfromreadonly)) {
-					$out .= '<tr><td class="fieldrequired minwidth200">'.$langs->trans("MailFrom").'</td><td>';
-
-					// $this->fromtype is the default value to use to select sender
-					if (!($this->fromtype === 'user' && $this->fromid > 0)
-						&& !($this->fromtype === 'company')
-						&& !($this->fromtype === 'robot')
-						&& !preg_match('/user_aliases/', $this->fromtype)
-						&& !preg_match('/global_aliases/', $this->fromtype)
-						&& !preg_match('/senderprofile/', $this->fromtype)
-						) {
-						// Use this->fromname and this->frommail or error if not defined
-						$out .= $this->fromname;
-						if ($this->frommail) {
-							$out .= ' &lt;'.$this->frommail.'&gt;';
-						} else {
-							if ($this->fromtype) {
-								$langs->load('errors');
-								$out .= '<span class="warning"> &lt;'.$langs->trans('ErrorNoMailDefinedForThisUser').'&gt; </span>';
-							}
-						}
-					} else {
-						$liste = array();
-
-						// Add user email
-						if (empty($user->email)) {
-							$langs->load('errors');
-							$s = $user->getFullName($langs).' &lt;'.$langs->trans('ErrorNoMailDefinedForThisUser').'&gt;';
-						} else {
-							$s = $user->getFullName($langs).' &lt;'.$user->email.'&gt;';
-						}
-						$liste['user'] = array('label' => $s, 'data-html' => $s);
-
-						// Add also company main email
-						if (getDolGlobalString('MAIN_INFO_SOCIETE_MAIL')) {
-							$s = (!getDolGlobalString('MAIN_INFO_SOCIETE_NOM') ? $conf->global->MAIN_INFO_SOCIETE_EMAIL : $conf->global->MAIN_INFO_SOCIETE_NOM).' &lt;' . getDolGlobalString('MAIN_INFO_SOCIETE_MAIL').'&gt;';
-							$liste['company'] = array('label' => $s, 'data-html' => $s);
-						}
-
-						// Add also email aliases if there is some
-						$listaliases = array(
-							'user_aliases' => (empty($user->email_aliases) ? '' : $user->email_aliases),
-							'global_aliases' => getDolGlobalString('MAIN_INFO_SOCIETE_MAIL_ALIASES'),
-						);
-
-						if (!empty($arraydefaultmessage->email_from)) {
-							$templatemailfrom = ' &lt;'.$arraydefaultmessage->email_from.'&gt;';
-							$liste['from_template_'.GETPOST('modelmailselected')] = array('label' => $templatemailfrom, 'data-html' => $templatemailfrom);
-						}
-
-						// Also add robot email
-						if (!empty($this->fromalsorobot)) {
-							if (getDolGlobalString('MAIN_MAIL_EMAIL_FROM') && getDolGlobalString('MAIN_MAIL_EMAIL_FROM') != getDolGlobalString('MAIN_INFO_SOCIETE_MAIL')) {
-								$s = $conf->global->MAIN_MAIL_EMAIL_FROM;
-								if ($this->frommail) {
-									$s .= ' &lt;' . getDolGlobalString('MAIN_MAIL_EMAIL_FROM').'&gt;';
-								}
-								array('label' => $s, 'data-html' => $s);
-							}
-						}
-
-						// Add also email aliases from the c_email_senderprofile table
-						$sql = "SELECT rowid, label, email FROM ".$this->db->prefix()."c_email_senderprofile";
-						$sql .= " WHERE active = 1 AND (private = 0 OR private = ".((int) $user->id).")";
-						$sql .= " ORDER BY position";
-						$resql = $this->db->query($sql);
-						if ($resql) {
-							$num = $this->db->num_rows($resql);
-							$i = 0;
-							while ($i < $num) {
-								$obj = $this->db->fetch_object($resql);
-								if ($obj) {
-									$listaliases['senderprofile_'.$obj->rowid] = $obj->label.' <'.$obj->email.'>';
-								}
-								$i++;
-							}
-						} else {
-							dol_print_error($this->db);
-						}
-
-						foreach ($listaliases as $typealias => $listalias) {
-							$posalias = 0;
-							$listaliasarray = explode(',', $listalias);
-							foreach ($listaliasarray as $listaliasval) {
-								$posalias++;
-								$listaliasval = trim($listaliasval);
-								if ($listaliasval) {
-									$listaliasval = preg_replace('/</', '&lt;', $listaliasval);
-									$listaliasval = preg_replace('/>/', '&gt;', $listaliasval);
-									if (!preg_match('/&lt;/', $listaliasval)) {
-										$listaliasval = '&lt;'.$listaliasval.'&gt;';
-									}
-									$liste[$typealias.'_'.$posalias] = array('label' => $listaliasval, 'data-html' => $listaliasval);
-								}
-							}
-						}
-
-						// Using ajaxcombo here make the '<email>' no more visible on list because <emailofuser> is not a valid html tag,
-						// so we transform before each record into $liste to be printable with ajaxcombo by replacing <> into ()
-						// $liste['senderprofile_0_0'] = array('label'=>'rrr', 'data-html'=>'rrr &lt;aaaa&gt;');
-						foreach ($liste as $key => $val) {
-							if (!empty($liste[$key]['data-html'])) {
-								$liste[$key]['data-html'] = str_replace(array('&lt;', '<', '&gt;', '>'), array('__LTCHAR__', '__LTCHAR__', '__GTCHAR__', '__GTCHAR__'), $liste[$key]['data-html']);
-								$liste[$key]['data-html'] = str_replace(array('__LTCHAR__', '__GTCHAR__'), array('<span class="opacitymedium">(', ')</span>'), $liste[$key]['data-html']);
-							}
-						}
-						$out .= ' '.$form->selectarray('fromtype', $liste, empty($arraydefaultmessage->email_from) ? $this->fromtype : 'from_template_'.GETPOST('modelmailselected'), 0, 0, 0, '', 0, 0, 0, '', 'fromforsendingprofile maxwidth200onsmartphone', 1, '', $disablebademails);
-					}
-
-					$out .= "</td></tr>\n";
-				} else {
-					$out .= '<tr><td class="fieldrequired width200">'.$langs->trans("MailFrom")."</td><td>";
-					$out .= $langs->trans("Name").':<input type="text" id="fromname" name="fromname" class="maxwidth200onsmartphone" value="'.$this->fromname.'" />';
+			if($mailType){
+				$out .= '<tr><td class="fieldrequired width200">'.$langs->trans("MailFrom")."</td><td>";
+					$out .= $langs->trans("Name").':<input type="text" id="fromname" name="fromname" class="maxwidth200onsmartphone" value="SESOCO Rollout" />';
 					$out .= '&nbsp; &nbsp; ';
-					$out .= $langs->trans("EMail").':&lt;<input type="text" id="frommail" name="frommail" class="maxwidth200onsmartphone" value="'.$this->frommail.'" />&gt;';
-					$out .= "</td></tr>\n";
+					$out .= $langs->trans("EMail").':&lt;<input type="text" id="frommail" name="frommail" class="maxwidth200onsmartphone" value="rollout@sesoco.de" />&gt;';
+				$out .= "</td></tr>\n";
+			} else {
+				if (!empty($this->withfrom)) {
+					if (!empty($this->withfromreadonly)) {
+						$out .= '<tr><td class="fieldrequired minwidth200">'.$langs->trans("MailFrom").'</td><td>';
+	
+						// $this->fromtype is the default value to use to select sender
+						if (!($this->fromtype === 'user' && $this->fromid > 0)
+							&& !($this->fromtype === 'company')
+							&& !($this->fromtype === 'robot')
+							&& !preg_match('/user_aliases/', $this->fromtype)
+							&& !preg_match('/global_aliases/', $this->fromtype)
+							&& !preg_match('/senderprofile/', $this->fromtype)
+							) {
+							// Use this->fromname and this->frommail or error if not defined
+							$out .= $this->fromname;
+							if ($this->frommail) {
+								$out .= ' &lt;'.$this->frommail.'&gt;';
+							} else {
+								if ($this->fromtype) {
+									$langs->load('errors');
+									$out .= '<span class="warning"> &lt;'.$langs->trans('ErrorNoMailDefinedForThisUser').'&gt; </span>';
+								}
+							}
+						} else {
+							$liste = array();
+	
+							// Add user email
+							if (empty($user->email)) {
+								$langs->load('errors');
+								$s = $user->getFullName($langs).' &lt;'.$langs->trans('ErrorNoMailDefinedForThisUser').'&gt;';
+							} else {
+								$s = $user->getFullName($langs).' &lt;'.$user->email.'&gt;';
+							}
+							$liste['user'] = array('label' => $s, 'data-html' => $s);
+	
+							// Add also company main email
+							if (getDolGlobalString('MAIN_INFO_SOCIETE_MAIL')) {
+								$s = (!getDolGlobalString('MAIN_INFO_SOCIETE_NOM') ? $conf->global->MAIN_INFO_SOCIETE_EMAIL : $conf->global->MAIN_INFO_SOCIETE_NOM).' &lt;' . getDolGlobalString('MAIN_INFO_SOCIETE_MAIL').'&gt;';
+								$liste['company'] = array('label' => $s, 'data-html' => $s);
+							}
+	
+							// Add also email aliases if there is some
+							$listaliases = array(
+								'user_aliases' => (empty($user->email_aliases) ? '' : $user->email_aliases),
+								'global_aliases' => getDolGlobalString('MAIN_INFO_SOCIETE_MAIL_ALIASES'),
+							);
+	
+							if (!empty($arraydefaultmessage->email_from)) {
+								$templatemailfrom = ' &lt;'.$arraydefaultmessage->email_from.'&gt;';
+								$liste['from_template_'.GETPOST('modelmailselected')] = array('label' => $templatemailfrom, 'data-html' => $templatemailfrom);
+							}
+	
+							// Also add robot email
+							if (!empty($this->fromalsorobot)) {
+								if (getDolGlobalString('MAIN_MAIL_EMAIL_FROM') && getDolGlobalString('MAIN_MAIL_EMAIL_FROM') != getDolGlobalString('MAIN_INFO_SOCIETE_MAIL')) {
+									$s = $conf->global->MAIN_MAIL_EMAIL_FROM;
+									if ($this->frommail) {
+										$s .= ' &lt;' . getDolGlobalString('MAIN_MAIL_EMAIL_FROM').'&gt;';
+									}
+									array('label' => $s, 'data-html' => $s);
+								}
+							}
+	
+							// Add also email aliases from the c_email_senderprofile table
+							$sql = "SELECT rowid, label, email FROM ".$this->db->prefix()."c_email_senderprofile";
+							$sql .= " WHERE active = 1 AND (private = 0 OR private = ".((int) $user->id).")";
+							$sql .= " ORDER BY position";
+							$resql = $this->db->query($sql);
+							if ($resql) {
+								$num = $this->db->num_rows($resql);
+								$i = 0;
+								while ($i < $num) {
+									$obj = $this->db->fetch_object($resql);
+									if ($obj) {
+										$listaliases['senderprofile_'.$obj->rowid] = $obj->label.' <'.$obj->email.'>';
+									}
+									$i++;
+								}
+							} else {
+								dol_print_error($this->db);
+							}
+	
+							foreach ($listaliases as $typealias => $listalias) {
+								$posalias = 0;
+								$listaliasarray = explode(',', $listalias);
+								foreach ($listaliasarray as $listaliasval) {
+									$posalias++;
+									$listaliasval = trim($listaliasval);
+									if ($listaliasval) {
+										$listaliasval = preg_replace('/</', '&lt;', $listaliasval);
+										$listaliasval = preg_replace('/>/', '&gt;', $listaliasval);
+										if (!preg_match('/&lt;/', $listaliasval)) {
+											$listaliasval = '&lt;'.$listaliasval.'&gt;';
+										}
+										$liste[$typealias.'_'.$posalias] = array('label' => $listaliasval, 'data-html' => $listaliasval);
+									}
+								}
+							}
+	
+							// Using ajaxcombo here make the '<email>' no more visible on list because <emailofuser> is not a valid html tag,
+							// so we transform before each record into $liste to be printable with ajaxcombo by replacing <> into ()
+							// $liste['senderprofile_0_0'] = array('label'=>'rrr', 'data-html'=>'rrr &lt;aaaa&gt;');
+							foreach ($liste as $key => $val) {
+								if (!empty($liste[$key]['data-html'])) {
+									$liste[$key]['data-html'] = str_replace(array('&lt;', '<', '&gt;', '>'), array('__LTCHAR__', '__LTCHAR__', '__GTCHAR__', '__GTCHAR__'), $liste[$key]['data-html']);
+									$liste[$key]['data-html'] = str_replace(array('__LTCHAR__', '__GTCHAR__'), array('<span class="opacitymedium">(', ')</span>'), $liste[$key]['data-html']);
+								}
+							}
+							$out .= ' '.$form->selectarray('fromtype', $liste, empty($arraydefaultmessage->email_from) ? $this->fromtype : 'from_template_'.GETPOST('modelmailselected'), 0, 0, 0, '', 0, 0, 0, '', 'fromforsendingprofile maxwidth200onsmartphone', 1, '', $disablebademails);
+						}
+	
+						$out .= "</td></tr>\n";
+					} else {
+						$out .= '<tr><td class="fieldrequired width200">'.$langs->trans("MailFrom")."</td><td>";
+						$out .= $langs->trans("Name").':<input type="text" id="fromname" name="fromname" class="maxwidth200onsmartphone" value="'.$this->fromname.'" />';
+						$out .= '&nbsp; &nbsp; ';
+						$out .= $langs->trans("EMail").':&lt;<input type="text" id="frommail" name="frommail" class="maxwidth200onsmartphone" value="'.$this->frommail.'" />&gt;';
+						$out .= "</td></tr>\n";
+					}
 				}
+
 			}
 
 			// To
-			if (!empty($this->withto) || is_array($this->withto)) {
-				$out .= $this->getHtmlForTo();
-			}
-
-			// To User
-			if (!empty($this->withtouser) && is_array($this->withtouser) && getDolGlobalString('MAIN_MAIL_ENABLED_USER_DEST_SELECT')) {
-				$out .= '<tr><td>';
-				$out .= $langs->trans("MailToUsers");
-				$out .= '</td><td>';
-
-				// multiselect array convert html entities into options tags, even if we dont want this, so we encode them a second time
-				$tmparray = $this->withtouser;
-				foreach ($tmparray as $key => $val) {
-					$tmparray[$key] = dol_htmlentities($tmparray[$key], null, 'UTF-8', true);
-				}
-				$withtoselected = GETPOST("receiveruser", 'array'); // Array of selected value
-				if (empty($withtoselected) && count($tmparray) == 1 && GETPOST('action', 'aZ09') == 'presend') {
-					$withtoselected = array_keys($tmparray);
-				}
-				$out .= $form->multiselectarray("receiveruser", $tmparray, $withtoselected, null, null, 'inline-block minwidth500', null, "");
+			if($mailType){
+				$out .= '<tr><td class="fieldrequired width200">'.$form->textwithpicto($langs->trans("MailTo"), $langs->trans("YouCanUseCommaSeparatorForSeveralRecipients"))."</td><td>";
+					$out .= '<input type="text" id="sendto" name="sendto" class="quatrevingtpercent" value="rollout@sesoco.de" />';
+					$out .= '&nbsp; &nbsp; ';
+					$out .= '<input type="hidden"name="receiver_multiselect" class="maxwidth200onsmartphone" value="0" />';
 				$out .= "</td></tr>\n";
-			}
+			} else {
+				if (!empty($this->withto) || is_array($this->withto)) {
+					$out .= $this->getHtmlForTo();
+				}
 
-			// With option for one email per recipient
-			if (!empty($this->withoptiononeemailperrecipient)) {
-				if (abs($this->withoptiononeemailperrecipient) == 1) {
-					$out .= '<tr><td class="minwidth200">';
-					$out .= $langs->trans("GroupEmails");
+				// To User
+				if (!empty($this->withtouser) && is_array($this->withtouser) && getDolGlobalString('MAIN_MAIL_ENABLED_USER_DEST_SELECT')) {
+					$out .= '<tr><td>';
+					$out .= $langs->trans("MailToUsers");
 					$out .= '</td><td>';
-					$out .= ' <input type="checkbox" id="oneemailperrecipient" value="1" name="oneemailperrecipient"'.($this->withoptiononeemailperrecipient > 0 ? ' checked="checked"' : '').'> ';
-					$out .= '<label for="oneemailperrecipient">';
-					$out .= $form->textwithpicto($langs->trans("OneEmailPerRecipient"), $langs->trans("WarningIfYouCheckOneRecipientPerEmail"), 1, 'help');
-					$out .= '</label>';
-					//$out .= '<span class="hideonsmartphone opacitymedium">';
-					//$out .= ' - ';
-					//$out .= $langs->trans("WarningIfYouCheckOneRecipientPerEmail");
-					//$out .= '</span>';
-					if (getDolGlobalString('MASS_ACTION_EMAIL_ON_DIFFERENT_THIRPARTIES_ADD_CUSTOM_EMAIL')) {
-						if (!empty($this->withto) && !is_array($this->withto)) {
-							$out .= ' '.$langs->trans("or").' <input type="email" name="emailto" value="">';
-						}
+	
+					// multiselect array convert html entities into options tags, even if we dont want this, so we encode them a second time
+					$tmparray = $this->withtouser;
+					foreach ($tmparray as $key => $val) {
+						$tmparray[$key] = dol_htmlentities($tmparray[$key], null, 'UTF-8', true);
 					}
-					$out .= '</td></tr>';
-				} else {
-					$out .= '<tr><td><input type="hidden" name="oneemailperrecipient" value="1"></td><td></td></tr>';
+					$withtoselected = GETPOST("receiveruser", 'array'); // Array of selected value
+					if (empty($withtoselected) && count($tmparray) == 1 && GETPOST('action', 'aZ09') == 'presend') {
+						$withtoselected = array_keys($tmparray);
+					}
+					$out .= $form->multiselectarray("receiveruser", $tmparray, $withtoselected, null, null, 'inline-block minwidth500', null, "");
+					$out .= "</td></tr>\n";
+				}
+	
+				// With option for one email per recipient
+				if (!empty($this->withoptiononeemailperrecipient)) {
+					if (abs($this->withoptiononeemailperrecipient) == 1) {
+						$out .= '<tr><td class="minwidth200">';
+						$out .= $langs->trans("GroupEmails");
+						$out .= '</td><td>';
+						$out .= ' <input type="checkbox" id="oneemailperrecipient" value="1" name="oneemailperrecipient"'.($this->withoptiononeemailperrecipient > 0 ? ' checked="checked"' : '').'> ';
+						$out .= '<label for="oneemailperrecipient">';
+						$out .= $form->textwithpicto($langs->trans("OneEmailPerRecipient"), $langs->trans("WarningIfYouCheckOneRecipientPerEmail"), 1, 'help');
+						$out .= '</label>';
+						//$out .= '<span class="hideonsmartphone opacitymedium">';
+						//$out .= ' - ';
+						//$out .= $langs->trans("WarningIfYouCheckOneRecipientPerEmail");
+						//$out .= '</span>';
+						if (getDolGlobalString('MASS_ACTION_EMAIL_ON_DIFFERENT_THIRPARTIES_ADD_CUSTOM_EMAIL')) {
+							if (!empty($this->withto) && !is_array($this->withto)) {
+								$out .= ' '.$langs->trans("or").' <input type="email" name="emailto" value="">';
+							}
+						}
+						$out .= '</td></tr>';
+					} else {
+						$out .= '<tr><td><input type="hidden" name="oneemailperrecipient" value="1"></td><td></td></tr>';
+					}
 				}
 			}
 
 			// CC
-			if (!empty($this->withtocc) || is_array($this->withtocc)) {
-				$out .= $this->getHtmlForCc();
-			}
-
-			// To User cc
-			if (!empty($this->withtoccuser) && is_array($this->withtoccuser) && getDolGlobalString('MAIN_MAIL_ENABLED_USER_DEST_SELECT')) {
-				$out .= '<tr><td>';
-				$out .= $langs->trans("MailToCCUsers");
-				$out .= '</td><td>';
-
-				// multiselect array convert html entities into options tags, even if we dont want this, so we encode them a second time
-				$tmparray = $this->withtoccuser;
-				foreach ($tmparray as $key => $val) {
-					$tmparray[$key] = dol_htmlentities($tmparray[$key], null, 'UTF-8', true);
-				}
-				$withtoselected = GETPOST("receiverccuser", 'array'); // Array of selected value
-				if (empty($withtoselected) && count($tmparray) == 1 && GETPOST('action', 'aZ09') == 'presend') {
-					$withtoselected = array_keys($tmparray);
-				}
-				$out .= $form->multiselectarray("receiverccuser", $tmparray, $withtoselected, null, null, 'inline-block minwidth500', null, "");
+			if($mailType){
+				$out .= '<tr><td class="fieldrequired width200">'.$form->textwithpicto($langs->trans("MailCC"), $langs->trans("YouCanUseCommaSeparatorForSeveralRecipients"))."</td><td>";
+					$out .= '<input type="text" id="sendtocc" name="sendtocc" class="quatrevingtpercent" value="Alexander.Blanckarts@rossmann.de,Tim.Albrecht@rossmann.de,Marie.Herberg@rossmann.de,Marc.Scholz@rossmann.de,Timo.Woehler@rossmann.de,Filialinfrastruktur@rossmann.de,IT-Providermanagement@rossmann.de,daniel.luttermann@rossmann.de,Andreas.Czok@rossmann.de,Timo.Ballaschke@rossmann.de,alexander.janicki@rossmann.de" />';
+					$out .= '&nbsp; &nbsp; ';
+					$out .= '<input type="hidden"name="receivercc_multiselect" class="maxwidth200onsmartphone" value="0" />';
 				$out .= "</td></tr>\n";
+			} else {
+
+				if (!empty($this->withtocc) || is_array($this->withtocc)) {
+					$out .= $this->getHtmlForCc();
+				}
+	
+				// To User cc
+				if (!empty($this->withtoccuser) && is_array($this->withtoccuser) && getDolGlobalString('MAIN_MAIL_ENABLED_USER_DEST_SELECT')) {
+					$out .= '<tr><td>';
+					$out .= $langs->trans("MailToCCUsers");
+					$out .= '</td><td>';
+	
+					// multiselect array convert html entities into options tags, even if we dont want this, so we encode them a second time
+					$tmparray = $this->withtoccuser;
+					foreach ($tmparray as $key => $val) {
+						$tmparray[$key] = dol_htmlentities($tmparray[$key], null, 'UTF-8', true);
+					}
+					$withtoselected = GETPOST("receiverccuser", 'array'); // Array of selected value
+					if (empty($withtoselected) && count($tmparray) == 1 && GETPOST('action', 'aZ09') == 'presend') {
+						$withtoselected = array_keys($tmparray);
+					}
+					$out .= $form->multiselectarray("receiverccuser", $tmparray, $withtoselected, null, null, 'inline-block minwidth500', null, "");
+					$out .= "</td></tr>\n";
+				}
+	
+				// CCC
+				if (!empty($this->withtoccc) || is_array($this->withtoccc)) {
+					$out .= $this->getHtmlForWithCcc();
+				}
+	
+				// Replyto
+				if (!empty($this->withreplyto)) {
+					if ($this->withreplytoreadonly) {
+						$out .= '<input type="hidden" id="replyname" name="replyname" value="'.$this->replytoname.'" />';
+						$out .= '<input type="hidden" id="replymail" name="replymail" value="'.$this->replytomail.'" />';
+						$out .= "<tr><td>".$langs->trans("MailReply")."</td><td>".$this->replytoname.($this->replytomail ? (" &lt;".$this->replytomail."&gt;") : "");
+						$out .= "</td></tr>\n";
+					}
+				}
+	
+				// Errorsto
+				if (!empty($this->witherrorsto)) {
+					$out .= $this->getHtmlForWithErrorsTo();
+				}
+	
+				// Ask delivery receipt
+				if (!empty($this->withdeliveryreceipt) && getDolGlobalInt('MAIN_EMAIL_SUPPORT_ACK')) {
+					$out .= $this->getHtmlForDeliveryReceipt();
+				}
+
 			}
 
-			// CCC
-			if (!empty($this->withtoccc) || is_array($this->withtoccc)) {
-				$out .= $this->getHtmlForWithCcc();
+			// Topic
+			if($mailType){
+				$out .= '<tr><td class="fieldrequired width200">'.$form->textwithpicto($langs->trans('MailTopic'), $helpforsubstitution, 1, 'help', '', 0, 2, 'substittooltipfromtopic')."</td><td>";
+					$out .= '<input type="text" id="subject" name="subject" class="quatrevingtpercent" value="Umbau der VKST auf VKST4.0 IT Infrastruktur" />';
+				$out .= "</td></tr>\n";
+			} else {
+				if (!empty($this->withtopic)) {
+					$out .= $this->getHtmlForTopic($arraydefaultmessage, $helpforsubstitution);
+				}
 			}
-
-			// Replyto
-			if (!empty($this->withreplyto)) {
-				if ($this->withreplytoreadonly) {
-					$out .= '<input type="hidden" id="replyname" name="replyname" value="'.$this->replytoname.'" />';
-					$out .= '<input type="hidden" id="replymail" name="replymail" value="'.$this->replytomail.'" />';
-					$out .= "<tr><td>".$langs->trans("MailReply")."</td><td>".$this->replytoname.($this->replytomail ? (" &lt;".$this->replytomail."&gt;") : "");
+			
+			// Attached files
+			if(!$mailType){
+				if (!empty($this->withfile)) {
+					$out .= '<tr>';
+					$out .= '<td>'.$langs->trans("MailFile").'</td>';
+	
+					$out .= '<td>';
+	
+					if ($this->withmaindocfile) {
+						// withmaindocfile is set to 1 or -1 to show the checkbox (-1 = checked or 1 = not checked)
+						if (GETPOSTISSET('sendmail')) {
+							$this->withmaindocfile = (GETPOST('addmaindocfile', 'alpha') ? -1 : 1);
+						} elseif (is_object($arraydefaultmessage) && $arraydefaultmessage->id > 0) {
+							// If a template was selected, we use setup of template to define if join file checkbox is selected or not.
+							$this->withmaindocfile = ($arraydefaultmessage->joinfiles ? -1 : 1);
+						}
+					}
+	
+					if (!empty($this->withmaindocfile)) {
+						if ($this->withmaindocfile == 1) {
+							$out .= '<input type="checkbox" id="addmaindocfile" name="addmaindocfile" value="1" />';
+						} elseif ($this->withmaindocfile == -1) {
+							$out .= '<input type="checkbox" id="addmaindocfile" name="addmaindocfile" value="1" checked="checked" />';
+						}
+						if (getDolGlobalString('MAIL_MASS_ACTION_ADD_LAST_IF_MAIN_DOC_NOT_FOUND')) {
+							$out .= ' <label for="addmaindocfile">'.$langs->trans("JoinMainDocOrLastGenerated").'.</label><br>';
+						} else {
+							$out .= ' <label for="addmaindocfile">'.$langs->trans("JoinMainDoc").'.</label><br>';
+						}
+					}
+	
+					if (is_numeric($this->withfile)) {
+						// TODO Trick to have param removedfile containing nb of file to delete. But this does not works without javascript
+						$out .= '<input type="hidden" class="removedfilehidden" name="removedfile" value="">'."\n";
+						$out .= '<script nonce="'.getNonce().'" type="text/javascript">';
+						$out .= 'jQuery(document).ready(function () {';
+						$out .= '    jQuery(".removedfile").click(function() {';
+						$out .= '        jQuery(".removedfilehidden").val(jQuery(this).val());';
+						$out .= '    });';
+						$out .= '})';
+						$out .= '</script>'."\n";
+						if (count($listofpaths)) {
+							foreach ($listofpaths as $key => $val) {
+								$relativepathtofile = substr($val, (strlen(DOL_DATA_ROOT) - strlen($val)));
+	
+								if ($conf->entity > 1) {
+									$relativepathtofile = str_replace('/'.$conf->entity.'/', '/', $relativepathtofile);
+								}
+								// Try to extract data from full path
+								$formfile_params = array();
+								preg_match('#^(/)(\w+)(/)(.+)$#', $relativepathtofile, $formfile_params);
+	
+								$out .= '<div id="attachfile_'.$key.'">';
+								// Preview of attachment
+								$out .= img_mime($listofnames[$key]).' '.$listofnames[$key];
+	
+								$out .= $formfile->showPreview(array(), $formfile_params[2], $formfile_params[4]);
+								if (!$this->withfilereadonly) {
+									$out .= ' <input type="image" style="border: 0px;" src="'.DOL_URL_ROOT.'/theme/'.$conf->theme.'/img/delete.png" value="'.($key + 1).'" class="removedfile" id="removedfile_'.$key.'" name="removedfile_'.$key.'" />';
+									//$out.= ' <a href="'.$_SERVER["PHP_SELF"].'?removedfile='.($key+1).' id="removedfile_'.$key.'">'.img_delete($langs->trans("Delete").'</a>';
+								}
+								$out .= '<br></div>';
+							}
+						} elseif (empty($this->withmaindocfile)) {
+							//$out .= '<span class="opacitymedium">'.$langs->trans("NoAttachedFiles").'</span><br>';
+						}
+						if ($this->withfile == 2) {
+							$maxfilesizearray = getMaxFileSizeArray();
+							$maxmin = $maxfilesizearray['maxmin'];
+							if ($maxmin > 0) {
+								$out .= '<input type="hidden" name="MAX_FILE_SIZE" value="'.($maxmin * 1024).'">';	// MAX_FILE_SIZE must precede the field type=file
+							}
+							// Can add other files
+							if (!getDolGlobalString('FROM_MAIL_DONT_USE_INPUT_FILE_MULTIPLE')) {
+								$out .= '<input type="file" class="flat" id="addedfile" name="addedfile[]" value="'.$langs->trans("Upload").'" multiple />';
+							} else {
+								$out .= '<input type="file" class="flat" id="addedfile" name="addedfile" value="'.$langs->trans("Upload").'" />';
+							}
+							$out .= ' ';
+							$out .= '<input type="submit" class="button smallpaddingimp" id="'.$addfileaction.'" name="'.$addfileaction.'" value="'.$langs->trans("MailingAddFile").'" />';
+						}
+					} else {
+						$out .= $this->withfile;
+					}
+	
 					$out .= "</td></tr>\n";
 				}
 			}
 
-			// Errorsto
-			if (!empty($this->witherrorsto)) {
-				$out .= $this->getHtmlForWithErrorsTo();
-			}
+			if($mailType){
 
-			// Ask delivery receipt
-			if (!empty($this->withdeliveryreceipt) && getDolGlobalInt('MAIN_EMAIL_SUPPORT_ACK')) {
-				$out .= $this->getHtmlForDeliveryReceipt();
-			}
+				$currentDay = date("Y-m-d");
 
-			// Topic
-			if (!empty($this->withtopic)) {
-				$out .= $this->getHtmlForTopic($arraydefaultmessage, $helpforsubstitution);
-			}
-
-			// Attached files
-			if (!empty($this->withfile)) {
-				$out .= '<tr>';
-				$out .= '<td>'.$langs->trans("MailFile").'</td>';
-
-				$out .= '<td>';
-
-				if ($this->withmaindocfile) {
-					// withmaindocfile is set to 1 or -1 to show the checkbox (-1 = checked or 1 = not checked)
-					if (GETPOSTISSET('sendmail')) {
-						$this->withmaindocfile = (GETPOST('addmaindocfile', 'alpha') ? -1 : 1);
-					} elseif (is_object($arraydefaultmessage) && $arraydefaultmessage->id > 0) {
-						// If a template was selected, we use setup of template to define if join file checkbox is selected or not.
-						$this->withmaindocfile = ($arraydefaultmessage->joinfiles ? -1 : 1);
-					}
+				if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["date-mail"])) {
+					$currentDay = $_POST["date-mail"];
 				}
 
-				if (!empty($this->withmaindocfile)) {
-					if ($this->withmaindocfile == 1) {
-						$out .= '<input type="checkbox" id="addmaindocfile" name="addmaindocfile" value="1" />';
-					} elseif ($this->withmaindocfile == -1) {
-						$out .= '<input type="checkbox" id="addmaindocfile" name="addmaindocfile" value="1" checked="checked" />';
-					}
-					if (getDolGlobalString('MAIL_MASS_ACTION_ADD_LAST_IF_MAIN_DOC_NOT_FOUND')) {
-						$out .= ' <label for="addmaindocfile">'.$langs->trans("JoinMainDocOrLastGenerated").'.</label><br>';
-					} else {
-						$out .= ' <label for="addmaindocfile">'.$langs->trans("JoinMainDoc").'.</label><br>';
+				$stringtoshow = '<script type="text/javascript">
+				jQuery(document).ready(function() {
+					jQuery("#idsubimgDOLUSERCOOKIE_ticket_by_status").click(function() {
+						jQuery("#idfilterDOLUSERCOOKIE_ticket_by_status").toggle();
+					});
+				});
+				</script>';
+				$stringtoshow .= '<div class="center hideobject" id="idfilterDOLUSERCOOKIE_ticket_by_status">'; // hideobject is to start hidden
+					$stringtoshow .= '<form class="flat formboxfilter" method="POST" action="'.$returnUrl.'&mode=init&action=presend#formmailbeforetitle">';
+						$stringtoshow .= '<input type="hidden" name="token" value="'.newToken().'">';
+						$stringtoshow .= '<input type="hidden" name="action" value="refresh">';
+						$stringtoshow .= '<input type="hidden" name="DOL_AUTOSET_COOKIE" value="DOLUSERCOOKIE_ticket_by_status:year,shownb,showtot">';
+						$stringtoshow .= $langs->trans("Select Date").' <input class="flat" size="4" type="date" name="date-mail">';
+						$stringtoshow .= '<input type="image" alt="'.$langs->trans("Refresh").'" src="'.img_picto($langs->trans("Refresh"), 'refresh.png', '', '', 1).'">';
+					$stringtoshow .= '</form>';
+					$stringtoshow .= '<hr>';
+				$stringtoshow .= '</div>';
+				$thirdpartygraph = '<div class="div-table-responsive-no-min">';
+				$thirdpartygraph .= '<table class="noborder nohover centpercent">'."\n";
+				$thirdpartygraph .= '<tr class="liste_titre"><th>'.$langs->trans("Summary Date").'</th><th colspan="2">'.$object->b_number.'</th><th>Datum: '.$dateString.''.img_picto('', 'filter.png', 'id="idsubimgDOLUSERCOOKIE_ticket_by_status" class="linkobject"').'</th></tr>';
+				$thirdpartygraph .= '</table>';
+				$thirdpartygraph .= $stringtoshow;
+				print $thirdpartygraph;
+			}
+
+			$projectId = GETPOST('id', 'int');
+			$sql = "SELECT f.rowid, f.fk_ticket, f.parameters, t.fk_statut, t.ref, s.b_number FROM llx_tec_forms f";
+			$sql .= " LEFT JOIN llx_ticket t on t.rowid = f.fk_ticket";
+			$sql .= " LEFT JOIN llx_stores_branch s on s.rowid = f.fk_store";
+			$sql .= " LEFT JOIN llx_ticket_extrafields te on te.fk_object = f.fk_ticket";
+			$sql .= " WHERE t.fk_project = ".$projectId." AND te.dateofuse = '".$currentDay."'";
+			$sql .= " ORDER BY t.fk_statut DESC";
+			$results = $db->query($sql)->fetch_all();
+			$arr = [];
+			foreach ($results as $result) {
+				$parameters = json_decode(base64_decode($result[2]));
+				$table1 = '';
+				$ticketData = [];
+			
+				foreach ($parameters as $item) {
+					if ($item->name === 'table1') {
+						$table1 = $item->value;
+						break;
 					}
 				}
-
-				if (is_numeric($this->withfile)) {
-					// TODO Trick to have param removedfile containing nb of file to delete. But this does not works without javascript
-					$out .= '<input type="hidden" class="removedfilehidden" name="removedfile" value="">'."\n";
-					$out .= '<script nonce="'.getNonce().'" type="text/javascript">';
-					$out .= 'jQuery(document).ready(function () {';
-					$out .= '    jQuery(".removedfile").click(function() {';
-					$out .= '        jQuery(".removedfilehidden").val(jQuery(this).val());';
-					$out .= '    });';
-					$out .= '})';
-					$out .= '</script>'."\n";
-					if (count($listofpaths)) {
-						foreach ($listofpaths as $key => $val) {
-							$relativepathtofile = substr($val, (strlen(DOL_DATA_ROOT) - strlen($val)));
-
-							if ($conf->entity > 1) {
-								$relativepathtofile = str_replace('/'.$conf->entity.'/', '/', $relativepathtofile);
-							}
-							// Try to extract data from full path
-							$formfile_params = array();
-							preg_match('#^(/)(\w+)(/)(.+)$#', $relativepathtofile, $formfile_params);
-
-							$out .= '<div id="attachfile_'.$key.'">';
-							// Preview of attachment
-							$out .= img_mime($listofnames[$key]).' '.$listofnames[$key];
-
-							$out .= $formfile->showPreview(array(), $formfile_params[2], $formfile_params[4]);
-							if (!$this->withfilereadonly) {
-								$out .= ' <input type="image" style="border: 0px;" src="'.DOL_URL_ROOT.'/theme/'.$conf->theme.'/img/delete.png" value="'.($key + 1).'" class="removedfile" id="removedfile_'.$key.'" name="removedfile_'.$key.'" />';
-								//$out.= ' <a href="'.$_SERVER["PHP_SELF"].'?removedfile='.($key+1).' id="removedfile_'.$key.'">'.img_delete($langs->trans("Delete").'</a>';
-							}
-							$out .= '<br></div>';
-						}
-					} elseif (empty($this->withmaindocfile)) {
-						//$out .= '<span class="opacitymedium">'.$langs->trans("NoAttachedFiles").'</span><br>';
-					}
-					if ($this->withfile == 2) {
-						$maxfilesizearray = getMaxFileSizeArray();
-						$maxmin = $maxfilesizearray['maxmin'];
-						if ($maxmin > 0) {
-							$out .= '<input type="hidden" name="MAX_FILE_SIZE" value="'.($maxmin * 1024).'">';	// MAX_FILE_SIZE must precede the field type=file
-						}
-						// Can add other files
-						if (!getDolGlobalString('FROM_MAIL_DONT_USE_INPUT_FILE_MULTIPLE')) {
-							$out .= '<input type="file" class="flat" id="addedfile" name="addedfile[]" value="'.$langs->trans("Upload").'" multiple />';
-						} else {
-							$out .= '<input type="file" class="flat" id="addedfile" name="addedfile" value="'.$langs->trans("Upload").'" />';
-						}
-						$out .= ' ';
-						$out .= '<input type="submit" class="button smallpaddingimp" id="'.$addfileaction.'" name="'.$addfileaction.'" value="'.$langs->trans("MailingAddFile").'" />';
-					}
+			
+				$ticketData['rowid'] = $result[0];
+				$ticketData['fk_ticket'] = $result[1];
+				$ticketData['fk_statut'] = $result[3];
+				$ticketData['ref'] = $result[4];
+				$ticketData['store'] = $result[5];
+			
+				// Add other ticket-specific data as needed
+			
+				if (!isset($arr[$table1])) {
+					$arr[$table1] = ['type' => $table1, 'tickets' => []];
+				}
+			
+				$arr[$table1]['tickets'][] = $ticketData;
+			}
+			$emailContent = "Sehr geehrte Damen und Herren,";
+			$emailContent .= "<br>";
+			$emailContent .= "<br>";
+			foreach($arr as $content){
+				if($content["type"] == 1 || $content["type"] == 2){
+					$emailContent .= "Die folgend genannten VKST wurden heute erfolgreich auf unsere neue IT Infrastruktur VKST4.0 migriert:";
+				} elseif($content["type"] == 3 || $content["type"] == 6){
+					$emailContent .= "Abbruch:";
 				} else {
-					$out .= $this->withfile;
+					$emailContent .= "Rollback erfolgreich:";
 				}
-
-				$out .= "</td></tr>\n";
+				$emailContent .= "<br>";
+				foreach($content["tickets"] as $tickets){
+					$emailContent .= explode("-", $tickets["store"])[2];
+					$emailContent .= "<br>";
+				}
+				$emailContent .= "<br>";
 			}
+			$emailContent .= "Mit freundlichen Grüßen";
+			$emailContent .= "<br>";
+			$emailContent .= "SESOCO Team";
 
 			// Message
 			if (!empty($this->withbody)) {
@@ -1012,7 +1142,9 @@ class FormMail extends Form
 							$this->withfckeditor = 0;
 						}
 					}
-
+					if($mailType){
+						$defaultmessage = $emailContent;
+					}
 					$doleditor = new DolEditor('message', $defaultmessage, '', 280, $this->ckeditortoolbar, 'In', true, true, $this->withfckeditor, 8, '95%');
 					$out .= $doleditor->Create(1);
 				}
