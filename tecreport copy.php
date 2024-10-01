@@ -96,16 +96,17 @@ dol_include_once('/stores/compress.php');
 
  
    $sql = 'SELECT f.content, f.parameters, f.images, t.fk_project, p.ref 
-            FROM llx_tec_forms f 
+           FROM llx_tec_forms f 
                LEFT JOIN llx_ticket t ON t.rowid = f.fk_ticket
                LEFT JOIN llx_projet p ON p.rowid = t.fk_project 
-            WHERE f.fk_ticket = '.$object->id.' AND f.fk_user = '.$user->id.' AND f.fk_store = '.$storeid.' AND f.fk_soc = '.$object->fk_soc.';';
+           WHERE f.fk_ticket = '.$object->id.' AND f.fk_user = '.$user->id.' AND f.fk_store = '.$storeid.' AND f.fk_soc = '.$object->fk_soc.';';
    // var_dump($sql);
    $result = $db->query($sql)->fetch_all()[0];
    $parameters = json_decode(base64_decode($result[1]));
    $encoded_params = json_encode($parameters);
    $projectId = $result[3];
    $projectRef = $result[4];
+   // var_dump($projectRef);
    print '<div id="report-body">';
    
       // if(strpos($company->name_alias, 'NCR') !== false && strpos($company->name_alias, 'NCR') >= 0){
@@ -1006,23 +1007,23 @@ dol_include_once('/stores/compress.php');
          print '</div>';
          print '<br>';
          print '<div class="container">';
-            if($projectId != 106 && $projectRef != "69-2407-0101"){
-               print '<div class="row mb-3">';
-                  print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                     print '<label for="input-time-departure" class="form-label mb-0">'.$langs->trans("timedeparture").'</label>';
-                  print '</div>';
-                  print '<div class="col-6 col-md-9">';
-                     print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="">';
-                  print '</div>';
+            print '<div class="row mb-3">';
+               print '<div class="col-6 col-md-3 d-flex align-items-center">';
+                  print '<label for="input-time-departure" class="form-label mb-0">'.$langs->trans("timedeparture").'</label>';
                print '</div>';
-               print '<div class="row mb-3">';
-                  print '<div class="col-6 col-md-3 d-flex align-items-center">';
-                     print '<label for="input-time-arrival" class="form-label mb-0">'.$langs->trans("timearraival").'</label>';
-                  print '</div>';
-                  print '<div class="col-6 col-md-9">';
-                     print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="">';
-                  print '</div>';
+               print '<div class="col-6 col-md-9">';
+                  print '<input type="time" id="input-time-departure" name="time-departure" class="form-control" value="">';
                print '</div>';
+            print '</div>';
+            print '<div class="row mb-3">';
+               print '<div class="col-6 col-md-3 d-flex align-items-center">';
+                  print '<label for="input-time-arrival" class="form-label mb-0">'.$langs->trans("timearraival").'</label>';
+               print '</div>';
+               print '<div class="col-6 col-md-9">';
+                  print '<input type="time" id="input-time-arrival" name="time-arrival" class="form-control" value="">';
+               print '</div>';
+            print '</div>';
+            if($projectId != 106 && $projectRef == "69-2407-0101"){
                print '<div class="row mb-3">';
                   print '<div class="col-6 col-md-3 d-flex align-items-center">';
                      print '<label class="form-label mb-0">'.$langs->trans("tripduration").'</label>';
@@ -1121,191 +1122,191 @@ dol_include_once('/stores/compress.php');
                      print '<td colspan="1">Test NR</td>';
                      print '<td colspan="1">Testfalle</td>';
                      print '<td colspan="1">Prio</td>';
-                     print '<td colspan="1" class="center"><i class="fa fa-check check-all" style="color:green" data-column="vk"></i></td>';
-                     print '<td colspan="1" class="center"><i class="ico-times" role="img" aria-label="Cancel"></i></td>';
-                     print '<td colspan="1" class="center">NV</td>';
-                     print '<td colspan="1" class="center"><i class="fa fa-check center" style="color:green" data-column="nu"></i></td>';
-                     print '<td colspan="1" class="center"><i class="ico-times center" role="img" aria-label="Cancel"></i></td>';
+                     print '<td colspan="1"><i class="fa fa-check check-all" style="color:green" data-column="vk"></i></td>';
+                     print '<td colspan="1"><i class="ico-times" role="img" aria-label="Cancel"></i></td>';
+                     print '<td colspan="1">NV</td>';
+                     print '<td colspan="1"><i class="fa fa-check center" style="color:green" data-column="nu"></i></td>';
+                     print '<td colspan="1"><i class="ico-times center" role="img" aria-label="Cancel"></i></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">A1</td>';
                      print '<td colspan="1">Testartikel scannen (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question1vk" id="question1vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question1vk" id="question1vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-1"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question1nu" id="question1nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question1nu" id="question1nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question1vk" id="question1vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question1vk" id="question1vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-1"></td>';
+                     print '<td colspan="1"><input type="radio" name="question1nu" id="question1nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question1nu" id="question1nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">A2</td>';
                      print '<td colspan="1">Bon Druck und TSE (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question2vk" id="question2vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question2vk" id="question2vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-2"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question2nu" id="question2nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question2nu" id="question2nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question2vk" id="question2vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question2vk" id="question2vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question2nu" id="question2nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question2nu" id="question2nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">A3</td>';
                      print '<td colspan="1">EC-Zahlung (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question3vk" id="question3vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question3vk" id="question3vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-3"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question3nu" id="question3nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question3nu" id="question3nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question3vk" id="question3vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question3vk" id="question3vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-3"></td>';
+                     print '<td colspan="1"><input type="radio" name="question3nu" id="question3nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question3nu" id="question3nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">A4</td>';
                      print '<td colspan="1">EC-Diagnose (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question4vk" id="question4vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question4vk" id="question4vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-4"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question4nu" id="question4nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question4nu" id="question4nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question4vk" id="question4vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question4vk" id="question4vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-4"></td>';
+                     print '<td colspan="1"><input type="radio" name="question4nu" id="question4nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question4nu" id="question4nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">A5</td>';
                      print '<td colspan="1">Gutschein abfragen (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question5vk" id="question5vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question5vk" id="question5vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-5"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question5nu" id="question5nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question5nu" id="question5nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question5vk" id="question5vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question5vk" id="question5vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-5"></td>';
+                     print '<td colspan="1"><input type="radio" name="question5nu" id="question5nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question5nu" id="question5nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">A6</td>';
                      print '<td colspan="1">Bediener Abmelden (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question6vk" id="question6vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question6vk" id="question6vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-6"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question6nu" id="question6nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question6nu" id="question6nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question6vk" id="question6vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question6vk" id="question6vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-6"></td>';
+                     print '<td colspan="1"><input type="radio" name="question6nu" id="question6nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question6nu" id="question6nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">B1</td>';
                      print '<td colspan="1">Mit OBF einen Artikel scannen (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question7vk" id="question7vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question7vk" id="question7vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-7"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question7nu" id="question7nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question7nu" id="question7nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question7vk" id="question7vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question7vk" id="question7vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-7"></td>';
+                     print '<td colspan="1"><input type="radio" name="question7nu" id="question7nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question7nu" id="question7nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">B2</td>';
                      print '<td colspan="1">Mit OBF Etiketten drucken (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question8vk" id="question8vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question8vk" id="question8vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-8"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question8nu" id="question8nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question8nu" id="question8nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question8vk" id="question8vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question8vk" id="question8vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-8"></td>';
+                     print '<td colspan="1"><input type="radio" name="question8nu" id="question8nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question8nu" id="question8nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">C1</td>';
                      print '<td colspan="1">MO STM (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question9vk" id="question9vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question9vk" id="question9vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-9"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question9nu" id="question9nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question9nu" id="question9nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question9vk" id="question9vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question9vk" id="question9vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-9"></td>';
+                     print '<td colspan="1"><input type="radio" name="question9nu" id="question9nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question9nu" id="question9nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">C2</td>';
                      print '<td colspan="1">MO HR Portal (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question10vk" id="question10vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question10vk" id="question10vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-10"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question10nu" id="question10nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question10nu" id="question10nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question10vk" id="question10vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question10vk" id="question10vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-10"></td>';
+                     print '<td colspan="1"><input type="radio" name="question10nu" id="question10nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question10nu" id="question10nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">C3</td>';
                      print '<td colspan="1">MO PEP (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question11vk" id="question11vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question11vk" id="question11vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-11"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question11nu" id="question11nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question11nu" id="question11nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question11vk" id="question11vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question11vk" id="question11vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-11"></td>';
+                     print '<td colspan="1"><input type="radio" name="question11nu" id="question11nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question11nu" id="question11nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">C4</td>';
                      print '<td colspan="1">MO ProDigi (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question12vk" id="question12vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question12vk" id="question12vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-12"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question12nu" id="question12nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question12nu" id="question12nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question12vk" id="question12vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question12vk" id="question12vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-12"></td>';
+                     print '<td colspan="1"><input type="radio" name="question12nu" id="question12nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question12nu" id="question12nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">C5</td>';
                      print '<td colspan="1">MO Intranet (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question13vk" id="question13vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question13vk" id="question13vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-13"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question13nu" id="question13nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question13nu" id="question13nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question13vk" id="question13vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question13vk" id="question13vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-13"></td>';
+                     print '<td colspan="1"><input type="radio" name="question13nu" id="question13nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question13nu" id="question13nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">C6</td>';
                      print '<td colspan="1">MO Korona Backoffice (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question14vk" id="question14vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question14vk" id="question14vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-14"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question14nu" id="question14nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question14nu" id="question14nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question14vk" id="question14vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question14vk" id="question14vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-14"></td>';
+                     print '<td colspan="1"><input type="radio" name="question14nu" id="question14nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question14nu" id="question14nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">C7</td>';
                      print '<td colspan="1">MO Webportal Instanthaltung (R)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question15vk" id="question15vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question15vk" id="question15vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-15"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question15nu" id="question15nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question15nu" id="question15nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question15vk" id="question15vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question15vk" id="question15vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-15"></td>';
+                     print '<td colspan="1"><input type="radio" name="question15nu" id="question15nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question15nu" id="question15nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">D1</td>';
                      print '<td colspan="1">Fototerminals (R/T)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question16vk" id="question16vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question16vk" id="question16vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-16"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question16nu" id="question16nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question16nu" id="question16nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question16vk" id="question16vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question16vk" id="question16vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-16"></td>';
+                     print '<td colspan="1"><input type="radio" name="question16nu" id="question16nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question16nu" id="question16nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">D2</td>';
                      print '<td colspan="1">EMA (R/T)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question17vk" id="question17vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question17vk" id="question17vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-17"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question17nu" id="question17nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question17nu" id="question17nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question17vk" id="question17vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question17vk" id="question17vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-17"></td>';
+                     print '<td colspan="1"><input type="radio" name="question17nu" id="question17nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question17nu" id="question17nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">D3</td>';
                      print '<td colspan="1">Telefonie (R/T)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question18vk" id="question18vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question18vk" id="question18vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-18"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question18nu" id="question18nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question18nu" id="question18nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question18vk" id="question18vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question18vk" id="question18vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-18"></td>';
+                     print '<td colspan="1"><input type="radio" name="question18nu" id="question18nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question18nu" id="question18nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="3">OPTIONAL (testen, wenn vorhanden)</td>';
@@ -1319,21 +1320,21 @@ dol_include_once('/stores/compress.php');
                      print '<td colspan="1">E1</td>';
                      print '<td colspan="1">ESL (R)</td>';
                      print '<td colspan="1" class="prio">1</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question19vk" id="question19vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question19vk" id="question19vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-19"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question19nu" id="question19nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question19nu" id="question19nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question19vk" id="question19vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question19vk" id="question19vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-19"></td>';
+                     print '<td colspan="1"><input type="radio" name="question19nu" id="question19nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question19nu" id="question19nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="1">E2</td>';
                      print '<td colspan="1">Pfandautomaten (R/T)</td>';
                      print '<td colspan="1" class="prio">2</td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question20vk" id="question20vk_1" value="1" class="vk-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question20vk" id="question20vk_2" value="2"></td>';
-                     print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-20"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question20nu" id="question20nu_1" value="1" class="nu-radio"></td>';
-                     print '<td colspan="1" class="center"><input type="radio" name="question20nu" id="question20nu_2" value="2"></td>';
+                     print '<td colspan="1"><input type="radio" name="question20vk" id="question20vk_1" value="1" class="vk-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question20vk" id="question20vk_2" value="2"></td>';
+                     print '<td colspan="1"><input type="checkbox" name="table1-check-20"></td>';
+                     print '<td colspan="1"><input type="radio" name="question20nu" id="question20nu_1" value="1" class="nu-radio"></td>';
+                     print '<td colspan="1"><input type="radio" name="question20nu" id="question20nu_2" value="2"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
                      print '<td colspan="7">Durchzuführen durch: (R)= Rossmann Personal (T)= Techniker (R/T)= Rossmann Personal oder Techniker</td>';
@@ -1510,7 +1511,6 @@ dol_include_once('/stores/compress.php');
             // Karim's code : Logic
             print '
             function checkTests() {
-               
                var opt1 = document.getElementById("table1_1");
                var opt2 = document.getElementById("table1_2");
                var opt3 = document.getElementById("table1_3");
@@ -1532,7 +1532,7 @@ dol_include_once('/stores/compress.php');
                      const prio = cells[2].textContent.trim();
                      const notAvailable = cells[5].querySelector(\'input[type="checkbox"]\').checked;
                      if(notAvailable){
-                        console.log("Not available");
+                        // console.log("Not available");
                         cells[3].querySelector(\'input[type="radio"]\').disabled = true;
                         cells[3].querySelector(\'input[type="radio"]\').checked = false;
                         cells[4].querySelector(\'input[type="radio"]\').disabled = true;
@@ -1647,22 +1647,24 @@ dol_include_once('/stores/compress.php');
                ';
 
                print '
-                  function toggleTableInputs(disable) {
-                     console.log("Function called");
-                     const rows = document.querySelectorAll(\'#questions-table .oddeven\');
-                     for (let i = 0 ; i<rows.length; i++){
-                        const row = rows[i];
-                        const cells = row.children;
-                        if(cells.length == 8){
-                           cells[3].querySelector(\'input[type="radio"]\').disabled = disable;
-                           cells[4].querySelector(\'input[type="radio"]\').disabled = disable;
-                           cells[5].querySelector(\'input[type="checkbox"]\').disabled = disable;
-                           cells[6].querySelector(\'input[type="radio"]\').disabled = disable;
-                           cells[7].querySelector(\'input[type="radio"]\').disabled = disable;   
-                        }  
-                     }
-                  }
+               function toggleSecondColumnDisabled(disabled) {
+                  
+                     // const rows = document.querySelectorAll(\'#questions-table .oddeven\');
+                     // for (let i = 0; i < rows.length; i++) {
+                     //    const row = rows[i];
+                     //    const cells = row.children;
+                     //    if(cells.length == 8){
+                     //       cells[6].querySelector(\'input[type="radio"]\').checked = disabled;
+                     //       cells[6].querySelector(\'input[type="radio"]\').disabled = !disabled;
+                     //       cells[7].querySelector(\'input[type="radio"]\').disabled = disabled;
+                     //       cells[7].querySelector(\'input[type="radio"]\').checked = !disabled;
+                     //    }
+                     // }
+                  return;
+               }
+
                ';
+
    
                print '
                   function testTracker() {
@@ -1688,13 +1690,13 @@ dol_include_once('/stores/compress.php');
                      let rows = document.querySelectorAll("#questions-table .oddeven");
    
                      if (opt1.checked) {
-                         
+                        toggleSecondColumnDisabled(false);
                         document.getElementById("error-text-p1").style.display = "none";
                         document.getElementById("error-text-p2").style.display = "none";
                         document.getElementById("error-text-p1-rollback").style.display = "none";
                         document.getElementById("error-text-p2-rollback").style.display = "none";      
                      } else if (opt2.checked) {
-                          
+                        toggleSecondColumnDisabled(false);
                         document.getElementById("error-text-p2").style.display = "block";
                         document.getElementById("p2tests").value = "";
                         for (let i = 0; i < rows.length; i++) {
@@ -1721,9 +1723,8 @@ dol_include_once('/stores/compress.php');
                      } else if (opt3.checked) {
                         toggleVisibility("show");
                         // Logic for opt3
-                        toggleTableInputs(true);
                      } else if (opt4.checked) {
-                         
+                        toggleSecondColumnDisabled(true);
                         document.getElementById("error-text-p1").style.display = "block";
                         document.getElementById("error-text-p2").style.display = "block";
                         //document.getElementById("error-text-p2-rollback").style.display = "block";
@@ -1770,7 +1771,7 @@ dol_include_once('/stores/compress.php');
                      document.getElementById("p2testsRollback").value = document.getElementById("error-text-p2-rollback").textContent.replace("P2 Fehler (Rollback): ", "");
 
                   } else if(opt5.checked){
-                      
+                     toggleSecondColumnDisabled(true);
                      document.getElementById("error-text-p1").style.display = "block";
                      document.getElementById("error-text-p2").style.display = "block";
                      //document.getElementById("error-text-p1-rollback").style.display = "block";
@@ -1815,7 +1816,7 @@ dol_include_once('/stores/compress.php');
                      document.getElementById("p2testsRollback").value = document.getElementById("error-text-p2-rollback").textContent.replace("P2 Fehler (Rollback): ", "");
 
                   }else if (opt6.checked) {
-                      
+                     toggleSecondColumnDisabled(true);
                      toggleVisibility("show");
                      document.getElementById("error-text-p1").style.display = "block";
                      document.getElementById("error-text-p2").style.display = "block";
@@ -1911,23 +1912,6 @@ dol_include_once('/stores/compress.php');
                         document.getElementById("table1_4").addEventListener("change", setRequireRadio);
                         document.getElementById("table1_6").addEventListener("change", setRequireRadio);
 
-                        // Enable all Inputs if the user decides to switch from opt3 to any other option manually instead of deselecting opt3
-                        document.getElementById("table1_1").addEventListener("change", function(){
-                           toggleTableInputs(false);
-                        });
-                        document.getElementById("table1_2").addEventListener("change", function(){
-                           toggleTableInputs(false);
-                        });
-                        document.getElementById("table1_4").addEventListener("change", function(){
-                           toggleTableInputs(false);
-                        });
-                        document.getElementById("table1_5").addEventListener("change", function(){
-                           toggleTableInputs(false);
-                        });
-                        document.getElementById("table1_6").addEventListener("change", function(){
-                           toggleTableInputs(false);
-                        });
-
                         // If the checkboxes in any row are checked, disable the radio buttons. Check this at the beginning of loading the page, otherwise the radio buttons will be enabled despite the chekboxes being checked
                         const rows = document.querySelectorAll(\'#questions-table .oddeven\');
                         for (let i = 0; i < rows.length; i++) {
@@ -1955,106 +1939,104 @@ dol_include_once('/stores/compress.php');
                      });';
             // end check P1, P2 table rows
 
-            if($projectId != 106 && $projectRef != "69-2407-0101"){
-               // calculate distance/times
-               print '
-               document.addEventListener("DOMContentLoaded", function() {
-                     const arrivalInput = document.getElementById("input-time-arrival");
-                     const departureInput = document.getElementById("input-time-departure");
-                     const workStartInput = document.getElementById("input-work-start");
-                     const workEndInput = document.getElementById("input-work-end");
-                     const durationHoursInput = document.getElementById("input-duration-hours");
-                     const durationMinutesInput = document.getElementById("input-duration-minutes");
-               
-                     function floorTimeToNearest15(date) {
-                        const minutes = date.getMinutes();
-                        date.setMinutes(minutes - (minutes % 15), 0, 0); // floor to nearest 15 minutes
-                        return date;
+            // calculate distance/times
+            print '
+            document.addEventListener("DOMContentLoaded", function() {
+                  const arrivalInput = document.getElementById("input-time-arrival");
+                  const departureInput = document.getElementById("input-time-departure");
+                  const workStartInput = document.getElementById("input-work-start");
+                  const workEndInput = document.getElementById("input-work-end");
+                  const durationHoursInput = document.getElementById("input-duration-hours");
+                  const durationMinutesInput = document.getElementById("input-duration-minutes");
+            
+                  function floorTimeToNearest15(date) {
+                     const minutes = date.getMinutes();
+                     date.setMinutes(minutes - (minutes % 15), 0, 0); // floor to nearest 15 minutes
+                     return date;
+                  }
+            
+                  function ceilTimeToNearest15(date) {
+                     const minutes = date.getMinutes();
+                     date.setMinutes(minutes + (15 - (minutes % 15)) % 15, 0, 0); // ceil to nearest 15 minutes
+                     return date;
+                  }
+            
+                  function calculateDuration(endTime, startTime) {
+                     let duration = (endTime - startTime) / (1000 * 60); // duration in minutes
+                     const hours = Math.floor(duration / 60);
+                     const minutes = duration % 60;
+                     return { hours, minutes };
+                  }
+            
+                  function updateDuration() {
+                     if (arrivalInput.value && departureInput.value) {
+                        let arrivalTime = new Date();
+                        let departureTime = new Date();
+            
+                        const [arrHours, arrMinutes] = arrivalInput.value.split(":").map(Number);
+                        const [depHours, depMinutes] = departureInput.value.split(":").map(Number);
+            
+                        arrivalTime.setHours(arrHours, arrMinutes, 0, 0);
+                        departureTime.setHours(depHours, depMinutes, 0, 0);
+            
+                     if(arrivalTime < departureTime) {
+                           alert("Ankunftszeit kann nicht vor Abfahrtszeit sein!");
+                           return;
+                        }
+            
+                        const { hours, minutes } = calculateDuration(arrivalTime, departureTime);
+                        durationHoursInput.value = hours;
+                        durationMinutesInput.value = minutes;
                      }
-               
-                     function ceilTimeToNearest15(date) {
-                        const minutes = date.getMinutes();
-                        date.setMinutes(minutes + (15 - (minutes % 15)) % 15, 0, 0); // ceil to nearest 15 minutes
-                        return date;
+                     
+                  }
+            
+                  arrivalInput.addEventListener("blur", function() {
+                     if (arrivalInput.value) {
+                        let arrivalTime = new Date();
+                        const [hours, minutes] = arrivalInput.value.split(":").map(Number);
+                        arrivalTime.setHours(hours, minutes, 0, 0);
+                        arrivalTime = floorTimeToNearest15(arrivalTime);
+                        arrivalInput.value = arrivalTime.toTimeString().substring(0, 5);
+                        workStartInput.value = arrivalTime.toTimeString().substring(0, 5);
+                        updateDuration();
                      }
-               
-                     function calculateDuration(endTime, startTime) {
-                        let duration = (endTime - startTime) / (1000 * 60); // duration in minutes
-                        const hours = Math.floor(duration / 60);
-                        const minutes = duration % 60;
-                        return { hours, minutes };
+                  });
+            
+                  departureInput.addEventListener("blur", function() {
+                     if (departureInput.value) {
+                        let departureTime = new Date();
+                        const [hours, minutes] = departureInput.value.split(":").map(Number);
+                        departureTime.setHours(hours, minutes, 0, 0);
+                        departureTime = floorTimeToNearest15(departureTime);
+                        departureInput.value = departureTime.toTimeString().substring(0, 5);
+                        updateDuration();
                      }
-               
-                     function updateDuration() {
-                        if (arrivalInput.value && departureInput.value) {
-                           let arrivalTime = new Date();
-                           let departureTime = new Date();
-               
-                           const [arrHours, arrMinutes] = arrivalInput.value.split(":").map(Number);
-                           const [depHours, depMinutes] = departureInput.value.split(":").map(Number);
-               
-                           arrivalTime.setHours(arrHours, arrMinutes, 0, 0);
-                           departureTime.setHours(depHours, depMinutes, 0, 0);
-               
-                        if(arrivalTime < departureTime) {
-                              alert("Ankunftszeit kann nicht vor Abfahrtszeit sein!");
-                              return;
-                           }
-               
-                           const { hours, minutes } = calculateDuration(arrivalTime, departureTime);
-                           durationHoursInput.value = hours;
-                           durationMinutesInput.value = minutes;
-                        }
-                        
+                  });
+            
+                  workEndInput.addEventListener("blur", function() {
+                     if (workEndInput.value) {
+                        let workEndTime = new Date();
+                        const [hours, minutes] = workEndInput.value.split(":").map(Number);
+                        workEndTime.setHours(hours, minutes, 0, 0);
+                        workEndTime = ceilTimeToNearest15(workEndTime);
+                        workEndInput.value = workEndTime.toTimeString().substring(0, 5);
                      }
-               
-                     arrivalInput.addEventListener("blur", function() {
-                        if (arrivalInput.value) {
-                           let arrivalTime = new Date();
-                           const [hours, minutes] = arrivalInput.value.split(":").map(Number);
-                           arrivalTime.setHours(hours, minutes, 0, 0);
-                           arrivalTime = floorTimeToNearest15(arrivalTime);
-                           arrivalInput.value = arrivalTime.toTimeString().substring(0, 5);
-                           workStartInput.value = arrivalTime.toTimeString().substring(0, 5);
-                           updateDuration();
-                        }
-                     });
-               
-                     departureInput.addEventListener("blur", function() {
-                        if (departureInput.value) {
-                           let departureTime = new Date();
-                           const [hours, minutes] = departureInput.value.split(":").map(Number);
-                           departureTime.setHours(hours, minutes, 0, 0);
-                           departureTime = floorTimeToNearest15(departureTime);
-                           departureInput.value = departureTime.toTimeString().substring(0, 5);
-                           updateDuration();
-                        }
-                     });
-               
-                     workEndInput.addEventListener("blur", function() {
-                        if (workEndInput.value) {
-                           let workEndTime = new Date();
-                           const [hours, minutes] = workEndInput.value.split(":").map(Number);
-                           workEndTime.setHours(hours, minutes, 0, 0);
-                           workEndTime = ceilTimeToNearest15(workEndTime);
-                           workEndInput.value = workEndTime.toTimeString().substring(0, 5);
-                        }
-                     });
-               
-                     workStartInput.addEventListener("blur", function() {
-                        if (workStartInput.value) {
-                           let workStartTime = new Date();
-                           const [hours, minutes] = workStartInput.value.split(":").map(Number);
-                           workStartTime.setHours(hours, minutes, 0, 0);
-                           workStartTime = floorTimeToNearest15(workStartTime);
-                           workStartInput.value = workStartTime.toTimeString().substring(0, 5);
-                           arrivalInput.value = workStartTime.toTimeString().substring(0, 5);
-                           updateDuration();
-                        }
-                     });
-                  });';
-            // end calculate distance/times
-            }
+                  });
+            
+                  workStartInput.addEventListener("blur", function() {
+                     if (workStartInput.value) {
+                        let workStartTime = new Date();
+                        const [hours, minutes] = workStartInput.value.split(":").map(Number);
+                        workStartTime.setHours(hours, minutes, 0, 0);
+                        workStartTime = floorTimeToNearest15(workStartTime);
+                        workStartInput.value = workStartTime.toTimeString().substring(0, 5);
+                        arrivalInput.value = workStartTime.toTimeString().substring(0, 5);
+                        updateDuration();
+                     }
+                  });
+               });';
+         // end calculate distance/times  
          print '</script>';
 
       }
@@ -2497,12 +2479,6 @@ dol_include_once('/stores/compress.php');
                radio.addEventListener("click", function(event) {
                   if (this === lastSelectedRadio) {
                      this.checked = false; // Deselect the radio button
-                     // Additionally check if this is the table1_3 radio button, the call toggleTableInputs again
-                     if (this.id === "table1_3") {
-                        toggleTableInputs(false);
-                        checkTests();
-                     }
-                     
                      lastSelectedRadio = null; // Reset last selected radio button
                   } else {
                      lastSelectedRadio = this; // Update last selected radio button
@@ -2843,8 +2819,5 @@ dol_include_once('/stores/compress.php');
                box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
                padding: 5px;
                border-radius: 5px;
-            }';
-   print '#questions-table td {
-               width: 100px;
             }';
  print '</style>';

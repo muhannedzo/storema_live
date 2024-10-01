@@ -2336,7 +2336,11 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			}
 
 			// Reports Mail
-			print dolGetButtonAction('', $langs->trans('Reports Mail'), 'default', $_SERVER['PHP_SELF'].'?action=presend&token='.newToken().'&id='.$object->id.'&type=reportsMail&mode=init#formmailbeforetitle', '');
+			$customer = new Societe($db);
+			$customer->fetch($object->array_options["options_customerbranch"]);
+			if($customer->name_alias == "ROS"){
+				print dolGetButtonAction('', $langs->trans('Reports Mail'), 'default', $_SERVER['PHP_SELF'].'?action=presend&token='.newToken().'&id='.$object->id.'&type=reportsMail&mode=init#formmailbeforetitle', '');
+			}
 			
 
 			// Accounting Report

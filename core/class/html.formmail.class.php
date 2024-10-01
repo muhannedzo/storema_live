@@ -980,6 +980,15 @@ class FormMail extends Form
 						break;
 					}
 				}
+				if($table1 == 1 || $table1 == 2){
+					$table1 = 1;
+				}
+				if($table1 == 3 || $table1 == 6){
+					$table1 = 3;
+				}
+				if($table1 == 4 || $table1 == 5){
+					$table1 = 4;
+				}
 			
 				$ticketData['rowid'] = $result[0];
 				$ticketData['fk_ticket'] = $result[1];
@@ -995,6 +1004,8 @@ class FormMail extends Form
 			
 				$arr[$table1]['tickets'][] = $ticketData;
 			}
+			// var_dump($arr);
+			// $emailContent = "";
 			$emailContent = "Sehr geehrte Damen und Herren,";
 			$emailContent .= "<br>";
 			$emailContent .= "<br>";
