@@ -122,7 +122,7 @@ $techUser = new User($db);
 // var_dump($object->fk_user_assign);
 // $sql = 'SELECT content, parameters, fk_user, images FROM llx_tec_forms WHERE fk_ticket = '.$object->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.' AND fk_user = '.$object->fk_user_assign.';';
  
-$sql = 'SELECT f.content, f.parameters, f.fk_user, f.images, t.fk_project, p.ref 
+$sql = 'SELECT f.content, f.parameters, f.fk_user, f.images, t.fk_project, p.ref, p.rowid 
          FROM llx_tec_forms f 
             LEFT JOIN llx_ticket t ON t.rowid = f.fk_ticket
             LEFT JOIN llx_projet p ON p.rowid = t.fk_project 
@@ -1417,7 +1417,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
             print '<div class="col" style="text-align: center;">';
                print '<canvas id="signatureCanvasSesoco" class="signature-canvas" name="signatureCanvasSesoco"></canvas>';
                print '<br>';
-               print '<input type="text" name="employee-name" placeholder="Name of Technician" value="'.$user->firstname.' '.$user->lastname.'">';
+               print '<input type="text" name="employee-name" placeholder="Name of Technician" value="'.$techUser->firstname.' '.$techUser->lastname.'">';
                print '<i class="ico-times clearCanvas" role="img" aria-label="Cancel"  onClick="clearCanvas(\'signatureCanvasSesoco\')"></i>';
                print '<br>';
             print '</div>';
@@ -2138,7 +2138,8 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
    $parameters = json_decode(base64_decode($result[1]));
    $images = json_decode(base64_decode($result[3]));
    $encoded_params = json_encode($parameters);
-   if($result[1] ){
+   // var_dump($result);
+   if($result[6]){
       print '<script>';
          // auto fill inputs 
          print '
@@ -2202,7 +2203,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
 
          print '<script>';
 
-         // export as csv
+            // export as csv
             print '
             function exportToCSV() {
                const tables = document.getElementById("report-body").querySelectorAll("table:not(#times-table)");
@@ -2302,7 +2303,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                return timeRegex.test(timeStr);
             }
             ';
-         // end export as csv
+            // end export as csv
 
             // generate pdf
             print '      
@@ -3005,7 +3006,22 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
       print 'document.getElementById("generate-pdf").style.display = "none";';
       print 'document.getElementById("csv").style.display = "none";';
       print '</script>';
-      print "Noch kein Bericht vorhanden";
+      print '<div class="row">';
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="col-12">';
+               print 'Noch kein Bericht vorhanden';
+            print '</div>';
+            print '<div class="col-12 mt-2">';
+               print '<input type="submit" id="add-report" name="add-report" value="Add a new Report">';
+            print '</div>';
+         print '</form>';
+      print '</div>';
+   }
+   if(isset($_POST['add-report'])) {
+      $sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`) VALUES ("'.$object->id.'", "'.$object->fk_user_assign.'", "'.$object->fk_soc.'", "'.$object->array_options["options_fk_store"].'")';
+      $db->query($sql, 0, 'ddl');
+     print '<script>window.location.href = window.location.href;
+     </script>';
    }
 
 
@@ -3098,8 +3114,12 @@ print '.closed {
             width: 90%;
          }
       }';
-   print '#questions-table td {
-               width: 100px;
-            }';
+print '#questions-table td {
+            width: 100px;
+      }';
+print '#add-report {      
+            width: 15%;
+            font-size: 13px;
+      }';
 print '</style>';
 

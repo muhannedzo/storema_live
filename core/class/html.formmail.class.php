@@ -1004,6 +1004,11 @@ class FormMail extends Form
 			
 				$arr[$table1]['tickets'][] = $ticketData;
 			}
+			foreach ($arr as &$table) {
+				usort($table['tickets'], function ($a, $b) {
+					return $a['fk_ticket'] - $b['fk_ticket'];
+				});
+			}
 			// var_dump($arr);
 			// $emailContent = "";
 			$emailContent = "Sehr geehrte Damen und Herren,";
