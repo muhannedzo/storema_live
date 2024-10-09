@@ -2958,6 +2958,7 @@ class Ticket extends CommonObject
 				//var_dump($listofpaths);exit;
 
 				if (!empty($public_area)) {
+					var_dump(1);
 					/*
 					 * Message created from the Public interface
 					 *
@@ -3059,6 +3060,9 @@ class Ticket extends CommonObject
 						}
 					}
 				} else {
+					// var_dump(2);
+					// var_dump($send_email);
+					// var_dump($object->private);
 					/*
 					 * Message send from the Backoffice / Private area
 					 *
@@ -3144,116 +3148,116 @@ class Ticket extends CommonObject
 						/*
 						 * Send emails for externals users if not private (linked contacts)
 						 */
-						if (empty($object->private)) {
-							// Retrieve email of all contacts (external)
-							$external_contacts = $object->getInfosTicketExternalContact(1);
+						// if (empty($object->private)) {
+						// 	// Retrieve email of all contacts (external)
+						// 	$external_contacts = $object->getInfosTicketExternalContact(1);
 
-							// If no contact, get email from thirdparty
-							if (is_array($external_contacts) && count($external_contacts) === 0) {
-								if (!empty($object->fk_soc)) {
-									$object->fetch_thirdparty($object->fk_soc);
-									$array_company = array(array('firstname' => '', 'lastname' => $object->thirdparty->name, 'email' => $object->thirdparty->email, 'libelle' => $langs->transnoentities('Customer'), 'socid' => $object->thirdparty->id));
-									$external_contacts = array_merge($external_contacts, $array_company);
-								} elseif (empty($object->fk_soc) && !empty($object->origin_email)) {
-									$array_external = array(array('firstname' => '', 'lastname' => $object->origin_email, 'email' => $object->thirdparty->email, 'libelle' => $langs->transnoentities('Customer'), 'socid' => $object->thirdparty->id));
-									$external_contacts = array_merge($external_contacts, $array_external);
-								}
-							}
+						// 	// If no contact, get email from thirdparty
+						// 	if (is_array($external_contacts) && count($external_contacts) === 0) {
+						// 		if (!empty($object->fk_soc)) {
+						// 			$object->fetch_thirdparty($object->fk_soc);
+						// 			$array_company = array(array('firstname' => '', 'lastname' => $object->thirdparty->name, 'email' => $object->thirdparty->email, 'libelle' => $langs->transnoentities('Customer'), 'socid' => $object->thirdparty->id));
+						// 			$external_contacts = array_merge($external_contacts, $array_company);
+						// 		} elseif (empty($object->fk_soc) && !empty($object->origin_email)) {
+						// 			$array_external = array(array('firstname' => '', 'lastname' => $object->origin_email, 'email' => $object->thirdparty->email, 'libelle' => $langs->transnoentities('Customer'), 'socid' => $object->thirdparty->id));
+						// 			$external_contacts = array_merge($external_contacts, $array_external);
+						// 		}
+						// 	}
 
-							$sendto = array();
-							if (is_array($external_contacts) && count($external_contacts) > 0) {
-								// Get default subject for email to external contacts
-								$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
+						// 	$sendto = array();
+						// 	if (is_array($external_contacts) && count($external_contacts) > 0) {
+						// 		// Get default subject for email to external contacts
+						// 		$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
 
-								$subject = GETPOST('subject') ? GETPOST('subject') : '['.$appli.' - '.$langs->trans("Ticket").' #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
+						// 		$subject = GETPOST('subject') ? GETPOST('subject') : '['.$appli.' - '.$langs->trans("Ticket").' #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
 
-								$message_intro = GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO');
-								$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
-								if (!dol_textishtml($message_intro)) {
-									$message_intro = dol_nl2br($message_intro);
-								}
-								if (!dol_textishtml($message_signature)) {
-									$message_signature = dol_nl2br($message_signature);
-								}
+						// 		$message_intro = GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO');
+						// 		$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
+						// 		if (!dol_textishtml($message_intro)) {
+						// 			$message_intro = dol_nl2br($message_intro);
+						// 		}
+						// 		if (!dol_textishtml($message_signature)) {
+						// 			$message_signature = dol_nl2br($message_signature);
+						// 		}
 
-								// We put intro after
-								$messagePost = GETPOST('message', 'restricthtml');
-								if (!dol_textishtml($messagePost)) {
-									$messagePost = dol_nl2br($messagePost);
-								}
-								$message = $messagePost;
-								$message .= '<br><br>';
+						// 		// We put intro after
+						// 		$messagePost = GETPOST('message', 'restricthtml');
+						// 		if (!dol_textishtml($messagePost)) {
+						// 			$messagePost = dol_nl2br($messagePost);
+						// 		}
+						// 		$message = $messagePost;
+						// 		$message .= '<br><br>';
 
-								foreach ($external_contacts as $key => $info_sendto) {
-									// altairis: avoid duplicate emails to external contacts
-									if ($info_sendto['id'] == $user->contact_id) {
-										continue;
-									}
+						// 		foreach ($external_contacts as $key => $info_sendto) {
+						// 			// altairis: avoid duplicate emails to external contacts
+						// 			if ($info_sendto['id'] == $user->contact_id) {
+						// 				continue;
+						// 			}
 
-									if ($info_sendto['email'] != '' && $info_sendto['email'] != $object->origin_email) {
-										if (!empty($info_sendto['email'])) {
-											$sendto[$info_sendto['email']] = trim($info_sendto['firstname']." ".$info_sendto['lastname'])." <".$info_sendto['email'].">";
-										}
+						// 			if ($info_sendto['email'] != '' && $info_sendto['email'] != $object->origin_email) {
+						// 				if (!empty($info_sendto['email'])) {
+						// 					$sendto[$info_sendto['email']] = trim($info_sendto['firstname']." ".$info_sendto['lastname'])." <".$info_sendto['email'].">";
+						// 				}
 
-										$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], '-1').' ('.strtolower($info_sendto['libelle']).')';
-										// $message .= (!empty($recipient) ? $langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
-									}
-								}
+						// 				$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], '-1').' ('.strtolower($info_sendto['libelle']).')';
+						// 				// $message .= (!empty($recipient) ? $langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
+						// 			}
+						// 		}
 
-								// If public interface is not enable, use link to internal page into mail
-								$url_public_ticket = (getDolGlobalInt('TICKET_ENABLE_PUBLIC_INTERFACE') ?
-										(getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') !== '' ? getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') . '/view.php' : dol_buildpath('/public/ticket/view.php', 2)) : dol_buildpath('/ticket/card.php', 2)).'?track_id='.$object->track_id;
+						// 		// If public interface is not enable, use link to internal page into mail
+						// 		$url_public_ticket = (getDolGlobalInt('TICKET_ENABLE_PUBLIC_INTERFACE') ?
+						// 				(getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') !== '' ? getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') . '/view.php' : dol_buildpath('/public/ticket/view.php', 2)) : dol_buildpath('/ticket/card.php', 2)).'?track_id='.$object->track_id;
 
-								$message .= '<br>'.$langs->trans('TicketNewEmailBodyInfosTrackUrlCustomer').' : <a href="'.$url_public_ticket.'">'.$object->track_id.'</a><br>';
+						// 		$message .= '<br>'.$langs->trans('TicketNewEmailBodyInfosTrackUrlCustomer').' : <a href="'.$url_public_ticket.'">'.$object->track_id.'</a><br>';
 
-								// Build final message
-								$message = $message_intro.'<br><br>'.$message;
+						// 		// Build final message
+						// 		$message = $message_intro.'<br><br>'.$message;
 
-								// Add signature
-								$message .= '<br>'.$message_signature;
+						// 		// Add signature
+						// 		$message .= '<br>'.$message_signature;
 
-								if (!empty($object->origin_email)) {
-									$sendto[$object->origin_email] = $object->origin_email;
-								}
+						// 		if (!empty($object->origin_email)) {
+						// 			$sendto[$object->origin_email] = $object->origin_email;
+						// 		}
 
-								if ($object->fk_soc > 0 && !array_key_exists($object->origin_email, $sendto)) {
-									$object->socid = $object->fk_soc;
-									$object->fetch_thirdparty();
-									if (!empty($object->thirdparty->email)) {
-										$sendto[$object->thirdparty->email] = $object->thirdparty->email;
-									}
-								}
+						// 		if ($object->fk_soc > 0 && !array_key_exists($object->origin_email, $sendto)) {
+						// 			$object->socid = $object->fk_soc;
+						// 			$object->fetch_thirdparty();
+						// 			if (!empty($object->thirdparty->email)) {
+						// 				$sendto[$object->thirdparty->email] = $object->thirdparty->email;
+						// 			}
+						// 		}
 
-								// Add global email address recipient
-								if (getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)) {
-									if (getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')) {
-										$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
-									}
-								}
+						// 		// Add global email address recipient
+						// 		if (getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)) {
+						// 			if (getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')) {
+						// 				$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
+						// 			}
+						// 		}
 
-								// Dont try to send email when no recipient
-								if (!empty($sendto)) {
+						// 		// Dont try to send email when no recipient
+						// 		if (!empty($sendto)) {
 									
-									$sendto = [
-										"it-providermanagement@rossmann.de", 
-										"rollout-vkst4@rossmann.de", 
-										"Filialinfrastruktur@rossmann.de",
-										"posteingangvkst-hotline@rossmann.de",
-										"Timo.Woehler@rossmann.de",
-										"f.mutschler@telonic.de",
-										"rossmann.rollout@ncrvoyix.com",
-										"Kristijan.Novakovic@ncrvoyix.com",
-										"rollout@sesoco.de"
-									];
-									$result = $this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
-									if ($result) {
-										// update last_msg_sent date (for last message sent to external users)
-										$this->date_last_msg_sent = dol_now();
-										$this->update($user, 1);	// disable trigger when updating date_last_msg_sent. sendTicketMessageByEmail already create an event in actioncomm table.
-									}
-								}
-							}
-						}
+						// 			$sendto = [
+						// 				"it-providermanagement@rossmann.de", 
+						// 				"rollout-vkst4@rossmann.de", 
+						// 				"Filialinfrastruktur@rossmann.de",
+						// 				"posteingangvkst-hotline@rossmann.de",
+						// 				"Timo.Woehler@rossmann.de",
+						// 				"f.mutschler@telonic.de",
+						// 				"rossmann.rollout@ncrvoyix.com",
+						// 				"Kristijan.Novakovic@ncrvoyix.com",
+						// 				"rollout@sesoco.de"
+						// 			];
+						// 			$result = $this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
+						// 			if ($result) {
+						// 				// update last_msg_sent date (for last message sent to external users)
+						// 				$this->date_last_msg_sent = dol_now();
+						// 				$this->update($user, 1);	// disable trigger when updating date_last_msg_sent. sendTicketMessageByEmail already create an event in actioncomm table.
+						// 			}
+						// 		}
+						// 	}
+						// }
 					}
 				}
 

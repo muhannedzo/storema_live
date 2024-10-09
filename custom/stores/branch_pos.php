@@ -589,23 +589,23 @@ if ($object->id > 0) {
 					$k = 0;
 					print '<div class="group">';
 						print '<div class="group-header">';
-						print '<div style="display: flex">';
-							print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-								print $ticket->getNomUrl();
-								// print '<div class="edit-icon" id="edit-icon '.$k.'"><span id="'.$k.'" class="fa fa-pen" onclick="changeLabel(this.id)"></span></div>';
-								// print '<button type="submit" name="edit-label" id="save-edit '.$k.'" hidden>Save</button></td>';
+							print '<div style="display: flex">';
+								print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+									print $ticket->getNomUrl();
+									// print '<div class="edit-icon" id="edit-icon '.$k.'"><span id="'.$k.'" class="fa fa-pen" onclick="changeLabel(this.id)"></span></div>';
+									// print '<button type="submit" name="edit-label" id="save-edit '.$k.'" hidden>Save</button></td>';
+									// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+								print '</form>';
+							print '</div>';  
+							print '<div style="display: flex; align-items:center">';
+								// print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+								// print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
+								// print '<button type="submit" id="delete-group delete '.$k.'" name="delete-group" hidden>delete</button></td>';
+								print '<span id="addmore '.$k.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
 								// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
-							print '</form>';
-						print '</div>';  
-						print '<div style="display: flex; align-items:center">';
-							// print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-							// print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
-							// print '<button type="submit" id="delete-group delete '.$k.'" name="delete-group" hidden>delete</button></td>';
-							// print '<span id="addmore '.$k.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
-							// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
-							// print '</form>';  
+								// print '</form>';  
+							print '</div>';
 						print '</div>';
-					print '</div>';
 					foreach($imagesGroup as $elem){
 						$elements = $elem->images;
 						$exploded_elements = array_map(function($element) {

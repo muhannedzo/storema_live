@@ -1025,6 +1025,11 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      print '<td colspan="1" class="center"><input type="checkbox" name="firewall-value"></td>';
                   print '</tr>';
                   print '<tr class="oddeven">';
+                     print '<td colspan="1">CISCO SN</td>';
+                     print '<td colspan="1"><input type="text" name="sisci-sn" style="width:100%" required></td>';
+                     print '<td colspan="1" class="center"><input type="checkbox" name="sisci-sn-check"></td>';
+                  print '</tr>';
+                  print '<tr class="oddeven">';
                      print '<td colspan="1">Patchkabel</td>';
                      print '<td colspan="1">1 Meter</td>';
                      print '<td colspan="1" class="center"><input type="number" name="patchkabel-1meter-value" value="0"></td>';

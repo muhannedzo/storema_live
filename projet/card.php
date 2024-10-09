@@ -2062,25 +2062,45 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			$allStores .= '<th class="center">Im Projekt</th>';
 			$allStores .= '<th class="center">Fertig/Offen</th>';
 			$allStores .= '</tr>';
-			$sql = "SELECT DISTINCT LEFT(s.zip_code, 1) AS `zipcode`, 
-								(SELECT COUNT(*) FROM llx_stores_branch WHERE fk_soc = ".$object->array_options["options_customerbranch"]." AND LEFT(zip_code, 1) = LEFT(s.zip_code, 1) AND s.country_id = ".$countryIDFilter.") AS `zipcode_stores`, 
-								(SELECT COUNT(*) FROM llx_stores_branch ss 
-								LEFT JOIN llx_projet_extrafields p ON CONCAT(',', p.stores, ',') LIKE CONCAT('%,', ss.rowid, ',%') 
-								WHERE p.fk_object = ".$id." AND s.fk_soc = ".$object->array_options["options_customerbranch"]." AND LEFT(zip_code, 1) = LEFT(s.zip_code, 1) AND s.country_id = ".$countryIDFilter.") AS `zipcode_stores_p`,
-								(SELECT COUNT(DISTINCT te.fk_store) 
-									FROM llx_ticket_extrafields te 
-									JOIN llx_ticket t ON te.fk_object = t.rowid 
-									JOIN llx_stores_branch sb ON te.fk_store = sb.rowid 
-									JOIN llx_projet pr ON t.fk_project = pr.rowid 
-								WHERE te.customer = s.fk_soc AND t.fk_project = ".$id." AND LEFT(sb.zip_code, 1) = LEFT(s.zip_code, 1) AND t.fk_statut = 8 AND s.country_id = ".$countryIDFilter.") AS `total_stores_done`,
-								(SELECT COUNT(DISTINCT te.fk_store) 
-									FROM llx_ticket_extrafields te 
-									JOIN llx_ticket t ON te.fk_object = t.rowid 
-									JOIN llx_stores_branch sb ON te.fk_store = sb.rowid 
-									JOIN llx_projet pr ON t.fk_project = pr.rowid 
-								WHERE te.customer = s.fk_soc AND t.fk_project = ".$id." AND LEFT(sb.zip_code, 1) = LEFT(s.zip_code, 1) AND t.fk_statut <> 8 AND s.country_id = ".$countryIDFilter.") AS `total_stores_open`
-						FROM llx_stores_branch s
-						WHERE s.fk_soc = ".$object->array_options["options_customerbranch"]." AND s.country_id = ".$countryIDFilter." ORDER BY zipcode";			
+			// $sql = "SELECT DISTINCT LEFT(s.zip_code, 1) AS `zipcode`, 
+			// 					(SELECT COUNT(*) FROM llx_stores_branch WHERE fk_soc = ".$object->array_options["options_customerbranch"]." AND LEFT(zip_code, 1) = LEFT(s.zip_code, 1) AND s.country_id = ".$countryIDFilter.") AS `zipcode_stores`, 
+			// 					(SELECT COUNT(*) FROM llx_stores_branch ss 
+			// 					LEFT JOIN llx_projet_extrafields p ON CONCAT(',', p.stores, ',') LIKE CONCAT('%,', ss.rowid, ',%') 
+			// 					WHERE p.fk_object = ".$id." AND s.fk_soc = ".$object->array_options["options_customerbranch"]." AND LEFT(zip_code, 1) = LEFT(s.zip_code, 1) AND s.country_id = ".$countryIDFilter.") AS `zipcode_stores_p`,
+			// 					(SELECT COUNT(DISTINCT te.fk_store) 
+			// 						FROM llx_ticket_extrafields te 
+			// 						JOIN llx_ticket t ON te.fk_object = t.rowid 
+			// 						JOIN llx_stores_branch sb ON te.fk_store = sb.rowid 
+			// 						JOIN llx_projet pr ON t.fk_project = pr.rowid 
+			// 					WHERE te.customer = s.fk_soc AND t.fk_project = ".$id." AND LEFT(sb.zip_code, 1) = LEFT(s.zip_code, 1) AND t.fk_statut = 8 AND s.country_id = ".$countryIDFilter.") AS `total_stores_done`,
+			// 					(SELECT COUNT(DISTINCT te.fk_store) 
+			// 						FROM llx_ticket_extrafields te 
+			// 						JOIN llx_ticket t ON te.fk_object = t.rowid 
+			// 						JOIN llx_stores_branch sb ON te.fk_store = sb.rowid 
+			// 						JOIN llx_projet pr ON t.fk_project = pr.rowid 
+			// 					WHERE te.customer = s.fk_soc AND t.fk_project = ".$id." AND LEFT(sb.zip_code, 1) = LEFT(s.zip_code, 1) AND t.fk_statut <> 8 AND s.country_id = ".$countryIDFilter.") AS `total_stores_open`
+			// 			FROM llx_stores_branch s
+			// 			WHERE s.fk_soc = ".$object->array_options["options_customerbranch"]." AND s.country_id = ".$countryIDFilter." ORDER BY zipcode";
+			$sql = "SELECT
+						LEFT(s.zip_code, 1) AS zipcode,
+						(SELECT COUNT(*) FROM llx_stores_branch ss WHERE ss.fk_soc = ".$object->array_options["options_customerbranch"]." AND ss.country_id = ".$countryIDFilter." AND LEFT(ss.zip_code, 1) = zipcode) as zipcode_stores,
+						COUNT(DISTINCT CASE WHEN p.fk_object = ".$id." AND s.fk_soc = ".$object->array_options["options_customerbranch"]." AND s.country_id = ".$countryIDFilter." THEN s.rowid END) AS zipcode_stores_p,
+						COUNT(DISTINCT CASE WHEN p.fk_object = ".$id." AND s.fk_soc = ".$object->array_options["options_customerbranch"]." AND s.country_id = ".$countryIDFilter." AND t.fk_statut = 8 THEN s.rowid END) AS total_stores_done,
+						COUNT(DISTINCT CASE WHEN p.fk_object = ".$id." AND s.fk_soc = ".$object->array_options["options_customerbranch"]." AND s.country_id = ".$countryIDFilter." AND t.fk_statut <> 8 THEN s.rowid END) AS total_stores_open
+					FROM
+						llx_stores_branch s
+					LEFT JOIN llx_projet_extrafields p ON CONCAT(',', p.stores, ',') LIKE CONCAT('%,', s.rowid, ',%')
+					LEFT JOIN llx_ticket_extrafields te ON te.customer = s.fk_soc AND te.fk_store = s.rowid
+					LEFT JOIN llx_ticket t ON te.fk_object = t.rowid
+					LEFT JOIN llx_projet pr ON t.fk_project = pr.rowid
+					WHERE
+						s.fk_soc = ".$object->array_options["options_customerbranch"]." AND
+						s.country_id = ".$countryIDFilter." AND 
+						pr.rowid = ".$id."
+					GROUP BY
+						LEFT(s.zip_code, 1)
+					ORDER BY
+						zipcode;";				
 			$result = $db->query($sql);
 			$stores = new Branch($db);
 			if ($result) {
