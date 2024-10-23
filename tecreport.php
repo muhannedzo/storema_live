@@ -1447,8 +1447,20 @@ dol_include_once('/stores/compress.php');
                print '<div class="row mb-2">';
                $imagesGroup = json_decode(base64_decode($result[2]));
                foreach($imagesGroup as $group){
-                  print '<div class="col-12 mt-2" style="background: #aaa;padding: 5px 0 5px 10px;">';
-                     print $group->type;
+                  print '<div class="row">';
+                     print '<div class="col-12 mt-2" style="background: #aaa;padding: 5px 0 5px 10px; display: flex">';
+                        print '<div class="header-text">';
+                           print $group->type;
+                        print '</div>';
+                        print '<div class="header-action">';
+                           print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+                              print '<span id="remove-group '.$group->type.'" class="fa fa-trash" style="color:red;margin:5px" onclick="handleClick(this.id)"></span>';
+                              print '<button type="submit" class="remove-group '.$group->type.'" name="delete-group" hidden>delete</button></td>';
+                              print '<input type="hidden" name="image-group" value="'.$group->type.'">';
+                              print '<input type="hidden" name="image" value="'.$group->images[0].'">';
+                           print '</form>';
+                        print '</div>';
+                     print '</div>';
                   print '</div>';
                   foreach($group->images as $image){
                      print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
@@ -1512,6 +1524,13 @@ dol_include_once('/stores/compress.php');
          }
          print '<script>';
 
+            // delete group of images
+            print '
+                  function handleClick(id){
+                     document.getElementsByClassName(id)[0].click();
+                  }
+            ';
+            // end delete group of images
             // Karim's code : Logic
             print '
             function checkTests() {
@@ -2125,58 +2144,72 @@ dol_include_once('/stores/compress.php');
    </script>';
  }
 
- if(isset($_POST['submit'])) {
-    $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
-     
-    $maxsize = 1024 * 1024;
-    
-    if(!empty(array_filter($_FILES['files']['name']))) {
-       
-  
-      foreach ($_FILES['files']['tmp_name'] as $key => $value) {
-          
-         $file_tmpname = $_FILES['files']['tmp_name'][$key];
-         $file_name = $_FILES['files']['name'][$key];
-         $file_names = $_FILES['files']['name'][$key];
-         $file_size = $_FILES['files']['size'][$key];
-         $imageQuality = 20;
-         $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
-         if($_POST['image-type'] == "Testprotokoll"){
-           $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
-         } else if($_POST['image-type'] == "Serverschrank nachher") {
-           $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0].".".$file_ext;
-         } else {
-           $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type'].".".$file_ext;
-         }
-         
-         $filepath = $dir.$file_names;
- 
+ if(isset($_POST['delete-group'])) {
+   var_dump($_POST);
+   $imagesList = array_filter($imagesList, function ($object) {
+      return $object->type !== $_POST["image-group"];
+   });
+   $filepath = $dir.$_POST["image"];
+   $list = json_encode($imagesList);
+   $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+   $db->query($sql,0,'ddl');
+   unlink($filepath);
+   print '<script>window.location.href = window.location.href;
+   </script>';
+ }
 
-         if(in_array(strtolower($file_ext), $allowed_types)) {
-            //Karim test
-            if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
-               $exif = exif_read_data($file_tmpname);
-               if (!empty($exif['Orientation'])) {
-                   $image = imagecreatefromjpeg($file_tmpname);
-                   switch ($exif['Orientation']) {
-                       case 3:
-                           $image = imagerotate($image, 180, 0);
-                           break;
-                       case 6:
-                           $image = imagerotate($image, -90, 0);
-                           break;
-                       case 8:
-                           $image = imagerotate($image, 90, 0);
-                           break;
-                   }
-                   imagejpeg($image, $file_tmpname, 90); // Save the rotated image
-                   imagedestroy($image);
+   if(isset($_POST['submit'])) {
+      $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
+      
+      $maxsize = 1024 * 1024;
+      
+      if(!empty(array_filter($_FILES['files']['name']))) {
+         
+   
+         foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+            
+            $file_tmpname = $_FILES['files']['tmp_name'][$key];
+            $file_name = $_FILES['files']['name'][$key];
+            $file_names = $_FILES['files']['name'][$key];
+            $file_size = $_FILES['files']['size'][$key];
+            $imageQuality = 20;
+            $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+            if($_POST['image-type'] == "Testprotokoll"){
+               $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
+            } else if($_POST['image-type'] == "Serverschrank nachher") {
+               $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0].".".$file_ext;
+            } else {
+               $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type'].".".$file_ext;
+            }
+            
+            $filepath = $dir.$file_names;
+   
+
+            if(in_array(strtolower($file_ext), $allowed_types)) {
+               //Karim test
+               if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
+                  $exif = exif_read_data($file_tmpname);
+                  if (!empty($exif['Orientation'])) {
+                     $image = imagecreatefromjpeg($file_tmpname);
+                     switch ($exif['Orientation']) {
+                        case 3:
+                              $image = imagerotate($image, 180, 0);
+                              break;
+                        case 6:
+                              $image = imagerotate($image, -90, 0);
+                              break;
+                        case 8:
+                              $image = imagerotate($image, 90, 0);
+                              break;
+                     }
+                     imagejpeg($image, $file_tmpname, 90); // Save the rotated image
+                     imagedestroy($image);
+                  }
                }
-           }
-///
+
                if(file_exists($filepath)) {
                   unlink($filepath);
-                 //  $fileN = time().$file_names;
+                  //  $fileN = time().$file_names;
                   $filepath = $dir.$file_names;
                   $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
                   if( $compressedImage) {
@@ -2192,32 +2225,32 @@ dol_include_once('/stores/compress.php');
                      dol_htmloutput_errors("Error uploading {$file_name} <br />");
                   }
                }      
-         }else {
-            dol_htmloutput_errors("Error uploading {$file_name} ");
-            dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+            }else {
+               dol_htmloutput_errors("Error uploading {$file_name} ");
+               dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+            }
          }
+      }else {
+         dol_htmloutput_errors("No files selected.");
       }
-    }else {
-       dol_htmloutput_errors("No files selected.");
-    }
-    $node = [
-       "type" => $_POST['image-type'],
-       "images" => $images
-    ];
-    array_push($imagesList, $node);
-    $list = json_encode($imagesList);
-    if($result){
+      $node = [
+         "type" => $_POST['image-type'],
+         "images" => $images
+      ];
+      array_push($imagesList, $node);
+      $list = json_encode($imagesList);
+      if($result){
          $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
          $db->query($sql,0,'ddl');
          print '<script>window.location.href = window.location.href;
          </script>';
-    } else {
+      } else {
          $sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("'.$ticketId.'", "'.$user->id.'", "'.$object->fk_soc.'", "'.$storeid.'", "'.base64_encode($list).'")';
          $db->query($sql,0,'ddl');
          print '<script>window.location.href = window.location.href;
          </script>';
-    }
- }
+      }
+   }
 // if (isset($_POST['submit'])) {
 //    $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
 //    $maxsize = 1024 * 1024;

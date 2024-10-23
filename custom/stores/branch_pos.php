@@ -560,11 +560,12 @@ if ($object->id > 0) {
 					$db->query($sql,0,'ddl');
 					print '<script>window.location.href = window.location.href;
 					</script>';
-				}	
+				}
 			////////////////////////////End Normal Images/////////////////////////////////	
 
 			////////////////////////////Forms tickets images//////////////////////////////
-			
+			// var_dump(count($imagesList));
+			$groupIndex = count($imagesList);
 			$query = 'SELECT f.rowid, f.fk_ticket, f.images FROM llx_tec_forms f
 					  WHERE fk_store = '.$id;
 			$forms = $db->query($query)->fetch_all();
@@ -585,7 +586,6 @@ if ($object->id > 0) {
 				foreach($formsList as $form) {
 					$ticket->fetch($form["ticketId"]);
 					$imagesGroup = json_decode(base64_decode($form["images"]));
-					// var_dump($imagesGroup);
 					$k = 0;
 					print '<div class="group">';
 						print '<div class="group-header">';
@@ -601,75 +601,104 @@ if ($object->id > 0) {
 								// print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
 								// print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
 								// print '<button type="submit" id="delete-group delete '.$k.'" name="delete-group" hidden>delete</button></td>';
-								print '<span id="addmore '.$k.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
+								print '<span id="addmore '.$groupIndex.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
 								// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
 								// print '</form>';  
 							print '</div>';
 						print '</div>';
-					foreach($imagesGroup as $elem){
-						$elements = $elem->images;
-						$exploded_elements = array_map(function($element) {
-							$parts = explode("|", $element);
-							return $parts[0];
-						}, $elements);
-						$exploded_texts = array_map(function($element) {
-							$parts = explode("|", $element);
-							return $parts[1];
-						}, $elements);
-						
-						$text = implode(", ", $exploded_elements);
-						$titles = implode(", ", $exploded_texts);
-								
-						// $text = implode(", ", $elements);
-						print '<input type="text" class="array '.$k.'" value="'.$text.'" hidden>';
-						foreach($elements as $key => $image){
+						// var_dump($imagesGroup);
+						foreach($imagesGroup as $elem){
+							$elements = $elem->images;
+							$exploded_elements = array_map(function($element) {
+								$parts = explode("|", $element);
+								return $parts[0];
+							}, $elements);
+							$exploded_texts = array_map(function($element) {
+								$parts = explode("|", $element);
+								return $parts[1];
+							}, $elements);
+							
+							$text = implode(", ", $exploded_elements);
+							$titles = implode(", ", $exploded_texts);
+									
+							// $text = implode(", ", $elements);
+							print '<input type="text" class="array '.$k.'" value="'.$text.'" hidden>';
+							foreach($elements as $key => $image){
 
-							print '<div class="group-element">';
-							print '<input type="file" name="files[]" multiple hidden>';
-							  print '<div class="element-image">';
-								print '<img class="myImg" id="'.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" width="100" height="100" onclick="ss(this.id, 2);">';
-							  print '</div>';
-							  print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-							  print '<div class="element-description">';
-								print '<input id="desc '.$k.' '.$key.'" name="description"type="text" placeholder="Description.." value="'.$elem->type.'" disabled>';
-							  print '</div>';
-								print '<div class="element-buttons">';
-									print '<button type="submit" name="delete-form-img" onclick="return confirmDelete();">Delete</button>';
+								print '<div class="group-element">';
+								print '<input type="file" name="files[]" multiple hidden>';
+								print '<div class="element-image">';
+									print '<img class="myImg" id="'.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" width="100" height="100" onclick="ss(this.id, 2);">';
 								print '</div>';
-								print '<div id="form-modal '.$k.' '.$key.'" class="modal '.$k.' '.$key.'">
-											<!-- Modal content -->
-												<div class="modal-content">
-													<div class="modal-header">
-														<p class="'.$k.' '.$key.'" id="rotate '.$k.' '.$key.'" onclick="rotateImage(this.id,this.className, 2)">Rotate</p>
-														<span class="form-close '.$k.' '.$key.'" id="form-close '.$k.' '.$key.'">&times;</span>
+								print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+								print '<div class="element-description">';
+									print '<input id="desc '.$k.' '.$key.'" name="description"type="text" placeholder="Description.." value="'.$elem->type.'" disabled>';
+								print '</div>';
+									print '<div class="element-buttons">';
+										print '<button type="submit" name="delete-form-img" onclick="return confirmDelete();">Delete</button>';
+									print '</div>';
+									print '<div id="form-modal '.$k.' '.$key.'" class="modal '.$k.' '.$key.'">
+												<!-- Modal content -->
+													<div class="modal-content">
+														<div class="modal-header">
+															<p class="'.$k.' '.$key.'" id="rotate '.$k.' '.$key.'" onclick="rotateImage(this.id,this.className, 2)">Rotate</p>
+															<span class="form-close '.$k.' '.$key.'" id="form-close '.$k.' '.$key.'">&times;</span>
+														</div>
+														<div class="modal-body">  
+															<div class="modal-image" style="display: flex; align-items: center; justify-content: space-evenly;">
+																<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="prevImage(this.id, this.className, 2)"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
+																<img class="'.$k.' '.$key.'" id="form-img rotate '.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" onclick="se(this.id,this.className, 2);"
+																						style="cursor: pointer">
+																<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="nextImage(this.id, this.className, 2)"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
+															</div>';
+															// if($desc != ""){
+																print '<div><p id="form-txt rotate '.$k.' '.$key.'">'.$desc.'</p></div>';
+															// }
+													print '</div>
+														<div class="modal-footer">
+														</div>
 													</div>
-													<div class="modal-body">  
-														<div class="modal-image" style="display: flex; align-items: center; justify-content: space-evenly;">
-															<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="prevImage(this.id, this.className, 2)"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
-															<img class="'.$k.' '.$key.'" id="form-img rotate '.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" onclick="se(this.id,this.className, 2);"
-																					style="cursor: pointer">
-															<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="nextImage(this.id, this.className, 2)"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
-														</div>';
-														// if($desc != ""){
-															print '<div><p id="form-txt rotate '.$k.' '.$key.'">'.$desc.'</p></div>';
-														// }
-												print '</div>
-													<div class="modal-footer">
-													</div>
-												</div>
-										</div>';
-								print '<div id="form-full-model '.$k.' '.$key.'" class="full-view '.$key.'">
-											<span class="form-full-view-close '.$k.' '.$key.'" id="form-full-view-close '.$k.' '.$key.'">&times;</span>
-												<img class="full-view-content" id="form-full-view-img rotate '.$k.' '.$key.'" src="../../formsImages/'.explode("|", $image)[0].'">
-										</div>';    
-								print '<input type="hidden" name="objectIndex" value="'.$k.'">';
-								print '<input type="hidden" name="imgIndex" value="'.$key.'">';
-								print '<input type="hidden" name="img" value="'.explode("|", $image)[0].'">';
-							  print '</form>';
-							print '</div>';
+											</div>';
+									print '<div id="form-full-model '.$k.' '.$key.'" class="full-view '.$key.'">
+												<span class="form-full-view-close '.$k.' '.$key.'" id="form-full-view-close '.$k.' '.$key.'">&times;</span>
+													<img class="full-view-content" id="form-full-view-img rotate '.$k.' '.$key.'" src="../../formsImages/'.explode("|", $image)[0].'">
+											</div>';    
+									print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+									print '<input type="hidden" name="imgIndex" value="'.$key.'">';
+									print '<input type="hidden" name="img" value="'.explode("|", $image)[0].'">';
+								print '</form>';
+								print '</div>';
+							}
+							$k++;
 						}
-						$k++;
-					}
+						print '<div class="addmore '.$groupIndex.'" style="display:none">';
+						  print '<form action="" method="POST"  enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+							print '<div class="row">';
+								print '<div class="col">
+											<select id="images-types-selector" style="width: 100%" name="image-type">
+												<option selected disabled>Bildtyp auswählen</option>
+												<option>Serverschrank vorher</option>
+												<option>Serverschrank nachher</option>
+												<option>Arbeitssplatz nachher</option>
+												<option>Seriennummer router</option>
+												<option>Seriennummer firewall</option>
+												<option>Firewall (Beschriftung Patchkabel)</option>
+												<option>Kabeletikett</option>
+												<option>Testprotokoll</option>
+											</select>
+										</div>';
+								print '<div class="col">
+											<input style="width: 100%" type="file" name="files[]">
+										</div>';
+								print '<div class="col">
+											<input type="submit" name="submitAddForm" value="add more...">
+									   </div>';
+								print '<input type="text" name="index" value="'.$groupIndex.'" hidden>';
+								print '<input type="hidden" name="formId" value="'.$form["formId"].'">';
+							print '</div>';
+						  print '</form>';  
+						print '</div>';
+					print '</div>';
 					// print '<div class="row mt-2">';
 					// 	print '<div class="col-12" style="background: #aaa;padding: 5px 0 5px 10px;">';
 					// 		print $ticket->getNomUrl();
@@ -715,6 +744,106 @@ if ($object->id > 0) {
 llxFooter();
 $db->close();
 
+	
+	$images = array();	
+	$dir = DOL_DOCUMENT_ROOT.'/formsImages/';
+	if(isset($_POST['submitAddForm'])) {
+		$allowed_types = array('jpg', 'png', 'jpeg', 'gif');
+		
+		$maxsize = 1024 * 1024;
+		
+		if(!empty(array_filter($_FILES['files']['name']))) {
+		
+	
+			foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+				
+				$file_tmpname = $_FILES['files']['tmp_name'][$key];
+				$file_name = $_FILES['files']['name'][$key];
+				$file_names = $_FILES['files']['name'][$key];
+				$file_size = $_FILES['files']['size'][$key];
+				$imageQuality = 20;
+				$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+				if($_POST['image-type'] == "Testprotokoll"){
+					$file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$object->city."_VKST_".explode("-", $object->b_number)[2].".".$file_ext;
+				} else if($_POST['image-type'] == "Serverschrank nachher") {
+					$file_names = "VKST_".explode("-", $object->b_number)[2]."_".explode(" ", $_POST['image-type'])[0].".".$file_ext;
+				} else {
+					$file_names = "VKST_".explode("-", $object->b_number)[2]."_".$_POST['image-type'].".".$file_ext;
+				}
+				$filepath = $dir.$file_names;
+		
+
+				if(in_array(strtolower($file_ext), $allowed_types)) {
+					//Karim test
+					if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
+						$exif = exif_read_data($file_tmpname);
+						if (!empty($exif['Orientation'])) {
+							$image = imagecreatefromjpeg($file_tmpname);
+							switch ($exif['Orientation']) {
+								case 3:
+										$image = imagerotate($image, 180, 0);
+										break;
+								case 6:
+										$image = imagerotate($image, -90, 0);
+										break;
+								case 8:
+										$image = imagerotate($image, 90, 0);
+										break;
+							}
+							imagejpeg($image, $file_tmpname, 90); // Save the rotated image
+							imagedestroy($image);
+						}
+					}
+					// var_dump($dir);
+					if(file_exists($filepath)) {
+						unlink($filepath);
+						//  $fileN = time().$file_names;
+						$filepath = $dir.$file_names;
+						$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
+						if( $compressedImage) {
+							array_push($images, $file_names);
+						} else {                    
+							dol_htmloutput_errors("Error uploading {$file_name} <br />");
+						}
+					} else {
+						$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
+						if($compressedImage) {
+							array_push($images,$file_names);
+						} else {  
+							dol_htmloutput_errors("Error uploading {$file_name} <br />");
+						}
+					}
+				} else {
+					dol_htmloutput_errors("Error uploading {$file_name} ");
+					dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+				}
+			}
+		} else {
+			dol_htmloutput_errors("No files selected.");
+		}
+		$node = [
+			"type" => $_POST['image-type'],
+			"images" => $images
+		];
+		array_push($imagesGroup, (object)$node);
+		// var_dump($imagesGroup);
+		$list = json_encode($imagesGroup);
+		if($result){
+			var_dump(1);
+			// $sql = 'UPDATE llx_tec_forms SET images = "W3sidHlwZSI6IlNlcnZlcnNjaHJhbmsgdm9yaGVyIiwiaW1hZ2VzIjpbIlZLU1RfMDAwNTVfU2VydmVyc2NocmFuayB2b3JoZXIuanBnIl19LHsidHlwZSI6IlNlcnZlcnNjaHJhbmsgbmFjaGhlciIsImltYWdlcyI6WyJWS1NUXzAwMDU1X1NlcnZlcnNjaHJhbmsuanBnIl19LHsidHlwZSI6IkFyYmVpdHNzcGxhdHogbmFjaGhlciIsImltYWdlcyI6WyJWS1NUXzAwMDU1X0FyYmVpdHNzcGxhdHogbmFjaGhlci5qcGciXX0seyJ0eXBlIjoiVGVzdHByb3Rva29sbCIsImltYWdlcyI6WyIwOC4xMC4yNF9XdW5zdG9yZl9WS1NUXzAwMDU1LmpwZyJdfSx7InR5cGUiOiJLYWJlbGV0aWtldHQiLCJpbWFnZXMiOlsiVktTVF8wMDA1NV9LYWJlbGV0aWtldHQuanBnIl19LHsidHlwZSI6IlNlcmllbm51bW1lciByb3V0ZXIiLCJpbWFnZXMiOlsiVktTVF8wMDA1NV9TZXJpZW5udW1tZXIgcm91dGVyLmpwZyJdfV0=" WHERE rowid ="67";';
+			$sql = 'UPDATE llx_tec_forms SET images = "'.base64_encode($list).'" WHERE rowid = '.$_POST["formId"].';';
+			var_dump($sql);
+			// var_dump($db->query($sql,0,'ddl'));
+			$db->query($sql,0,'ddl');
+			print '<script>window.location.href = window.location.href;
+			</script>';
+		} else {
+			$sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("'.$ticketId.'", "'.$user->id.'", "'.$object->fk_soc.'", "'.$storeid.'", "'.base64_encode($list).'")';
+			// $db->query($sql,0,'ddl');
+			// print '<script>window.location.href = window.location.href;
+			// </script>';
+		}
+	}
 if(isset($_POST['delete'])) {
 	var_dump($_POST);
 	// var_dump($formsList);
