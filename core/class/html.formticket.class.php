@@ -710,7 +710,11 @@ class FormTicket
 	public function showForm($withdolfichehead = 0, $mode = 'edit', $public = 0, Contact $with_contact = null, $action = '')
 	{
 		global $conf, $langs, $user, $hookmanager;
-
+		$mainid = GETPOST("mainid");
+		$projectid = GETPOST("projectid");
+		$socid = GETPOST("socid");
+		$customerid = GETPOST("customerid");
+		$storeid = GETPOST("storeid");
 		// Load translation files required by the page
 		$langs->loadLangs(array('other', 'mails', 'ticket'));
 
@@ -719,6 +723,17 @@ class FormTicket
 		$ticketstatic = new Ticket($this->db);
 		$store = new Branch($this->db);
 		$proj = new Project($this->db);
+		$mainticket = new Ticket($this->db);
+		$mainticket->fetch($mainid);
+		$mainticketref = $mainticket->ref;
+		$sql = 'SELECT * FROM llx_ticket_extrafields WHERE parentticket = '.$mainid;
+		$total = $this->db->query($sql)->num_rows;
+		$parts = explode("-", $mainticketref);
+		$parts[0] = "27";
+		$parts[] = $total + 1;
+		$newRef = implode("-", $parts);
+		
+		
 
 		$soc = new Societe($this->db);
 		if (!empty($this->withfromsocid) && $this->withfromsocid > 0) {
@@ -805,13 +820,16 @@ class FormTicket
 		if ($this->withref) {
 			// Ref
 			$defaultref = $ticketstat->getDefaultRef();
+			if($mainid){
+				$defaultref = $newRef;
+			}
 			print '<tr><td class="titlefieldcreate"><span class="fieldrequired">'.$langs->trans("Ref").'</span></td><td>';
 			print '<input type="text" name="ref" value="'.dol_escape_htmltag(GETPOST("ref", 'alpha') ? GETPOST("ref", 'alpha') : $defaultref).'">';
 			print '</td></tr>';
 		}
 		
 		// Parent Ticket
-		$parentticket = "";
+		$parentticket = $mainid;
 		if(isset($_COOKIE["parentticket"])){
 			$parentticket = $_COOKIE["parentticket"];
 		}
@@ -923,6 +941,7 @@ class FormTicket
 							);
 				print img_picto('', 'company', 'class="paddingright"');
 				
+				$selectedCustomer = $customerid;
 				if(isset($_COOKIE["customer"])){
 					$selectedCustomer = $_COOKIE["customer"];
 				}
@@ -1049,13 +1068,13 @@ class FormTicket
 
 				// Store
 				if (isModEnabled('stores')){
-					$selectedStore = null;
+					$selectedStore = $storeid;
 					if(isset($_COOKIE["store"])){
 						$selectedStore = $_COOKIE["store"];
 					}
 					print '<tr><td>'.$langs->trans("Store").'</td><td>';
 					$selectedCompany = ($this->withfromsocid > 0) ? $this->withfromsocid : -1;
-					$store->select_store("", "");
+					$store->select_store($customerid, $storeid);
 				}
 
 
@@ -1631,7 +1650,7 @@ class FormTicket
 			print '</tr>';
 
 		if ($subelement != 'project') {
-			$selectedProject = null;
+			$selectedProject = $projectid;
 			if(isset($_COOKIE["project"])){
 				$selectedProject = $_COOKIE["project"];
 			}
@@ -1644,8 +1663,7 @@ class FormTicket
 				// 	$selectedCompany = $_COOKIE["customer"];
 				// }
 
-				
-				if(isset($_COOKIE["customer"]) && isset($_COOKIE["project"])){
+				if((isset($_COOKIE["customer"]) && isset($_COOKIE["project"]))){
 
 					print '<script>';
 					print '
@@ -1655,7 +1673,19 @@ class FormTicket
 					print '</script>';
 				}
 
+				if((isset($customerid) && isset($projectid))) {
 
+					print '<script>';
+						print '
+							$( document ).ready(function() {
+								$(".button-save").removeAttr("disabled");
+							});
+						';
+					print '</script>';
+				}
+
+				$selectedCompany = $socid;
+				// var_dump($selectedCompany);
 				if($selectedCompany != -1 && $selectedCompany != null){
 					
 									

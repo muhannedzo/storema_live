@@ -595,6 +595,7 @@ if ($object->id > 0) {
 									// print '<div class="edit-icon" id="edit-icon '.$k.'"><span id="'.$k.'" class="fa fa-pen" onclick="changeLabel(this.id)"></span></div>';
 									// print '<button type="submit" name="edit-label" id="save-edit '.$k.'" hidden>Save</button></td>';
 									// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+
 								print '</form>';
 							print '</div>';  
 							print '<div style="display: flex; align-items:center">';
@@ -830,10 +831,8 @@ $db->close();
 		$list = json_encode($imagesGroup);
 		if($result){
 			var_dump(1);
-			// $sql = 'UPDATE llx_tec_forms SET images = "W3sidHlwZSI6IlNlcnZlcnNjaHJhbmsgdm9yaGVyIiwiaW1hZ2VzIjpbIlZLU1RfMDAwNTVfU2VydmVyc2NocmFuayB2b3JoZXIuanBnIl19LHsidHlwZSI6IlNlcnZlcnNjaHJhbmsgbmFjaGhlciIsImltYWdlcyI6WyJWS1NUXzAwMDU1X1NlcnZlcnNjaHJhbmsuanBnIl19LHsidHlwZSI6IkFyYmVpdHNzcGxhdHogbmFjaGhlciIsImltYWdlcyI6WyJWS1NUXzAwMDU1X0FyYmVpdHNzcGxhdHogbmFjaGhlci5qcGciXX0seyJ0eXBlIjoiVGVzdHByb3Rva29sbCIsImltYWdlcyI6WyIwOC4xMC4yNF9XdW5zdG9yZl9WS1NUXzAwMDU1LmpwZyJdfSx7InR5cGUiOiJLYWJlbGV0aWtldHQiLCJpbWFnZXMiOlsiVktTVF8wMDA1NV9LYWJlbGV0aWtldHQuanBnIl19LHsidHlwZSI6IlNlcmllbm51bW1lciByb3V0ZXIiLCJpbWFnZXMiOlsiVktTVF8wMDA1NV9TZXJpZW5udW1tZXIgcm91dGVyLmpwZyJdfV0=" WHERE rowid ="67";';
-			$sql = 'UPDATE llx_tec_forms SET images = "'.base64_encode($list).'" WHERE rowid = '.$_POST["formId"].';';
+			$sql = 'UPDATE llx_tec_forms SET images = "'.base64_encode($list).'" WHERE rowid = '.$_POST["formId"];
 			var_dump($sql);
-			// var_dump($db->query($sql,0,'ddl'));
 			$db->query($sql,0,'ddl');
 			print '<script>window.location.href = window.location.href;
 			</script>';
@@ -844,20 +843,20 @@ $db->close();
 			// </script>';
 		}
 	}
-if(isset($_POST['delete'])) {
-	var_dump($_POST);
-	// var_dump($formsList);
-	// var_dump(1);
-	// $imagesList = array_reverse($imagesList);
-	// $key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
-	// unlink($dir.$_POST["img"]);
-	// unset($imagesList[$_POST["objectIndex"]]["images"][$key]);
-	// $list = json_encode(array_reverse($imagesList));
-	// $sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-	// $db->query($sql,0,'ddl');
-	// print '<script>window.location.href = window.location.href;
-	// 		</script>';
-}
+	if(isset($_POST['delete'])) {
+		var_dump($_POST);
+		// var_dump($formsList);
+		// var_dump(1);
+		// $imagesList = array_reverse($imagesList);
+		// $key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
+		// unlink($dir.$_POST["img"]);
+		// unset($imagesList[$_POST["objectIndex"]]["images"][$key]);
+		// $list = json_encode(array_reverse($imagesList));
+		// $sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
+		// $db->query($sql,0,'ddl');
+		// print '<script>window.location.href = window.location.href;
+		// 		</script>';
+	}
 print '<script>';
     
 	print '

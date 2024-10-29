@@ -1371,14 +1371,14 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
          print '<div class="row">
                      <div class="col">
                         <select style="width: 100%" name="image-type">
-                           <option selected disabled>Bildtyp auswählen</option>
                            <option>Serverschrank vorher</option>
-                           <option>Serverschrank nachher</option>
-                           <option>Arbeitssplatz nachher</option>
                            <option>Seriennummer router</option>
                            <option>Seriennummer firewall</option>
                            <option>Firewall (Beschriftung Patchkabel)</option>
                            <option>Kabeletikett</option>
+                           <option>Serverschrank nachher</option>
+                           <option>Health Check</option>
+                           <option>Arbeitssplatz nachher</option>
                            <option>Testprotokoll</option>
                         </select>
                      </div>

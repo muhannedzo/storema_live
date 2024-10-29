@@ -1550,6 +1550,12 @@ if ($action == 'create' || $action == 'presend') {
 			}
 
 			if (empty($reshook)) {
+				// Storema
+				// Create Sub Ticket
+				if ($user->hasRight('ticket', 'write') && !$user->socid) {
+					print dolGetButtonAction('', $langs->trans('Create Sub'), 'createSub', $_SERVER["PHP_SELF"].'?action=create&mainid='.$object->id.'&projectid='.$object->fk_project.'&socid='.$object->socid.'&customerid='.$object->array_options["options_customer"].'&storeid='.$object->array_options["options_fk_store"].'&token='.newToken().'&track_id='.$object->track_id, '');
+				}
+
 				// Email
 				if (isset($object->status) && $object->status < Ticket::STATUS_CLOSED && $action != "presend" && $action != "presend_addmessage") {
 					print dolGetButtonAction('', $langs->trans('SendMail'), 'default', $_SERVER["PHP_SELF"].'?action=presend_addmessage&send_email=1&private_message=0&mode=init&token='.newToken().'&track_id='.$object->track_id.'#formmailbeforetitle', '');

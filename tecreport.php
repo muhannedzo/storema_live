@@ -1422,14 +1422,14 @@ dol_include_once('/stores/compress.php');
             print '<div class="row">
                         <div class="col">
                            <select id="images-types-selector" style="width: 100%" name="image-type">
-                              <option selected disabled>Bildtyp auswählen</option>
                               <option>Serverschrank vorher</option>
-                              <option>Serverschrank nachher</option>
-                              <option>Arbeitssplatz nachher</option>
                               <option>Seriennummer router</option>
                               <option>Seriennummer firewall</option>
                               <option>Firewall (Beschriftung Patchkabel)</option>
                               <option>Kabeletikett</option>
+                              <option>Serverschrank nachher</option>
+                              <option>Health Check</option>
+                              <option>Arbeitssplatz nachher</option>
                               <option>Testprotokoll</option>
                            </select>
                         </div>
@@ -2145,7 +2145,7 @@ dol_include_once('/stores/compress.php');
  }
 
  if(isset($_POST['delete-group'])) {
-   var_dump($_POST);
+   // var_dump($_POST);
    $imagesList = array_filter($imagesList, function ($object) {
       return $object->type !== $_POST["image-group"];
    });
