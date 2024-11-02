@@ -202,7 +202,8 @@ if($user->socid || $result[0] != "0") {
 				print "</td>";
 
 				print '<td class="nowraponall right">';
-				print '<a class="btn" href="./tecreport.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
+				// Change tecreportKarim to tecreport to use the currently used reports
+				print '<a class="btn" href="./tecreportKarim.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
 				print "</td>";
 				print '<td class="nowraponall">';
 				print "</td>";
