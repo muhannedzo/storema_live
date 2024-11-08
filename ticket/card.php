@@ -1552,8 +1552,8 @@ if ($action == 'create' || $action == 'presend') {
 			if (empty($reshook)) {
 				// Storema
 				// Create Sub Ticket
-				if ($user->hasRight('ticket', 'write') && !$user->socid) {
-					print dolGetButtonAction('', $langs->trans('Create Sub'), 'createSub', $_SERVER["PHP_SELF"].'?action=create&mainid='.$object->id.'&projectid='.$object->fk_project.'&socid='.$object->socid.'&customerid='.$object->array_options["options_customer"].'&storeid='.$object->array_options["options_fk_store"].'&token='.newToken().'&track_id='.$object->track_id, '');
+				if ($user->hasRight('ticket', 'write')) {
+					print dolGetButtonAction('', $langs->trans('Create Sub'), 'createSub', $_SERVER["PHP_SELF"].'?action=create&mainid='.$object->id.'&projectid='.$object->fk_project.'&socid='.$object->socid.'&customerid='.$object->array_options["options_customer"].'&storeid='.$object->array_options["options_fk_store"].'&parentid='.$object->array_options["options_parentticket"].'&token='.newToken().'&track_id='.$object->track_id, '');
 				}
 
 				// Email

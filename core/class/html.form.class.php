@@ -1964,6 +1964,230 @@ class Form
 		}
 	}
 
+	/**
+	 * Return HTML code of the SELECT of list of all contacts (for a third party or all).
+	 * This also set the number of contacts found into $this->num
+	 *
+	 * @since 9.0 Add afterSelectContactOptions hook
+	 *
+	 * @param int 			$socid 				Id ot third party or 0 for all or -1 for empty list
+	 * @param array|int 	$selected 			Array of ID of pre-selected contact id
+	 * @param string 		$htmlname 			Name of HTML field ('none' for a not editable field)
+	 * @param int|string 	$showempty 			0=no empty value, 1=add an empty value, 2=add line 'Internal' (used by user edit), 3=add an empty value only if more than one record into list
+	 * @param string 		$exclude 			List of contacts id to exclude
+	 * @param string 		$limitto 			Disable answers that are not id in this array list
+	 * @param integer 		$showfunction 		Add function into label
+	 * @param string 		$morecss 			Add more class to class style
+	 * @param bool 			$options_only 		Return options only (for ajax treatment)
+	 * @param integer 		$showsoc 			Add company into label
+	 * @param int 			$forcecombo 		Force to use combo box (so no ajax beautify effect)
+	 * @param array 		$events 			Event options. Example: array(array('method'=>'getContacts', 'url'=>dol_buildpath('/core/ajax/contacts.php',1), 'htmlname'=>'contactid', 'params'=>array('add-customer-contact'=>'disabled')))
+	 * @param string 		$moreparam 			Add more parameters onto the select tag. For example 'style="width: 95%"' to avoid select2 component to go over parent container
+	 * @param string 		$htmlid 			Html id to use instead of htmlname
+	 * @param bool 			$multiple 			add [] in the name of element and add 'multiple' attribut
+	 * @param integer 		$disableifempty 	Set tag 'disabled' on select if there is no choice
+	 * @return     int|string                   Return integer <0 if KO, HTML with select string if OK.
+	 */
+	public function selectcontactsListing($socid, $selected = array(), $htmlname = 'contactid', $showempty = 0, $exclude = '', $limitto = '', $showfunction = 0, $morecss = '', $options_only = false, $showsoc = 0, $forcecombo = 0, $events = array(), $moreparam = '', $htmlid = '', $multiple = false, $disableifempty = 0)
+	{
+		global $conf, $langs, $hookmanager, $action;
+
+		$langs->load('companies');
+
+		if (empty($htmlid)) {
+			$htmlid = $htmlname;
+		}
+		$num = 0;
+
+		if ($selected === '') {
+			$selected = array();
+		} elseif (!is_array($selected)) {
+			$selected = array($selected);
+		}
+		$out = '';
+
+		if (!is_object($hookmanager)) {
+			include_once DOL_DOCUMENT_ROOT . '/core/class/hookmanager.class.php';
+			$hookmanager = new HookManager($this->db);
+		}
+
+		// We search third parties
+		$sql = "SELECT sp.rowid, sp.lastname, sp.statut, sp.firstname, sp.poste, sp.email, sp.phone, sp.phone_perso, sp.phone_mobile, sp.town AS contact_town, u.rowid As `original_id`";
+		if ($showsoc > 0 || getDolGlobalString('CONTACT_SHOW_EMAIL_PHONE_TOWN_SELECTLIST')) {
+			$sql .= ", s.nom as company, s.town AS company_town";
+		}
+		$sql .= " FROM " . $this->db->prefix() . "socpeople as sp";
+		$sql .= " LEFT JOIN  " . $this->db->prefix() . "user as u ON u.fk_socpeople=sp.rowid";
+		if ($showsoc > 0 || getDolGlobalString('CONTACT_SHOW_EMAIL_PHONE_TOWN_SELECTLIST')) {
+			$sql .= " LEFT OUTER JOIN  " . $this->db->prefix() . "societe as s ON s.rowid=sp.fk_soc";
+		}
+		$sql .= " WHERE sp.entity IN (" . getEntity('contact') . ")";
+		if ($socid > 0 || $socid == -1) {
+			$sql .= " AND sp.fk_soc = " . ((int) $socid);
+		}
+		if (getDolGlobalString('CONTACT_HIDE_INACTIVE_IN_COMBOBOX')) {
+			$sql .= " AND sp.statut <> 0";
+		}
+		// Add where from hooks
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('selectContactListWhere', $parameters); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
+		$sql .= " ORDER BY sp.lastname ASC";
+		
+		dol_syslog(get_class($this) . "::selectcontacts", LOG_DEBUG);
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$num = $this->db->num_rows($resql);
+
+			if ($htmlname != 'none' && !$options_only) {
+				$out .= '<select class="flat' . ($morecss ? ' ' . $morecss : '') . '" id="' . $htmlid . '" name="' . $htmlname . (($num || empty($disableifempty)) ? '' : ' disabled') . ($multiple ? '[]' : '') . '" ' . ($multiple ? 'multiple' : '') . ' ' . (!empty($moreparam) ? $moreparam : '') . '>';
+			}
+
+			if ($showempty && !is_numeric($showempty)) {
+				$textforempty = $showempty;
+				$out .= '<option class="optiongrey" value="-1"' . (in_array(-1, $selected) ? ' selected' : '') . '>' . $textforempty . '</option>';
+			} else {
+				if (($showempty == 1 || ($showempty == 3 && $num > 1)) && !$multiple) {
+					$out .= '<option value="0"' . (in_array(0, $selected) ? ' selected' : '') . '>&nbsp;</option>';
+				}
+				if ($showempty == 2) {
+					$out .= '<option value="0"' . (in_array(0, $selected) ? ' selected' : '') . '>-- ' . $langs->trans("Internal") . ' --</option>';
+				}
+			}
+
+			$i = 0;
+			if ($num) {
+				include_once DOL_DOCUMENT_ROOT . '/contact/class/contact.class.php';
+				$contactstatic = new Contact($this->db);
+
+				while ($i < $num) {
+					$obj = $this->db->fetch_object($resql);
+
+					// Set email (or phones) and town extended infos
+					$extendedInfos = '';
+					if (getDolGlobalString('CONTACT_SHOW_EMAIL_PHONE_TOWN_SELECTLIST')) {
+						$extendedInfos = array();
+						$email = trim($obj->email);
+						if (!empty($email)) {
+							$extendedInfos[] = $email;
+						} else {
+							$phone = trim($obj->phone);
+							$phone_perso = trim($obj->phone_perso);
+							$phone_mobile = trim($obj->phone_mobile);
+							if (!empty($phone)) {
+								$extendedInfos[] = $phone;
+							}
+							if (!empty($phone_perso)) {
+								$extendedInfos[] = $phone_perso;
+							}
+							if (!empty($phone_mobile)) {
+								$extendedInfos[] = $phone_mobile;
+							}
+						}
+						$contact_town = trim($obj->contact_town);
+						$company_town = trim($obj->company_town);
+						if (!empty($contact_town)) {
+							$extendedInfos[] = $contact_town;
+						} elseif (!empty($company_town)) {
+							$extendedInfos[] = $company_town;
+						}
+						$extendedInfos = implode(' - ', $extendedInfos);
+						if (!empty($extendedInfos)) {
+							$extendedInfos = ' - ' . $extendedInfos;
+						}
+					}
+
+					$contactstatic->id = $obj->rowid;
+					$contactstatic->lastname = $obj->lastname;
+					$contactstatic->firstname = $obj->firstname;
+					$contactstatic->original_id = $obj->original_id;
+					if ($obj->statut == 1) {
+						if ($htmlname != 'none') {
+							$disabled = 0;
+							if (is_array($exclude) && count($exclude) && in_array($obj->rowid, $exclude)) {
+								$disabled = 1;
+							}
+							if (is_array($limitto) && count($limitto) && !in_array($obj->rowid, $limitto)) {
+								$disabled = 1;
+							}
+							if (!empty($selected) && in_array($obj->rowid, $selected)) {
+								$out .= '<option value="' . $contactstatic->original_id . '"';
+								if ($disabled) {
+									$out .= ' disabled';
+								}
+								$out .= ' selected>';
+								$out .= $contactstatic->getFullName($langs) . $extendedInfos;
+								if ($showfunction && $obj->poste) {
+									$out .= ' (' . $obj->poste . ')';
+								}
+								if (($showsoc > 0) && $obj->company) {
+									$out .= ' - (' . $obj->company . ')';
+								}
+								$out .= '</option>';
+							} else {
+								$out .= '<option value="' . $obj->original_id . '"';
+								if ($disabled) {
+									$out .= ' disabled';
+								}
+								$out .= '>';
+								$out .= $contactstatic->getFullName($langs) . $extendedInfos;
+								if ($showfunction && $obj->poste) {
+									$out .= ' (' . $obj->poste . ')';
+								}
+								if (($showsoc > 0) && $obj->company) {
+									$out .= ' - (' . $obj->company . ')';
+								}
+								$out .= '</option>';
+							}
+						} else {
+							if (in_array($obj->rowid, $selected)) {
+								$out .= $contactstatic->getFullName($langs) . $extendedInfos;
+								if ($showfunction && $obj->poste) {
+									$out .= ' (' . $obj->poste . ')';
+								}
+								if (($showsoc > 0) && $obj->company) {
+									$out .= ' - (' . $obj->company . ')';
+								}
+							}
+						}
+					}
+					$i++;
+				}
+			} else {
+				$labeltoshow = ($socid != -1) ? ($langs->trans($socid ? "NoContactDefinedForThirdParty" : "NoContactDefined")) : $langs->trans('SelectAThirdPartyFirst');
+				$out .= '<option class="disabled" value="-1"' . (($showempty == 2 || $multiple) ? '' : ' selected') . ' disabled="disabled">';
+				$out .= $labeltoshow;
+				$out .= '</option>';
+			}
+
+			$parameters = array(
+				'socid' => $socid,
+				'htmlname' => $htmlname,
+				'resql' => $resql,
+				'out' => &$out,
+				'showfunction' => $showfunction,
+				'showsoc' => $showsoc,
+			);
+
+			$reshook = $hookmanager->executeHooks('afterSelectContactOptions', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+
+			if ($htmlname != 'none' && !$options_only) {
+				$out .= '</select>';
+			}
+
+			if ($conf->use_javascript_ajax && !$forcecombo && !$options_only) {
+				include_once DOL_DOCUMENT_ROOT . '/core/lib/ajax.lib.php';
+				$out .= ajax_combobox($htmlid, $events, getDolGlobalString("CONTACT_USE_SEARCH_TO_SELECT"));
+			}
+
+			$this->num = $num;
+			return $out;
+		} else {
+			dol_print_error($this->db);
+			return -1;
+		}
+	}
+
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 
 	/**
@@ -7426,28 +7650,28 @@ class Form
 		$sql .= ' WHERE p.entity IN (' . getEntity('ticket') . ')';
 
 		// Add criteria on ref/label
-		if ($filterkey != '') {
-			$sql .= ' AND (';
-			$prefix = !getDolGlobalString('TICKET_DONOTSEARCH_ANYWHERE') ? '%' : ''; // Can use index if PRODUCT_DONOTSEARCH_ANYWHERE is on
-			// For natural search
-			$scrit = explode(' ', $filterkey);
-			$i = 0;
-			if (count($scrit) > 1) {
-				$sql .= "(";
-			}
-			foreach ($scrit as $crit) {
-				if ($i > 0) {
-					$sql .= " AND ";
-				}
-				$sql .= "(p.ref LIKE '" . $this->db->escape($prefix . $crit) . "%' OR p.subject LIKE '" . $this->db->escape($prefix . $crit) . "%'";
-				$sql .= ")";
-				$i++;
-			}
-			if (count($scrit) > 1) {
-				$sql .= ")";
-			}
-			$sql .= ')';
-		}
+		// if ($filterkey != '') {
+		// 	$sql .= ' AND (';
+		// 	$prefix = !getDolGlobalString('TICKET_DONOTSEARCH_ANYWHERE') ? '%' : ''; // Can use index if PRODUCT_DONOTSEARCH_ANYWHERE is on
+		// 	// For natural search
+		// 	$scrit = explode(' ', $filterkey);
+		// 	$i = 0;
+		// 	if (count($scrit) > 1) {
+		// 		$sql .= "(";
+		// 	}
+		// 	foreach ($scrit as $crit) {
+		// 		if ($i > 0) {
+		// 			$sql .= " AND ";
+		// 		}
+		// 		$sql .= "(p.ref LIKE '" . $this->db->escape($prefix . $crit) . "%' OR p.subject LIKE '" . $this->db->escape($prefix . $crit) . "%'";
+		// 		$sql .= ")";
+		// 		$i++;
+		// 	}
+		// 	if (count($scrit) > 1) {
+		// 		$sql .= ")";
+		// 	}
+		// 	$sql .= ')';
+		// }
 
 		$sql .= $this->db->plimit($limit, 0);
 

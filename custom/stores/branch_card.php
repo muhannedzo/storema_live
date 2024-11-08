@@ -1981,12 +1981,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</tr>';
 	print '<tr class="field_opening">';
 	print '<td class="titlefield fieldname_phone">' . $langs->trans('Opening') . '</td>';
-	$opening = $object->opening ? date("Y-m", $object->opening) : "";
+	$opening = $object->opening ? date("Y-m-d", $object->opening) : "";
 	print '<td class="valuefield fieldname_phone">' . $opening . '</td>';
 	print '</tr>';
 	print '<tr class="field_closing">';
 	print '<td class="titlefield fieldname_phone">' . $langs->trans('Closing') . '</td>';
-	$closing = $object->closing ? date("Y-m", $object->closing) : "";
+	$closing = $object->closing ? date("Y-m-d", $object->closing) : "";
 	print '<td class="valuefield fieldname_phone">' . $closing . '</td>';
 	print '</tr>';
 	print '<tr class="field_cashers_desks">';

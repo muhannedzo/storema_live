@@ -715,6 +715,10 @@ class FormTicket
 		$socid = GETPOST("socid");
 		$customerid = GETPOST("customerid");
 		$storeid = GETPOST("storeid");
+		$parentid = GETPOST("parentid");
+		if($parentid){
+			$mainid = $parentid;
+		}
 		// Load translation files required by the page
 		$langs->loadLangs(array('other', 'mails', 'ticket'));
 
@@ -884,6 +888,9 @@ class FormTicket
 				// If no socid, set to -1 to avoid full contacts list
 				$selectedCompany = ($this->withfromsocid > 0) ? $this->withfromsocid : -1;
 				$selectedOrderVia = 0;
+				if($mainid){
+					$selectedOrderVia = "Storema";
+				}
 				if(isset($_COOKIE["ordervia"])){
 					$selectedOrderVia = $_COOKIE["ordervia"];
 				}
@@ -1270,8 +1277,12 @@ class FormTicket
 		}
 
 		// Type of Ticket
+		$typeCode = (GETPOST('type_code', 'alpha') ? GETPOST('type_code', 'alpha') : $this->type_code);
+		if($mainid){
+			$typeCode = $mainticket->type_code;
+		}
 		print '<tr><td class="titlefield"><span class="fieldrequired"><label for="selecttype_code">'.$langs->trans("TicketTypeRequest").'</span></label></td><td>';
-		$this->selectTypesTickets((GETPOST('type_code', 'alpha') ? GETPOST('type_code', 'alpha') : $this->type_code), 'type_code', '', 2, 1, 0, 0, 'minwidth200');
+		$this->selectTypesTickets($typeCode, 'type_code', '', 2, 1, 0, 0, 'minwidth200');
 		print '</td></tr>';
 
 		// Group => Category
@@ -1280,12 +1291,20 @@ class FormTicket
 		if ($public) {
 			$filter = 'public=1';
 		}
-		$this->selectGroupTickets((GETPOST('category_code') ? GETPOST('category_code') : $this->category_code), 'category_code', $filter, 2, 1, 0, 0, 'minwidth200');
+		$categoryCode = (GETPOST('category_code') ? GETPOST('category_code') : $this->category_code);
+		if($mainid){
+			$categoryCode = $mainticket->category_code;
+		}
+		$this->selectGroupTickets($categoryCode, 'category_code', $filter, 2, 1, 0, 0, 'minwidth200');
 		print '</td></tr>';
 
 		// Severity => Priority
+		$severityCode = (GETPOST('severity_code') ? GETPOST('severity_code') : $this->severity_code);
+		if($mainid){
+			$severityCode = $mainticket->severity_code;
+		}
 		print '<tr><td><span class="fieldrequired"><label for="selectseverity_code">'.$langs->trans("TicketSeverity").'</span></label></td><td>';
-		$this->selectSeveritiesTickets((GETPOST('severity_code') ? GETPOST('severity_code') : $this->severity_code), 'severity_code', '', 2, 1);
+		$this->selectSeveritiesTickets($severityCode, 'severity_code', '', 2, 1);
 		print '</td></tr>';
 
 		if (!empty($conf->knowledgemanagement->enabled)) {
@@ -1361,6 +1380,9 @@ class FormTicket
 					$subject = $langs->trans('SubjectAnswerToTicket').' '.$this->withreadid.' : '.$this->topic_title;
 				} else {
 					$subject = GETPOST('subject', 'alpha');
+				}
+				if($mainid){
+					$subject = $mainticket->subject;
 				}
 				print '<input class="text minwidth500" id="subject" name="subject" value="'.$subject.'"'.(empty($this->withemail)?' autofocus':'').' />';
 			}
@@ -1521,6 +1543,9 @@ class FormTicket
 		print '</td></tr>';
 		// MESSAGE
 		$msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : '';
+		if($mainid){
+			$msg = $mainticket->subject;
+		}
 		print '<tr><td><label for="message"><span class="fieldrequired">'.$langs->trans("Message").'</span></label></td><td>';
 
 		// If public form, display more information

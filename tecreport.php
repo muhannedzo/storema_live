@@ -95,17 +95,23 @@ dol_include_once('/stores/compress.php');
  //////////////////////////////////////////////////////////////////////////////////////////
 
  
-   $sql = 'SELECT f.content, f.parameters, f.images, t.fk_project, p.ref 
+   $sql = 'SELECT f.content, f.parameters, f.images, t.fk_project, p.ref, f.extra_images
             FROM llx_tec_forms f 
                LEFT JOIN llx_ticket t ON t.rowid = f.fk_ticket
                LEFT JOIN llx_projet p ON p.rowid = t.fk_project 
             WHERE f.fk_ticket = '.$object->id.' AND f.fk_user = '.$user->id.' AND f.fk_store = '.$storeid.' AND f.fk_soc = '.$object->fk_soc.';';
-   // var_dump($sql);
+   
    $result = $db->query($sql)->fetch_all()[0];
+   $sqll = 'SELECT t.fk_project, p.ref 
+            FROM llx_ticket t
+               LEFT JOIN llx_projet p on p.rowid = t.fk_project
+            WHERE t.rowid = '.$object->id;
+   $resu = $db->query($sqll)->fetch_all()[0];
    $parameters = json_decode(base64_decode($result[1]));
    $encoded_params = json_encode($parameters);
-   $projectId = $result[3];
-   $projectRef = $result[4];
+   $projectId = $resu[0];
+   $projectRef = $resu[1];
+   $extraImages = $result[5];
    print '<div id="report-body">';
    
       // if(strpos($company->name_alias, 'NCR') !== false && strpos($company->name_alias, 'NCR') >= 0){
@@ -1205,7 +1211,7 @@ dol_include_once('/stores/compress.php');
                   print '<tr class="oddeven">';
                      print '<td colspan="1">B2</td>';
                      print '<td colspan="1">Mit OBF Etiketten drucken (R)</td>';
-                     print '<td colspan="1" class="prio">1</td>';
+                     print '<td colspan="1" class="prio">2</td>';
                      print '<td colspan="1" class="center"><input type="radio" name="question8vk" id="question8vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1" class="center"><input type="radio" name="question8vk" id="question8vk_2" value="2"></td>';
                      print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-8"></td>';
@@ -1422,9 +1428,10 @@ dol_include_once('/stores/compress.php');
             print '<div class="row">
                         <div class="col">
                            <select id="images-types-selector" style="width: 100%" name="image-type">
+                              <option selected disabled>Bildtyp wählen</option>
                               <option>Serverschrank vorher</option>
-                              <option>Seriennummer router</option>
-                              <option>Seriennummer firewall</option>
+                              <option>Seriennummer Router</option>
+                              <option>Seriennummer Firewall</option>
                               <option>Firewall (Beschriftung Patchkabel)</option>
                               <option>Kabeletikett</option>
                               <option>Serverschrank nachher</option>
@@ -1476,6 +1483,20 @@ dol_include_once('/stores/compress.php');
                print '</div>';
             // print '</div>';
          }
+         print '<hr>';
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">
+                        <div class="col-2">
+                           <h5>Extra Images</h5>
+                        </div>
+                        <div class="col-5">
+                           <input style="width: 100%" type="file" name="files[]" multiple>
+                        </div>
+                        <div class="col-5">
+                           <input style="width: 100%" type="submit" name="submitExtra" value="'.$langs->trans("upload").'">
+                        </div>
+                  </div>';
+         print '</form>';
          print '<div>';
             print '<label>'.$langs->trans("additionalnotes").'</label>';
             print '<br>';
@@ -2110,53 +2131,53 @@ dol_include_once('/stores/compress.php');
             <i class="material-icons">Save</i>
           </button>';
  
- $dir = DOL_DOCUMENT_ROOT.'/formsImages/';
- if(!is_dir($dir)){
-    mkdir($dir);
- }
+   $dir = DOL_DOCUMENT_ROOT.'/formsImages/';
+   if(!is_dir($dir)){
+      mkdir($dir);
+   }
  
- $imagesList = array();
- $images = array();	
+   $imagesList = array();
+   $images = array();	
 
- $query = 'SELECT images FROM llx_tec_forms WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
- $list = $db->query($query)->fetch_row();
+   $query = 'SELECT images FROM llx_tec_forms WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+   $list = $db->query($query)->fetch_row();
 
- if($list[0 != null]) {
+   if($list[0 != null]) {
 
-    $arr = json_decode(base64_decode($list[0]));
-    foreach($arr as $elm){
-       array_push($imagesList, $elm);
-    }
- }
+      $arr = json_decode(base64_decode($list[0]));
+      foreach($arr as $elm){
+         array_push($imagesList, $elm);
+      }
+   }
 
  
- if(isset($_POST['delete-image'])) {
+   if(isset($_POST['delete-image'])) {
 
-   $imagesList = array_filter($imagesList, function ($object) {
-      return $object->type !== $_POST["image-group"];
-   });
-   $filepath = $dir.$_POST["image"];
-   $list = json_encode($imagesList);
-   $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
-   $db->query($sql,0,'ddl');
-   unlink($filepath);
-   print '<script>window.location.href = window.location.href;
-   </script>';
- }
+      $imagesList = array_filter($imagesList, function ($object) {
+         return $object->type !== $_POST["image-group"];
+      });
+      $filepath = $dir.$_POST["image"];
+      $list = json_encode($imagesList);
+      $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+      $db->query($sql,0,'ddl');
+      unlink($filepath);
+      print '<script>window.location.href = window.location.href;
+      </script>';
+   }
 
- if(isset($_POST['delete-group'])) {
-   // var_dump($_POST);
-   $imagesList = array_filter($imagesList, function ($object) {
-      return $object->type !== $_POST["image-group"];
-   });
-   $filepath = $dir.$_POST["image"];
-   $list = json_encode($imagesList);
-   $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
-   $db->query($sql,0,'ddl');
-   unlink($filepath);
-   print '<script>window.location.href = window.location.href;
-   </script>';
- }
+   if(isset($_POST['delete-group'])) {
+      // var_dump($_POST);
+      $imagesList = array_filter($imagesList, function ($object) {
+         return $object->type !== $_POST["image-group"];
+      });
+      $filepath = $dir.$_POST["image"];
+      $list = json_encode($imagesList);
+      $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+      $db->query($sql,0,'ddl');
+      unlink($filepath);
+      print '<script>window.location.href = window.location.href;
+      </script>';
+   }
 
    if(isset($_POST['submit'])) {
       $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
@@ -2250,6 +2271,101 @@ dol_include_once('/stores/compress.php');
          print '<script>window.location.href = window.location.href;
          </script>';
       }
+   }
+
+   if(isset($_POST['submitExtra'])) {
+      
+      // $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
+      
+      // $maxsize = 1024 * 1024;
+      
+      // if(!empty(array_filter($_FILES['files']['name']))) {
+         
+   
+      //    foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+            
+      //       $file_tmpname = $_FILES['files']['tmp_name'][$key];
+      //       $file_name = $_FILES['files']['name'][$key];
+      //       $file_names = $_FILES['files']['name'][$key];
+      //       $file_size = $_FILES['files']['size'][$key];
+      //       $imageQuality = 20;
+      //       $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+      //       if($_POST['image-type'] == "Testprotokoll"){
+      //          $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
+      //       } else if($_POST['image-type'] == "Serverschrank nachher") {
+      //          $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0].".".$file_ext;
+      //       } else {
+      //          $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type'].".".$file_ext;
+      //       }
+            
+      //       $filepath = $dir.$file_names;
+   
+
+      //       if(in_array(strtolower($file_ext), $allowed_types)) {
+      //          //Karim test
+      //          if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
+      //             $exif = exif_read_data($file_tmpname);
+      //             if (!empty($exif['Orientation'])) {
+      //                $image = imagecreatefromjpeg($file_tmpname);
+      //                switch ($exif['Orientation']) {
+      //                   case 3:
+      //                         $image = imagerotate($image, 180, 0);
+      //                         break;
+      //                   case 6:
+      //                         $image = imagerotate($image, -90, 0);
+      //                         break;
+      //                   case 8:
+      //                         $image = imagerotate($image, 90, 0);
+      //                         break;
+      //                }
+      //                imagejpeg($image, $file_tmpname, 90); // Save the rotated image
+      //                imagedestroy($image);
+      //             }
+      //          }
+
+      //          if(file_exists($filepath)) {
+      //             unlink($filepath);
+      //             //  $fileN = time().$file_names;
+      //             $filepath = $dir.$file_names;
+      //             $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
+      //             if( $compressedImage) {
+      //                array_push($images, $file_names);
+      //             } else {                    
+      //                dol_htmloutput_errors("Error uploading {$file_name} <br />");
+      //             }
+      //          }else {
+      //             $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
+      //             if($compressedImage) {
+      //                array_push($images,$file_names);
+      //             }else {                    
+      //                dol_htmloutput_errors("Error uploading {$file_name} <br />");
+      //             }
+      //          }      
+      //       }else {
+      //          dol_htmloutput_errors("Error uploading {$file_name} ");
+      //          dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+      //       }
+      //    }
+      // }else {
+      //    dol_htmloutput_errors("No files selected.");
+      // }
+      // $node = [
+      //    "type" => $_POST['image-type'],
+      //    "images" => $images
+      // ];
+      // array_push($imagesList, $node);
+      // $list = json_encode($imagesList);
+      // if($result){
+      //    $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+      //    $db->query($sql,0,'ddl');
+      //    print '<script>window.location.href = window.location.href;
+      //    </script>';
+      // } else {
+      //    $sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("'.$ticketId.'", "'.$user->id.'", "'.$object->fk_soc.'", "'.$storeid.'", "'.base64_encode($list).'")';
+      //    $db->query($sql,0,'ddl');
+      //    print '<script>window.location.href = window.location.href;
+      //    </script>';
+      // }
    }
 // if (isset($_POST['submit'])) {
 //    $allowed_types = array('jpg', 'png', 'jpeg', 'gif');

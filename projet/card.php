@@ -2348,6 +2348,9 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 				print '<a class="butAction" href="'.DOL_URL_ROOT.'/comm/action/card.php?action=create&amp;origin=' . $object->element . '&amp;originid=' . $object->id . '&amp;socid=' . $object->socid . '&amp;projectid=' . $object->id . '">' . $langs->trans("AddAction") . '</a>';
 			}*/
 
+			// CSV
+			print dolGetButtonAction('', $langs->trans('csv'), 'default', $_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&mode=init#formmailbeforetitle', '');
+
 			// Send
 			if (empty($user->socid)) {
 				if ($object->statut != Project::STATUS_CLOSED) {
@@ -2531,7 +2534,7 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 
 	}
 
-	if ($action != 'presend' && $action != 'reportsMail') {
+	if ($action != 'presend' && $action != 'reportsMail' && $action != 'csv') {
 		print '<div class="fichecenter"><div class="fichehalfleft">';
 		print '<a name="builddoc"></a>'; // ancre
 
@@ -2596,6 +2599,299 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 		$somethingshown = $formactions->showactions($object, 'project', 0, 1, '', $MAXEVENT, '', $morehtmlcenter);
 
 		print '</div></div>';
+	}
+
+	if($action == 'csv'){
+		$currentDate = new DateTime();
+		// var_dump($currentDate->format('Y-m-d'));
+		$currentDay = $currentDate->format('Y-m-d');
+		$currentMonth = $currentDate->format('m');
+		$currentYear = $currentDate->format('Y');
+		$startyear = $currentYear;
+		$dateString = 'From '. $startyear . '-'.$currentMonth.'-01 To '. $currentDay;
+		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["date-from"]) && isset($_POST["date-to"]) && $_POST["date-from"] != "" && $_POST["date-to"] != "") {
+			$datefrom = $_POST["date-from"];
+			$dateto = $_POST["date-to"];
+			$dateString = 'From '.$_POST["date-from"].' to '.$_POST["date-to"];
+		}
+		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["fk_user"])) {
+			$technicianId = $_POST["fk_user"];
+		}
+
+		$stringtoshow = '
+			<script type="text/javascript">
+				jQuery(document).ready(function() {
+					jQuery("#idsubimgDOLUSERCOOKIE_ticket_by_status").click(function() {
+						jQuery("#idfilterDOLUSERCOOKIE_ticket_by_status").toggle();
+					});
+				});
+					
+				function exportToCSV() {
+					const tables = document.getElementById("summary-table").querySelectorAll("table:not(#times-table)");
+					const csvContent = [];
+
+					tables.forEach(table => {
+						const rows = table.querySelectorAll("tr");
+						rows.forEach(row => {
+						const csvRow = [];
+
+						// Include both th and td elements
+						const cells = row.querySelectorAll("th, td");
+						cells.forEach(cell => {
+							let cellValue = cell.textContent.trim();
+
+							if (cellValue !== "") {
+							let elm = [];
+							cell.querySelectorAll("input").forEach(inputElement => {
+								if (inputElement) {
+									switch (inputElement.type) {
+										case "number":
+											elm.push(inputElement.value);
+											break;
+											case "date":
+											case "datetime-local":
+											const dateObj = new Date(inputElement.value);
+											cellValue = dateObj.toLocaleString("de-DE", {
+												year: "numeric",
+												month: "numeric",
+												day: "numeric"
+											});
+										break;
+										case "time":
+											// Handle time input type (logic might need adjustment)
+											cellValue = "HH:MM"; // Placeholder for time format
+										break;
+										case "number":
+											cellValue = inputElement.value;
+										break;
+										case "checkbox":
+											cellValue = inputElement.checked ? "Ja" : "Nein";
+										break;
+										default:
+											cellValue = inputElement.value;
+										break;
+									}
+								}
+							});
+								if (elm.length > 0) {
+									cellValue = elm.join(":");
+								}
+							} else {
+								cell.querySelectorAll("input").forEach(inputElement => {
+									if (inputElement) {
+										// Handle input elements with empty text content
+										switch (inputElement.type) {
+											case "checkbox":
+											cellValue = ""; // Set empty string for unchecked checkboxes
+											break;
+											default:
+											// Handle other input types with empty content (optional)
+											break;
+										}
+									}
+								});
+							}
+
+							csvRow.push(cellValue);
+						});
+
+						csvContent.push(csvRow.join(","));
+						});
+						csvContent.push(""); // Add a blank line between tables
+					});
+
+					const csvData = csvContent.join("\n");
+					const blob = new Blob([csvData], { type: "text/csv" });
+					const url = URL.createObjectURL(blob);
+
+					const a = document.createElement("a");
+					a.href = url;
+					// Set a larger default cell width in Excel (adjust as needed)
+					a.download = "report.csv"; // Add ".csv" extension for proper file type
+					a.click();
+					URL.revokeObjectURL(url);
+				}
+			</script>';
+			$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/projet/ajax/contacts.php', 1), 'htmlname' => 'fk_user', 'params' => array('add-customer-contact' => 'disabled'));
+			$customer='fk_businesspartner';
+			print '<script type="text/javascript">
+			$(document).ready(function () {
+
+				jQuery("#'.$customer.'").change(function () {
+					var obj = '.json_encode($events).';
+					$.each(obj, function(key,values) {
+						if (values.method.length) {
+							runJsCodeForEvent'.$customer.'(values);
+						}
+					});
+				});
+				function runJsCodeForEvent'.$customer.'(obj) {
+					console.log("Run runJsCodeForEvent'.$customer.'");
+					var id = $("#'.$customer.'").val();
+					var method = obj.method;
+					var url = obj.url;
+					var htmlname = obj.htmlname;
+					var showempty = obj.showempty;
+					$.getJSON(url,
+							{
+								action: method,
+								id: id,
+								htmlname: htmlname,
+								showempty: showempty
+							},
+							function(response) {
+								$.each(obj.params, function(key,action) {
+									if (key.length) {
+										var num = response.num;
+										if (num > 0) {
+											$("#" + key).removeAttr(action);
+										} else {
+											$("#" + key).attr(action, action);
+										}
+									}
+								});
+								$("select#" + htmlname).html(response.value);
+								if (response.num) {
+									var selecthtml_str = response.value;
+									var selecthtml_dom=$.parseHTML(selecthtml_str);
+									if (typeof(selecthtml_dom[0][0]) !== \'undefined\') {
+										$("#inputautocomplete"+htmlname).val(selecthtml_dom[0][0].innerHTML);
+									}
+								} else {
+									$("#inputautocomplete"+htmlname).val("");
+								}
+								$("select#" + htmlname).change();	/* Trigger event change */
+							}
+					);
+				}
+			});
+			</script>';
+		$stringtoshow .= '<div class="center hideobject" id="idfilterDOLUSERCOOKIE_ticket_by_status">'; // hideobject is to start hidden
+			$stringtoshow .= '<form class="flat formboxfilter" method="POST" action="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&mode=init#formmailbeforetitle">';
+				$stringtoshow .= '<input type="hidden" name="token" value="'.newToken().'">';
+				$stringtoshow .= '<input type="hidden" name="action" value="refresh">';
+				$stringtoshow .= '<input type="hidden" name="DOL_AUTOSET_COOKIE" value="DOLUSERCOOKIE_ticket_by_status:year,shownb,showtot">';
+				$stringtoshow .= $langs->trans("Geschäftspartner").": ".$form->select_company('', 'fk_businesspartner', '', 1, 1, '', $events, 0, 'minwidth400');
+				$stringtoshow .= $langs->trans("Techniker").": ".$form->selectcontactsListing("", "", 'fk_user', 3, '', '', 0, 'minwidth200');
+				$stringtoshow .= $langs->trans("von").' <input class="flat" size="4" type="date" name="date-from">';
+				$stringtoshow .= $langs->trans("bis").' <input class="flat" size="4" type="date" name="date-to">';
+				$stringtoshow .= '<input type="image" alt="'.$langs->trans("Refresh").'" src="'.img_picto($langs->trans("Refresh"), 'refresh.png', '', '', 1).'">';
+			$stringtoshow .= '</form>';
+		$stringtoshow .= '</div>';
+
+		$ticketObject = new Ticket($db);
+		$technicianObject = new User($db);
+		$sql = 'SELECT t.rowid, t.ref, f.fk_user, t.fk_statut, f.parameters, te.dateofuse 
+				FROM llx_projet p
+					LEFT JOIN llx_ticket t on t.fk_project = p.rowid
+					LEFT JOIN llx_ticket_extrafields te on te.fk_object = t.rowid
+					LEFT JOIN llx_tec_forms f on f.fk_ticket = t.rowid
+				WHERE p.rowid = '.$object->id;
+		if(isset($datefrom) && isset($dateto)){
+			$sql .= " AND CAST(te.dateofuse AS DATE) BETWEEN CAST('".$datefrom."' AS DATE) AND CAST('".$dateto."' AS DATE)";
+		}
+		if(isset($technicianId)){
+			$sql .= " AND f.fk_user = ".$technicianId;
+		}
+		var_dump($sql);
+		$result = $db->query($sql);
+		print '<div class="datefilter">';
+			print '<div class="div-table-responsive-no-min">';
+				print '<table class="noborder nohover centpercent">'."\n";
+					print '<tr class="liste_titre"><th>'.$langs->trans("Datum Filter").'</th><th>Datum: '.$dateString.''.img_picto('', 'filter.png', 'id="idsubimgDOLUSERCOOKIE_ticket_by_status" class="linkobject"').'</th><th><input class="butAction" type="submit" value="Download" id="csv" onclick="exportToCSV()"></th></tr>';
+					print '<tr><td  colspan="4" class="center">';
+					print $stringtoshow;
+				print '</table>';
+			print '</div>';
+		print '</div>';
+		print '<div class="row summary-table" id="summary-table">';
+			print '<table class="noborder centpercent">';
+				print '<tbody>';
+					print '<tr class="liste_titre">';
+						print '<th>';
+							print 'Ticket-Nummer';
+						print '</th>';
+						print '<th>';
+							print 'Filialnummer';
+						print '</th>';
+						print '<th>';
+							print 'Installationsdatum';
+						print '</th>';
+						print '<th>';
+							print 'Techniker Name';
+						print '</th>';
+						print '<th>';
+							print 'Arbeitsbeginn';
+						print '</th>';
+						print '<th>';
+							print 'Arbeitsende';
+						print '</th>';
+					print '</tr>';
+					if ($result) {
+						$num = $db->num_rows($result);
+						if($num > 0){
+							for ($i = 0; $i < $num; $i++) {
+								$objp = $db->fetch_object($result);
+								$ticketObject->id = $objp->rowid;
+								$ticketObject->fetch($ticketObject->id);
+								$ticketObject->status = $objp->fk_statut;
+								$ticketObject->parameters = $objp->parameters;
+								$ticketObject->fk_user = $objp->fk_user;
+								$ticketObject->dateofuse = $objp->dateofuse;
+								$technicianObject->fetch($ticketObject->fk_user);
+								$parameters = json_decode(base64_decode($ticketObject->parameters));
+								$installationDate = new DateTime($ticketObject->dateofuse);
+								$storeNumber = "";
+								$workStart = "";
+								$workEnd = "";
+								foreach ($parameters as $item) {
+									if ($item->name === 'store-number') {
+										$storeNumber = $item->value;
+									}
+									if ($item->name === 'work-start') {
+										$workStart = $item->value;
+									}
+									if ($item->name === 'work-end') {
+										$workEnd = $item->value;
+										break;
+									}
+								}
+	
+								print '<tr class="oddeven">';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $ticketObject->ref;
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $storeNumber;
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $ticketObject->dateofuse ? $installationDate->format('d.m.y') : "";
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $ticketObject->fk_user ? $technicianObject->firstname." ".$technicianObject->lastname : "";
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $workStart;
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $workEnd;
+									print '</td>';
+								print '</tr>';
+							}
+						} else {
+							print '<tr class="oddeven">';
+								print '<td class="nowrap tdoverflowmax200" colspan="6">';
+									print 'No results found.';
+								print '</td>';
+							print '</tr>';
+						}
+						$db->free($result);
+					} else {
+						dol_print_error($db);
+					}
+				print '</tbody>';
+			print '</table>';
+		print '</div>';
 	}
 	// Presend form
 	$modelmail = 'project';

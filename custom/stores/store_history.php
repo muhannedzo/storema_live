@@ -631,13 +631,16 @@ if (empty($reshook)) {
 	///////////////////////////////start last call project history table/////////////////////////
 
 	$thirdparty_static = new Project($db);
-	$sql = "SELECT DISTINCT p.ref, p.rowid, p.title, p.dateo, p.datee, p.fk_statut, t.datec";
+	$ticketObject = new Ticket($db);
+	$sql = "SELECT DISTINCT p.ref, p.rowid, p.title, p.dateo, p.datee, t.datec, t.rowid as `ticket_id`, t.fk_statut";
 	$sql .= " FROM ".MAIN_DB_PREFIX."projet p";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."categorie_project as cp on p.rowid = cp.fk_project";
+	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."categorie as ca on cp.fk_categorie = ca.rowid";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."ticket t on t.fk_project = p.rowid";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."ticket_extrafields te on te.fk_object = t.rowid";
-	$sql .= " WHERE cp.fk_categorie = 22 AND te.fk_store = ".$object->id;
+	$sql .= " WHERE ca.label = 'Rollout' AND te.fk_store = ".$object->id;
 	$sql .= " ORDER BY t.datec DESC;";
+	// var_dump($sql);
 
 	$lastmodified="";
 	$result = $db->query($sql);
@@ -646,7 +649,7 @@ if (empty($reshook)) {
 	$lastmodified .= '<div class="div-table-responsive-no-min">';
 	$lastmodified .= '<table class="noborder centpercent">';
 	
-	$lastmodified .= '<tr class="liste_titre"><th colspan="5">Last call history by project</th>';
+	$lastmodified .= '<tr class="liste_titre"><th colspan="6">Last call history by project</th>';
 	$lastmodified .= '</tr>'."\n";
 
 	if ($result) {
@@ -660,13 +663,20 @@ if (empty($reshook)) {
 				$thirdparty_static->title = $objp->title;
 				$thirdparty_static->date_start = $db->jdate($objp->dateo);
 				$thirdparty_static->date_end = $db->jdate($objp->datee);
-				$thirdparty_static->status = $objp->fk_statut;
 				$thirdparty_static->ticket_date = $db->jdate($objp->datec);
+				$thirdparty_static->ticket_id = $objp->ticket_id;
+				$ticketObject->fetch($thirdparty_static->ticket_id);
+				$ticketObject->status = $objp->fk_statut;
 				
 				$lastmodified .= '<tr class="oddeven">';
 				// Name
 				$lastmodified .= '<td class="nowrap tdoverflowmax200">';
 				$lastmodified .= $thirdparty_static->getNomUrl(1, '', 0, '', '-', 0, -1, 'nowraponall');
+				$lastmodified .= "</td>\n";
+
+				// Ticket
+				$lastmodified .= '<td class="nowrap tdoverflowmax200">';
+				$lastmodified .= $ticketObject->getNomUrl(1, '', 0, '', '-', 0, -1, 'nowraponall');
 				$lastmodified .= "</td>\n";
 				
 				// Label
@@ -686,7 +696,7 @@ if (empty($reshook)) {
 
 				// status
 				$lastmodified .= '<td class="center">';
-				$lastmodified .= $thirdparty_static->getLibStatut(2);
+				$lastmodified .= $ticketObject->getLibStatut(2);
 				$lastmodified .= '</td>';
 		}
 		$db->free($result);
@@ -708,9 +718,10 @@ if (empty($reshook)) {
 	$ssql = "SELECT DISTINCT p.rowid, p.ref, p.fk_statut, p.title 
 			FROM llx_projet as p
 				LEFT JOIN llx_categorie_project as cp on p.rowid = cp.fk_project
+				LEFT JOIN llx_categorie as ca on cp.fk_categorie = ca.rowid
 				LEFT JOIN llx_ticket as t on p.rowid = t.fk_project
 				LEFT JOIN llx_ticket_extrafields as te on t.rowid = te.fk_object
-			WHERE cp.fk_categorie = 22 and p.fk_soc = ".$object->thirdparty->id." and te.fk_store = ".$object->id.";";
+			WHERE ca.label = 'Rollout' and p.fk_soc = ".$object->thirdparty->id." and te.fk_store = ".$object->id.";";
 	$lastmodified="";
 	$result = $db->query($ssql);
 	$num = $db->num_rows($result);
@@ -764,10 +775,11 @@ if (empty($reshook)) {
 	$thirdparty_static = new Project($db);
 	$sql = "SELECT DISTINCT p.ref, p.rowid, p.title, p.dateo, p.datee, p.fk_statut";
 	$sql .= " FROM ".MAIN_DB_PREFIX."projet p";
-	$sql .= " LEFT JOIN  ".MAIN_DB_PREFIX."categorie_project as cp on p.rowid = cp.fk_project";
+	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."categorie_project as cp on p.rowid = cp.fk_project";
+	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."categorie as ca on cp.fk_categorie = ca.rowid";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."ticket t on t.fk_project = p.rowid";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."ticket_extrafields te on te.fk_object = t.rowid";
-	$sql .= " WHERE cp.fk_categorie = 22 AND te.fk_store = ".$object->id;
+	$sql .= " WHERE ca.label = 'Rollout' AND te.fk_store = ".$object->id;
 	$sql .= " ORDER BY p.dateo DESC";
 
 	$lastmodified="";

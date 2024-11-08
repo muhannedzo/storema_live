@@ -128,11 +128,16 @@ $sql = 'SELECT f.content, f.parameters, f.fk_user, f.images, t.fk_project, p.ref
             LEFT JOIN llx_projet p ON p.rowid = t.fk_project 
          WHERE f.fk_ticket = '.$object->id.' AND f.fk_user = '.$object->fk_user_assign.' AND f.fk_store = '.$storeid.' AND f.fk_soc = '.$object->fk_soc.';';
 $result = $db->query($sql)->fetch_all()[0];
+$sqll = 'SELECT t.fk_project, p.ref 
+         FROM llx_ticket t
+            LEFT JOIN llx_projet p on p.rowid = t.fk_project
+         WHERE t.rowid = '.$object->id;
+$resu = $db->query($sqll)->fetch_all()[0];
 // var_dump($sql);
 $parameters = json_decode(base64_decode($result[1]));
 $encoded_params = json_encode($parameters);
-$projectId = $result[4];
-$projectRef = $result[5];
+$projectId = $resu[0];
+$projectRef = $resu[1];
 // var_dump($projectRef);
 
 $techUser->fetch($result[2]);
@@ -1155,7 +1160,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                   print '<tr class="oddeven">';
                      print '<td colspan="1">B2</td>';
                      print '<td colspan="1">Mit OBF Etiketten drucken (R)</td>';
-                     print '<td colspan="1" class="prio">1</td>';
+                     print '<td colspan="1" class="prio">2</td>';
                      print '<td colspan="1" class="center"><input type="radio" name="question8vk" id="question8vk_1" value="1" class="vk-radio"></td>';
                      print '<td colspan="1" class="center"><input type="radio" name="question8vk" id="question8vk_2" value="2"></td>';
                      print '<td colspan="1" class="center"><input type="checkbox" name="table1-check-8"></td>';
@@ -1372,8 +1377,8 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                      <div class="col">
                         <select style="width: 100%" name="image-type">
                            <option>Serverschrank vorher</option>
-                           <option>Seriennummer router</option>
-                           <option>Seriennummer firewall</option>
+                           <option>Seriennummer Router</option>
+                           <option>Seriennummer Firewall</option>
                            <option>Firewall (Beschriftung Patchkabel)</option>
                            <option>Kabeletikett</option>
                            <option>Serverschrank nachher</option>
