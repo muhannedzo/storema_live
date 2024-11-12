@@ -62,7 +62,119 @@ if (isset($_POST['form'])) {
         $db->query($sql);
         echo json_encode(['message' => 'Form saved successfully']);
     }
-} else {
+}else if(isset($_POST['list'])){
+    $list = $_POST['list'];
+    if (!isset($listData['action'])) {
+        echo json_encode(['error' => 'No action specified for list operation']);
+        exit;
+    }
+
+    $action = $listData['action'];
+
+    switch ($action) {
+        case 'create':
+            // Validate and sanitize input
+            $reportId = isset($listData['reportId']) ? intval($listData['reportId']) : 0;
+            $name = isset($listData['name']) ? trim($listData['name']) : '';
+            $options = isset($listData['options']) ? $listData['options'] : [];
+        
+            if ($reportId <= 0 || empty($name) || !is_array($options)) {
+                echo json_encode(['error' => 'Invalid input data for list creation']);
+                exit;
+            }
+        
+            // Convert options array to JSON
+            $optionsJson = json_encode($options);
+        
+            // Prepare SQL statement
+            $stmt = $db->db->prepare('INSERT INTO llx_reports_lists (reportId, name, options, date_created, date_updated) VALUES (?, ?, ?, NOW(), NOW())');
+            $stmt->bind_param('iss', $reportId, $name, $optionsJson);
+        
+            if ($stmt->execute()) {
+                $listId = $stmt->insert_id;
+                echo json_encode(['message' => 'List created successfully', 'listId' => $listId]);
+            } else {
+                echo json_encode(['error' => 'Failed to create list']);
+            }
+            break;
+        case 'update':
+             // Validate and sanitize input
+            $listId = isset($listData['listId']) ? intval($listData['listId']) : 0;
+            $name = isset($listData['name']) ? trim($listData['name']) : '';
+            $options = isset($listData['options']) ? $listData['options'] : [];
+
+            if ($listId <= 0 || empty($name) || !is_array($options)) {
+                echo json_encode(['error' => 'Invalid input data for list update']);
+                exit;
+            }
+
+            // Convert options array to JSON
+            $optionsJson = json_encode($options);
+
+            // Prepare SQL statement
+            $stmt = $db->db->prepare('UPDATE llx_reports_lists SET name = ?, options = ?, date_updated = NOW() WHERE id = ?');
+            $stmt->bind_param('ssi', $name, $optionsJson, $listId);
+
+            if ($stmt->execute()) {
+                echo json_encode(['message' => 'List updated successfully']);
+            } else {
+                echo json_encode(['error' => 'Failed to update list']);
+            }
+            break;
+        case 'delete':
+            // Validate and sanitize input
+            $listId = isset($listData['listId']) ? intval($listData['listId']) : 0;
+
+            if ($listId <= 0) {
+                echo json_encode(['error' => 'Invalid list ID for deletion']);
+                exit;
+            }
+
+            // Prepare SQL statement
+            $stmt = $db->db->prepare('DELETE FROM llx_reports_lists WHERE id = ?');
+            $stmt->bind_param('i', $listId);
+
+            if ($stmt->execute()) {
+                echo json_encode(['message' => 'List deleted successfully']);
+            } else {
+                echo json_encode(['error' => 'Failed to delete list']);
+            }
+            break;
+        case 'fetch':
+            // Validate and sanitize input
+            $reportId = isset($listData['reportId']) ? intval($listData['reportId']) : 0;
+
+            if ($reportId <= 0) {
+                echo json_encode(['error' => 'Invalid report ID for fetching lists']);
+                exit;
+            }
+
+            // Prepare SQL statement
+            $stmt = $db->db->prepare('SELECT id, name, options FROM llx_reports_lists WHERE reportId = ?');
+            $stmt->bind_param('i', $reportId);
+
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $lists = [];
+
+                while ($row = $result->fetch_assoc()) {
+                    $lists[] = [
+                        'id' => $row['id'],
+                        'name' => $row['name'],
+                        'options' => json_decode($row['options'], true)
+                    ];
+                }
+
+                echo json_encode(['lists' => $lists]);
+            } else {
+                echo json_encode(['error' => 'Failed to fetch lists']);
+            }
+            break;
+        default:
+            echo json_encode(['error' => 'Invalid action specified for list operation']);
+            break;
+    }
+}else {
     echo json_encode(['error' => 'No form data received']);
 }
 

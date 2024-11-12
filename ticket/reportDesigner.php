@@ -85,8 +85,9 @@ dol_include_once('/stores/compress.php');
  $object = new Branch($db);
  $projectid = GETPOST("projectid");
 $socid = GETPOST("socid");
-// print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.css">';
-// print '<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.1/purify.min.js"></script>';
+// print ' <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+//          <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>
+//          <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.3.2/jspdf.plugin.autotable.min.js"></script>';
 llxHeader("", $langs->trans("ReportDesigner"));
 
 print load_fiche_titre($langs->trans("Ticket Report"), '', 'stores.png@stores');
@@ -170,18 +171,7 @@ echo '</div>';
         const reportContainer = document.getElementById("report-container");
         const propertyPanelElement = document.getElementById("report-property-panel");
         const reportGenerator = new ReportGenerator(reportContainer, propertyPanelElement);
-        const displayElement = new ReportElementDisplay("Name vom Projekt / Report", "");
-        const tableElement = new ReportElementTable("", "", 2, 2);
-        console.log("tableElement id " + tableElement._id);
-        const descriptionElement = new ReportElementDisplay("Beschreibung", "");
-        const textElement  = new ReportElementTextarea("Text", "");
-        const textElement2 = new ReportElementTextarea("Text", "");
-        console.log(displayElement.content);
-        reportGenerator.addElement(displayElement);
-        reportGenerator.addElement(tableElement);
-        reportGenerator.addElement(descriptionElement);
-        reportGenerator.addElement(textElement);
-        reportGenerator.addElement(textElement2);
+        reportGenerator.loadBasicDesign();
         reportGenerator.generateReport();
     });
      </script>';
@@ -191,50 +181,21 @@ echo '</div>';
     $sql = "SELECT * FROM llx_reports WHERE rowid = ".$reportId;
     $res = $db->query($sql)->fetch_all();
     $userId = $res[0][1] ? $res[0][1] : $user->id;
+    //$uploadRef = "reportDesigner.php?reportId=".$reportId."&userId=".$userId;
     // Base 64 decode the content of the report res[2]
     $parameters = base64_decode($res[0][3]);
+    // $sqlList = "SELECT * FROM llx_reports_lists WHERE reportid = ".$reportId;
+    // $resLists = $db->query($sqlList)->fetch_all();
+    // $lists = [];
+    // for($i = 0; $i < count($resLists); $i++){
+    //     $lists[$i] = $resLists[$i][2];
+    // }
+    
     //echo $parameters;
     echo '<script>
     document.addEventListener("DOMContentLoaded", () => {
     const reportGenerator = new ReportGenerator(document.getElementById("report-container"), document.getElementById("report-property-panel"));
-    const reportParameters = JSON.parse(`'.$parameters.'`);
-    
-    reportParameters.forEach(param => {
-        switch(param.type) {
-            case "display":
-                const displayElement = new ReportElementDisplay(param.content, param.style, param.label, param.contentType);
-                reportGenerator.addElement(displayElement);
-                break;
-            case "input":
-                const inputElement = new ReportElementInput(param.content, param.style, param.label);
-                reportGenerator.addElement(inputElement);
-                break;
-            case "textarea":
-                const textareaElement = new ReportElementTextarea(param.content, param.style, param.label);
-                reportGenerator.addElement(textareaElement);
-                break;
-            case "table":
-                const tableElement = new ReportElementTable(param.content, param.style, param.content.length, param.content[0].length, param.label);
-                param.content.forEach((row, rowIndex) => {
-                    row.forEach((cell, cellIndex) => {
-                        const cellElement = tableElement.grid[rowIndex][cellIndex];
-                        cellElement.content = cell.content;
-                        cellElement.styles = cell.styles;
-                        cellElement.label = cell.label;
-                        cellElement.contentType = cell.contentType;
-                        tableElement.updateContent(rowIndex, cellIndex);
-                    });
-                });
-                reportGenerator.addElement(tableElement);
-                break;
-            case "div":
-                const divElement = new ReportElementDiv(param.content, param.style);
-                reportGenerator.addElement(divElement);
-                break;
-            default:
-                break;
-        }
-    });
+    reportGenerator.initFromParams(JSON.parse(`'.$parameters.'`));
     reportGenerator.generateReport();
     });
     </script>';
@@ -455,6 +416,7 @@ class ReportGenerator {
         this.init();
     }
 
+    // Called inside constructor to set up event listeners and bind to the correct context
     init () {
     console.log("Init");
         // Handle clicks outside of reportdesigner
@@ -496,14 +458,79 @@ class ReportGenerator {
             }
         });
 
-// Add event listeners for selecting elements
-document.querySelectorAll(\'.sortable-item\').forEach(item => {
-    item.addEventListener(\'click\', (e) => {
-        const elementId = e.currentTarget.getAttribute(\'data-element-id\');
-        this.selectedElement = this.elements.find(element => element._id === elementId);
-    });
-});
+        // Add event listeners for selecting elements
+        document.querySelectorAll(\'.sortable-item\').forEach(item => {
+            item.addEventListener(\'click\', (e) => {
+                const elementId = e.currentTarget.getAttribute(\'data-element-id\');
+                this.selectedElement = this.elements.find(element => element._id === elementId);
+            });
+        });
 
+    }
+    // Pass json decoded params to load the report
+    initFromParams(params){
+        const reportParameters = params;
+        console.log(reportParameters);
+        reportParameters.forEach(param => {
+            switch(param.type) {
+                case "display":
+                    const displayElement = new ReportElementDisplay(param.content, param.style, param.label, param.contentType);
+                    this.addElement(displayElement);
+                    break;
+                case "input":
+                    const inputElement = new ReportElementInput(param.content, param.style, param.label);
+                    this.addElement(inputElement);
+                    break;
+                case "textarea":
+                    const textareaElement = new ReportElementTextarea(param.content, param.style, param.label);
+                    this.addElement(textareaElement);
+                    break;
+                case "table":
+                    let tableElement = new ReportElementTable(param.content, param.style, param.content.length, param.content[0].length, param.label);
+                    // param.content.forEach((row, rowIndex) => {
+                    //     row.forEach((cell, cellIndex) => {    
+                    //         tableElement.changeCellChildElement(rowIndex, cellIndex, tableElement.createCellContentElement(cell.contentType, cell.content));
+                    //     });
+                    // });
+                    this.addElement(tableElement);
+                    break;
+                case "div":
+                    const divElement = new ReportElementDiv(param.content, param.style);
+                    this.addElement(divElement);
+                    break;
+                case "upload":
+                    const uploadElement = new ReportElementUpload(param.content, param.style, param.label, param.includeSelect || false, param.selectOptions || []);
+                    this.addElement(uploadElement);
+                    break;
+                case "checkbox":
+                    const checkboxElement = new ReportElementCheckbox(param.content, param.style, param.label);
+                    this.addElement(checkboxElement);
+                    break;
+                case "signature":
+                    const signatureElement = new ReportElementSignature(param.content, param.style, param.label);
+                    this.addElement(signatureElement);
+                    break;
+                default:
+                    break;
+            }
+        });
+    }
+
+
+    // The basic design Mr. Michael wants
+    loadBasicDesign(){
+        const displayElement = new ReportElementDisplay("Name vom Projekt / Report", "");
+        const tableElement = new ReportElementTable("", "", 2, 2);
+        console.log("tableElement id " + tableElement._id);
+        const descriptionElement = new ReportElementDisplay("Beschreibung", "");
+        const textElement  = new ReportElementTextarea("Text", "");
+        const textElement2 = new ReportElementTextarea("Text", "");
+        console.log(displayElement.content);
+        this.addElement(displayElement);
+        this.addElement(tableElement);
+        this.addElement(descriptionElement);
+        this.addElement(textElement);
+        this.addElement(textElement2);
     }
 
     
@@ -630,381 +657,10 @@ handleGlobalClick(e) {
     }
     
 showProperties() {
-//     
-//     //If an element has been selected collect its styles and fill the property panel with the values
-//     if (this.selectedElement) {
-//         const style = this.selectedElement.styles;
-
-//         // Reset all input fields in the property panel
-//         document.querySelectorAll(".report-property").forEach(input => {
-//             input.value = "";
-//             input.disabled = false;
-//         });
-
-//         // Reset all select fields in the property panel
-//         document.querySelectorAll("select").forEach(select => {
-//             select.disabled = false;
-//         });
-
-//         // Take styles and fill the fields in the property panel
-//         const styleProperties = style.split(";").map(prop => prop.trim()).filter(prop => prop);
-//         styleProperties.forEach(prop => {
-//             const [key, value] = prop.split(":").map(item => item.trim());
-
-//             // Check all css properties and remove the unit. So 200px -> 200 etc.
-//             switch (key) {
-//             // For width and height we can use pixels or percentage so we need to check for both. If px then remove px from string and set unit to px. Same for %
-//                 case "width":
-//                      if (value.endsWith("px")) {
-//                         document.getElementById("property-width").value = value.replace("px", "");
-//                         document.getElementById("property-width").dataset.unit = "px";
-//                         document.getElementById("property-width-unit").value = "px";
-//                     } else if (value.endsWith("%")) {
-//                         document.getElementById("property-width").value = value.replace("%", "");
-//                         document.getElementById("property-width").dataset.unit = "%";
-//                         document.getElementById("property-width-unit").value = "%";
-//                     }
-//                     break;
-//                 case "height":
-//                     if (value.endsWith("px")) {
-//                     
-//                         document.getElementById("property-height").value = value.replace("px", "");
-//                         document.getElementById("property-height").dataset.unit = "px";
-//                         document.getElementById("property-height-unit").value = "px";
-//                     } else if (value.endsWith("%")) {
-//                         document.getElementById("property-height").value = value.replace("%", "");
-//                         document.getElementById("property-height").dataset.unit = "%";
-//                         document.getElementById("property-height-unit").value = "%";
-//                     }
-//                     break;
-//                 case "color":
-//                     document.getElementById("property-style-color").value = value;
-//                     break;
-//                 case "background-color":
-//                     document.getElementById("property-style-background-color").value = value;
-//                     break;
-//                 case "font-size":
-//                     document.getElementById("property-style-font-size").value = value.replace("px", "");
-//                     break;
-//                 case "font-weight":
-//                     document.getElementById("property-style-font-weight").value = value;
-//                     break;
-//                 case "padding":
-//                     document.getElementById("property-style-padding").value = value.replace("px", "");
-//                     break;
-//                 case "margin-top":
-//                     document.getElementById("property-style-margin").value = value.replace("px", "");
-//                     break;
-//                 case "border":
-//                     document.getElementById("property-style-border").value = value.replace("px", "");
-//                     break;
-//                 default:
-//                     break;
-//             }
-//         });
-
-//         // Set the position value
-        
-//     }
+// Implement seperate class for property panel
+return;
 }
 
-
-
-    // The code that follows now is shit but I had to do it this way, because i had to speed up.
-    // Future: Create seperate class : elementCreator 
-    // Methods: 
-    // generateUI => switch statement from below
-    // handlePreviewUpdate 
-    // handleCellSelection
-    // List of key/value pairs for renderable elements e.g table -> new ReportElementTable , yesNo -> new ReportElementRadio() + new ReportElementRadio() ...
-
-    // handleAddElementButtonClick(e) {
-    
-    //   // Show the Bootstrap modal
-    // const modal = new bootstrap.Modal(document.getElementById("elementModal"), {
-    //     keyboard: true
-    // });
-    // modal.show();
-
-    // // modal elements
-    // const configBox = document.getElementById("elementConfigBox");
-    // const addElementBtn = document.getElementById("addElementBtn");
-
-    // addElementBtn.disabled = true;
-
-    // // event listeners for buttons inside modal
-    // const options = document.querySelectorAll("#elementModal .list-group-item");
-    // options.forEach(option => {
-    //     option.addEventListener("click", (event) => {
-    //         const value = event.target.getAttribute("data-value");
-    //         configBox.innerHTML = ""; // Clear previous config
-    //         const selection = document.createElement("div");
-    //         const preview = document.createElement("div");
-    //         preview.classList.add("responsive");
-    //         preview.id = "preview";
-    //         selection.id = "selection";
-    //         //Append the selection and preview divs to the configBox
-    //         configBox.appendChild(selection);
-    //         configBox.appendChild(preview); 
-    //         preview.style.display = "flex";
-    //         preview.style.flexDirection = "column";
-    //         preview.style.gap = "1rem";
-
-    //         preview.innerHTML = "Vorschau: ";
-    //         configBox.style.display = "flex";
-    //         configBox.style.flexDirection = "column";
-    //         configBox.style.gap = "1rem";
-    //         let previewReportElement = null;
-           
-    //         switch (value) {
-    //             case "display":
-    //                 selection.innerHTML = `
-    //                     <div class="mb-3">
-    //                         <input type="text" id="displayText" class="form-control" placeholder="Text eingeben">
-    //                         <div>oder</div>
-    //                         <select id="predefinedText" class="form-select">
-    //                             <option value="default" selected>Dynamische Werte</option>
-    //                             <option value="projectname">Projektname / Report</option>
-    //                             <option value="ticketnumber">Ticketnummer</option>
-    //                             <option value="currentDate">Aktuelles Datum</option>
-    //                             <option value="creationDate">Erstellungsdatum</option>
-    //                             <option value="time">Uhrzeit</option>
-    //                             <option value="filial">Filiale</option>
-    //                             <option value="severity">Dringlichkeit</option>
-    //                             <option value="postalcode">Plz</option>
-    //                             <option value="city">Stadt</option>
-    //                             <option value="street">Straße</option>
-    //                             <option value="tickettype">Ticketart</option>
-    //                             <option value="telephonenumber">Telefonnummer</option>
-    //                             <option value="ticketdescription">Beschreibung/Auftrag</option>
-    //                         </select>
-    //                     </div>
-    //                 `;
-    //                 previewReportElement = new ReportElementDisplay("Text eingeben", "font-size: 20px; font-weight: bold; width: 100%; text-align: center;");
-    //                 preview.appendChild(previewReportElement.render());
-    //                 previewReportElement.clicked = true;
-    //                 // Preview and previewReportElement should change when input changes
-    //                 document.getElementById("displayText").addEventListener("input", (e) => {
-    //                     preview.innerHTML = "Vorschau:";
-    //                     previewReportElement.content = e.target.value;
-    //                     preview.appendChild(previewReportElement.render());
-    //                 });
-    //                 document.getElementById("predefinedText").addEventListener("change", (e) => {
-    //                     preview.innerHTML = "Vorschau:";
-    //                     if(e.target.value === "default") {
-    //                         previewReportElement.content = "";
-    //                         document.getElementById("displayText").disabled = false;
-    //                     } else {
-    //                         previewReportElement.content = e.target.options[e.target.selectedIndex].text+" (Automatisch)";
-    //                         previewReportElement.contentType = "dynamic";
-    //                         document.getElementById("displayText").disabled = true;
-    //                     }
-                        
-    //                     //previewReportElement.content = e.target.value;
-    //                     preview.appendChild(previewReportElement.render());
-    //                 });
-    //                 break;
-    //             case "input":
-    //                 selection.innerHTML = `
-    //                     <div class="mb-3">
-    //                         <input type="text" id="inputLabel" class="form-control" placeholder="Überschrift angeben">
-    //                     </div>
-    //                 `;
-    //                 previewReportElement = new ReportElementInput("", "", "Überschrift angeben");
-    //                 preview.appendChild(previewReportElement.render());
-    //                 previewReportElement.clicked = true;
-    //                 document.getElementById("inputLabel").addEventListener("input", (e) => {
-    //                     preview.innerHTML = "Vorschau:";
-    //                     previewReportElement.label = e.target.value;
-    //                     preview.appendChild(previewReportElement.render());
-    //                 });
-    //                 break;
-    //             case "textarea":
-    //                 selection
-    //                 .innerHTML = `
-    //                     <div class="mb-3">
-                            
-    //                         <input type="text" id="textareaLabel" class="form-control" placeholder="Überschrift angeben">
-    //                     </div>
-    //                 `;
-    //                 previewReportElement = new ReportElementTextarea("", "", "Enter textarea label");
-    //                 preview.appendChild(previewReportElement.render());
-    //                 previewReportElement.clicked = true;
-    //                 document.getElementById("textareaLabel").addEventListener("input", (e) => {
-    //                     preview.innerHTML = "Vorschau:";
-    //                     previewReportElement.label = e.target.value;
-    //                     preview.appendChild(previewReportElement.render());
-    //                 });
-    //                 break;
-    //             case "table":
-    //                 selection.innerHTML = `
-    //                 <div class="mb-3" id="tableLabelSelection">
-    //                 Tabellenüberschrift
-    //                 <input type="text" id="tableLabel" class="form-control" value="Table">
-    //                 </div>
-    //                 <div class="mb-3 d-flex gap-1 flex-column" id="tableStructureSelection">
-    //                 <label for="tableRows">Tabellenstruktur</label>
-    //                     <div class="mb-3">
-    //                         <label for="tableRows">Anzahl Zeilen</label>
-    //                         <input type="number" id="tableRows" class="form-control" value=2>
-    //                     </div>
-    //                     <div class="mb-3">
-    //                         <label for="tableCols">Anzahl Spalten</label>
-    //                         <input type="number" id="tableCols" class="form-control" value=2>
-    //                     </div>
-    //                 </div>
-    //                 <div class="mb-3 d-flex gap-1 flex-column" id="cellConfiguration" >
-    //                     <label for="tableContent">Ausgewählte Zelle bearbeiten</label>
-    //                     <div class="d-flex gap-1 flex-column">
-    //                         <select id="cellTypeSelection" class="form-select" disabled>
-    //                             <option value="default" selected>Zellentyp auswählen</option>
-    //                             <option value="text">Einfacher Text</option>
-    //                             <option value="input">Eingabefeld</option>
-    //                             <option value="checkbox">Checkbox</option>
-    //                             <option value="textarea">Textfeld</option>
-    //                             <option value="upload">Upload</option>
-    //                         </select>
-    //                     </div>
-    //                     <div id="cellContent"></div>
-    //                 </div>
-    //                 `;
-    //                 // Function for filling the cell content
-    //                 document.getElementById("cellTypeSelection").addEventListener("change", (e) => {
-    //                     if(document.getElementById("cellTypeSelection").value === "text"){
-    //                         const cellContent = document.getElementById("cellContent");
-    //                         cellContent.innerHTML = "Anzeigetext eingeben";
-    //                         const display = document.createElement("input");
-    //                         display.setAttribute("type", "text");
-    //                         display.setAttribute("id", "tableContent");
-    //                         display.setAttribute("class", "form-control");
-    //                         display.setAttribute("placeholder", "Text eingeben");
-    //                         if(this.selectedElement) {
-    //                             display.value = this.selectedElement.content;
-    //                         }
-    //                         cellContent.appendChild(display);
-    //                         document.getElementById("cellConfiguration").appendChild(cellContent);
-    //                     }else if(document.getElementById("cellTypeSelection").value === "upload"){
-    //                         const cellContent = document.getElementById("cellContent");
-    //                         cellContent.innerHTML = "";
-    //                     }
-    //                 });
-    //                 // Preview of table that is being configured
-    //                     previewReportElement = new ReportElementTable("", "", 2, 2);
-    //                     preview.appendChild(previewReportElement.render());
-    //                     previewReportElement.clicked = true;
-    //                     document.getElementById("tableRows").addEventListener("change", (e) => {
-    //                         preview.innerHTML = "Vorschau:";
-    //                         previewReportElement.rows = e.target.value;
-                            
-    //                         preview.appendChild(previewReportElement.render());
-    //                         if(this.selectedElement){
-    //                             if(this.selectedElement.id.split("-")[3] >= e.target.value){
-    //                                 this.selectedElement = null;
-    //                                 this.disableProperties();
-    //                             }
-    //                         }
-    //                     });
-    //                     // Function for changing the number of columns in the table
-    //                     document.getElementById("tableCols").addEventListener("change", (e) => {
-    //                         preview.innerHTML = "Vorschau:";
-    //                         previewReportElement.cols = e.target.value;
-    //                         preview.appendChild(previewReportElement.render());
-    //                         if(this.selectedElement){
-    //                             if(this.selectedElement.id.split("-")[4] >= e.target.value){
-    //                                 this.selectedElement = null;
-    //                                 this.disableProperties();
-    //                             }
-    //                         }
-    //                     });
-    //                     // Function for selecting <based on clicked cell type
-    //                     document.getElementById("cellTypeSelection").addEventListener("change", (e) => {
-    //                         if(this.selectedElement){
-    //                             this.selectedElement.contentType = document.getElementById("cellTypeSelection").value;
-    //                             preview.innerHTML = "Vorschau:";
-    //                             preview.appendChild(previewReportElement.render());
-    //                         }
-    //                     });
-
-                        
-    //                     // Function for changing the label of the table
-    //                     document.getElementById("tableLabel").addEventListener("input", (e) => {
-    //                         preview.innerHTML = "Vorschau:";
-    //                         previewReportElement.label = e.target.value;
-    //                         preview.appendChild(previewReportElement.render());
-    //                     });
-
-    //                     // Function for changing the selected cell\'s type based on selection
-    //                     document.getElementById("cellContent").addEventListener("input", (e) => {
-    //                         if(this.selectedElement){
-    //                             this.selectedElement.content = e.target.value;
-    //                             preview.innerHTML = "Vorschau:";
-    //                             preview.appendChild(previewReportElement.render());
-    //                         }
-    //                     });
-
-    //                     // Detect cell clicks similar to handleClick() and selectElement but just for modal
-    //                     document.getElementById("elementModal").addEventListener("click", (e) => {
-                        
-    //                     const cellHTML = e.target.closest("td, th");
-    //                         if(cellHTML){
-    //                             const cellObj = previewReportElement.grid[cellHTML.id.split("-")[3]][cellHTML.id.split("-")[4]]
-    //                             this.selectedElement = cellObj;
-    //                             document.getElementById("cellTypeSelection").value = this.selectedElement.contentType;
-    //                             document.getElementById("cellTypeSelection").disabled = false;
-    //                             document.getElementById("cellTypeSelection").dispatchEvent(new Event("change"));
-    //                         }else{
-    //                             // ?
-    //                         }
-                            
-                           
-    //                     });
-                        
-    //                 break;
-    //             default:
-    //                 break;
-    //         }
-
-    //         // Enable the add button when an option is selected
-    //         addElementBtn.disabled = false;
-
-    //         // Set the click event for the add button
-    //         // Bind input to ReportElement object and add it to the reportGenerator
-    //         addElementBtn.onclick = () => {
-    //             let element;
-    //             switch (value) {
-    //                 case "display":
-    //                     element = new ReportElementDisplay(previewReportElement.content, previewReportElement.styles, previewReportElement.label, previewReportElement.contentType);
-    //                     break;
-    //                 case "input":
-    //                     element = new ReportElementInput(previewReportElement.content, previewReportElement.styles, previewReportElement.label);
-    //                     break;
-    //                 case "textarea":
-    //                     element = new ReportElementTextarea(previewReportElement.content, previewReportElement.styles, previewReportElement.label);
-    //                     break;
-    //                 case "table":
-    //                     element = previewReportElement;
-    //                     break;
-    //                 case "div":
-    //                     element = new ReportElementDiv(previewReportElement.content, previewReportElement.styles);
-    //                     break;
-    //                 case "upload":
-    //                     element = previewReportElement;
-    //                     break;
-    //                 default:
-    //                     break;
-    //             }
-    //             console.log("Adding element", element); 
-    //             this.addElement(element);
-    //             this.selectedElement = null;
-    //             //this.generateReport();
-    //             modal.hide(); // Hide the modal after adding the element
-    //             console.log(this.elements);
-    //         };
-    //     });
-    // });
-
-
-    // }
     
     
     // Function to add a new ReportElement to the array
@@ -1215,6 +871,7 @@ class ReportElementCreator {
         this.closeButton = closeButton;  // Reference to the "Close" button inside modal -> hideModal()
         this.selection = null;       // Current selected option in modal -> handleSelection()
         this.preview = null;         // Reference to preview element in the modal -> mountPreview()
+        
 
         this.elements = [
             { value: "display", label: "Anzeige", factory: this.createDisplayElementUI.bind(this) },
@@ -1222,10 +879,12 @@ class ReportElementCreator {
             { value: "textarea", label: "Textfeld", factory: this.createTextareaElementUI.bind(this) },
             { value: "table", label: "Tabelle", factory: this.createTableElementUI.bind(this) },
             { value: "upload", label: "Upload", factory: this.createUploadElementUI.bind(this) },
+            { value: "Signature", label: "Unterschrift", factory: this.createSignatureElementUI.bind(this) },
             // { value: "clock", label: "Uhrzeit", factory: this.createClockElementUI.bind(this) },
             // { value: "div", label: "Box", factory: this.createDivElementUI.bind(this) }
         ];
-
+        // Testing, remove showModal() when finished
+        //this.showModal();
         this.mountElementFactories();
         this.bindEvents();
     }
@@ -1250,14 +909,17 @@ class ReportElementCreator {
         // Add element button handler
          this.addButton.addEventListener("click", () => {
             if (this.preview) {
+            if(this.preview.type === "upload" && (this.preview.label === "" || this.preview.label === "undefined")) {
+                alert("Uploads müssen eine Überschrift haben, da dies der Dateiname ist.");
+            }else{
                 // Delegate adding the element to the reportGenerator
                 this.reportGenerator.addElement(this.createFinalElement());
                 //this.reportGenerator.addElement(this.preview);
                 this.hideModal(); // Optionally hide modal after adding the element
             }
+               
+            }
         });
-
-        
 
         // Close button handler
         // For Muhannad: This preserves state of the modal. If you want to use custom modal (non bootstrap) you have to change hideModal and add lines to clear both ui state and class state
@@ -1341,13 +1003,6 @@ class ReportElementCreator {
         container.appendChild(previewContainer);
     }
 
-    // Hide the modal
-    hideModal() {
-        const bootstrapModal = bootstrap.Modal.getInstance(this.modal);
-        bootstrapModal.hide();
-    }
-
-
     // UI factory functions
 
 
@@ -1367,11 +1022,11 @@ class ReportElementCreator {
                     <option value="filial">Filiale</option>
                     <option value="severity">Dringlichkeit</option>
                     <option value="postalcode">Plz</option>
-                    <option value="city">Stadt</option>
+                    <option value="city">Ort</option>
                     <option value="street">Straße</option>
                     <option value="tickettype">Ticketart</option>
                     <option value="telephonenumber">Telefonnummer</option>
-                    <option value="ticketdescription">Beschreibung/Auftrag</option>
+                    <option value="ticketdescription">Beschreibung / Auftrag</option>
                 </select>
             </div>
         `;
@@ -1389,10 +1044,12 @@ class ReportElementCreator {
             if (e.target.value !== "default") {
                 document.getElementById("displayText").disabled = true;
                 this.preview.content = e.target.options[e.target.selectedIndex].text;
+                this.preview.contentType = "dynamic";
                 this.mountPreview(container);
             }else{
                 document.getElementById("displayText").disabled = false;
                 this.preview.content = "Text eingeben";
+                this.preview.contentType = "static";
                 this.mountPreview(container);
             }
         });
@@ -1433,26 +1090,114 @@ class ReportElementCreator {
     }
 
     // Create UI for Table element
-    // #TODO : Add cell configuration
     createTableElementUI(container) {
+        this.configBox = container;
         container.innerHTML = `
-            <div class="mb-3" id="tableLabelSelection">
-                Tabellenüberschrift
-                <input type="text" id="tableLabel" class="form-control" value="Table">
-            </div>
-            <div class="mb-3 d-flex gap-1 flex-column" id="tableStructureSelection">
-                <label for="tableRows">Tabellenstruktur</label>
-                <div class="mb-3">
-                    <label for="tableRows">Anzahl Zeilen</label>
-                    <input type="number" id="tableRows" class="form-control" value=2>
+            <div class="accordion" id="accordionExample">
+    <!-- Table Label Section Accordion Item -->
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingLabel">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLabel" aria-expanded="true" aria-controls="collapseLabel">
+                Überschrift Optionen
+            </button>
+        </h2>
+        <div id="collapseLabel" class="accordion-collapse collapse show" aria-labelledby="headingLabel">
+            <div class="accordion-body">
+                <div class="mb-3" id="tableLabelSelection">
+                    Tabellenüberschrift
+                    <input type="text" id="tableLabel" class="form-control" value="Table">
                 </div>
-                <div class="mb-3">
-                    <label for="tableCols">Anzahl Spalten</label>
-                    <input type="number" id="tableCols" class="form-control" value=2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Structure Section Accordion Item -->
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingStructure">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStructure" aria-expanded="false" aria-controls="collapseStructure">
+                Tabellenstruktur Optionen
+            </button>
+        </h2>
+        <div id="collapseStructure" class="accordion-collapse collapse" aria-labelledby="headingStructure">
+            <div class="accordion-body">
+                <div class="mb-3 d-flex gap-1 flex-column" id="tableStructureSelection">
+                    <div class="mb-3">
+                        <label for="tableRows">Anzahl Zeilen</label>
+                        <input type="number" id="tableRows" class="form-control" value="2">
+                    </div>
+                    <div class="mb-3">
+                        <label for="tableCols">Anzahl Spalten</label>
+                        <input type="number" id="tableCols" class="form-control" value="2">
+                    </div>
+                    <div class="mb-3">
+                        <label for="extendableTable">Erweiterbare Tabelle</label>
+                        <input type="checkbox" id="extendableTable" class="form-check-input">
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Table Cell Section Accordion Item -->
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingCell">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCell" aria-expanded="false" aria-controls="collapseCell">
+                Zellen Optionen
+            </button>
+        </h2>
+        <div id="collapseCell" class="accordion-collapse collapse" aria-labelledby="headingCell">
+            <div class="accordion-body">
+                <div class="mb-3 d-flex gap-1 flex-column" id="tableCellContentSelection">
+                    <label for="cellContent">Zelleninhalt</label>
+                    <div class="mb-3">
+                        <input type="text" id="cellContent" class="form-control" value="Cell">
+                    </div>
+                </div>
+                <div class="mb-3 d-flex gap-1 flex-column" id="cellContentTypeSelection">
+                    <label for="cellType">Zellentyp</label>
+                    <div class="mb-3">
+                        <select id="cellType" class="form-select">
+                            <option value="display" selected>Text</option>
+                            <option value="input">Input</option>
+                            <option value="textarea">Textarea</option>
+                            <option value="upload">Upload</option>
+                            <option value="checkbox">Checkbox</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3" id="displayType">
+                    <select id="predefinedText" class="form-select">
+                        <option value="default" selected>Dynamische Werte</option>
+                        <option value="projectname">Projektname / Report</option>
+                        <option value="ticketnumber">Ticketnummer</option>
+                        <option value="currentDate">Aktuelles Datum</option>
+                        <option value="creationDate">Erstellungsdatum</option>
+                        <option value="time">Uhrzeit</option>
+                        <option value="filial">Filiale</option>
+                        <option value="severity">Dringlichkeit</option>
+                        <option value="postalcode">Plz</option>
+                        <option value="city">Stadt</option>
+                        <option value="street">Straße</option>
+                        <option value="tickettype">Ticketart</option>
+                        <option value="telephonenumber">Telefonnummer</option>
+                        <option value="ticketdescription">Beschreibung / Auftrag</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
         `;
-        this.preview = new ReportElementTable("", "", 2, 2);
+        // Create the preview table
+        this.preview = new ReportElementTable();
+
+        // Assign the onActiveCellChange callback # FUTURE: Change if event emitter is implemented
+        this.preview.onActiveCellChange = this.handleActiveCellChange.bind(this);
+
+        // Set the default active cell
+        this.preview._activeCell = this.preview._grid[0][0];
+        this.handleActiveCellChange(this.preview._activeCell);
+
         this.mountPreview(container);
 
         // Event listener for row changes
@@ -1472,24 +1217,150 @@ class ReportElementCreator {
             this.preview.label = e.target.value;
             this.mountPreview(container);
         });
+
+        // Event listener for cell content changes
+        container.querySelector("#cellContent").addEventListener("input", (e) => {
+            if (this.preview._activeCell) {
+                this.preview._activeCell.contentElement.content = e.target.value;
+                this.mountPreview(container);
+                this.preview.initializeContent();
+            }
+        });
+
+        // Event listener for cell type changes
+        container.querySelector("#cellType").addEventListener("change", (e) => {
+            if (this.preview._activeCell) {
+                let currActiveCell = this.preview._activeCell;
+                this.preview._activeCell.changeContentType(e.target.value);
+                this.preview._activeCell.contentElement.content = "";
+                container.querySelector("#cellContent").value = "";
+                if(this.preview._activeCell.contentElement.type === "display") {
+                    container.querySelector("#displayType").style.display = "block";
+                }else{
+                    container.querySelector("#displayType").style.display = "none";
+                }
+                if(currActiveCell.contentElement.type !== this.preview._activeCell.contentElement.type) {
+                    container.querySelector("#predefinedText").value = "default";
+                }
+                this.mountPreview(container);
+                this.preview.initializeContent();
+            }
+        });
+
+        // Event listener for extendable table checkbox
+        container.querySelector("#extendableTable").addEventListener("change", (e) => {
+            this.preview.extendable = e.target.checked;
+            this.mountPreview(container);
+        });
+
+        // Event listener for predefined text selection
+        container.querySelector("#predefinedText").addEventListener("change", (e) => {
+            if (this.preview._activeCell && this.preview._activeCell.contentElement.type === "display") {
+                this.preview._activeCell.contentElement.content = e.target.options[e.target.selectedIndex].text;
+                if(e.target.options[e.target.selectedIndex].value !== "default") {
+                    this.preview._activeCell.contentElement.contentType = "dynamic";
+                    container.querySelector("#cellContent").disabled = true;
+                }else{
+                    container.querySelector("#cellContent").disabled = false;
+                    this.preview._activeCell.contentElement.contentType = "static";
+                }
+                this.mountPreview(container);
+                this.preview.initializeContent();
+                // Disable the content input field
+                
+
+            }
+        });
+
+
+
     }
+
+    // Auxillary function for table creation. Not elegant # FUTURE: Remove when event emitter is implemented
+    handleActiveCellChange(activeCell) {
+        console.log(`Active cell changed to: ${activeCell.id}`);
+
+        const cellContentType = this.configBox.querySelector(\'#cellType\');
+        const cellContentInput = this.configBox.querySelector(\'#cellContent\');
+
+        if (cellContentType && cellContentInput) {
+            // Update the selector to match the active cells content type
+            cellContentType.value = activeCell.contentElement.type;
+
+            // Update the content input field
+            cellContentInput.value = activeCell.contentElement.content;
+        } else {
+            console.error(\'UI elements not found.\');
+        }
+    }
+
+
 
     // Create UI for Upload element
     createUploadElementUI(container) {
-        container.innerHTML = `
-            <div class="mb-3">
-                <input type="text" id="uploadLabel" class="form-control" placeholder="Überschrift angeben">
-            </div>
-        `;
-        this.preview = new ReportElementUpload("", "");
-        this.mountPreview(container);
+    container.innerHTML = `
+        <div class="mb-3">
+            <label for="uploadLabel">Uploader Label</label>
+            <input type="text" id="uploadLabel" class="form-control" placeholder="Enter uploader label">
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" id="toggleMultiple">
+            <label class="form-check-label" for="toggleMultiple">Mehrere Dateien erlauben</label>
+        </div>
+        <div class="mb-3 form-check">
+            <label for="fileType">Dateityp</label>
+            <select id="fileType" class="form-select">
+                <option value="img">Bilder</option>
+            </select>
+        </div>
+    `;
 
-        // Event listener for input changes
-        container.querySelector("#uploadLabel").addEventListener("input", (e) => {
-            this.preview.label = e.target.value;
-            this.mountPreview(container);
-        });
-    }
+    // Create a preview instance
+    this.preview = new ReportElementUpload();
+
+     // Get references to the input elements
+    const uploadLabelInput = container.querySelector("#uploadLabel");
+    //const includeSelectCheckbox = container.querySelector("#includeSelect");
+    const toggleMultipleCheckbox = container.querySelector("#toggleMultiple");
+    const fileTypeSelect = container.querySelector("#fileType");
+
+    // Event listeners for input changes
+    uploadLabelInput.addEventListener("input", (e) => {
+        this.preview.label = e.target.value;
+        this.mountPreview(container);
+    });
+
+    toggleMultipleCheckbox.addEventListener("change", (e) => {
+        this.preview.multiple = e.target.checked;
+        this.mountPreview(container);
+    });
+
+    fileTypeSelect.addEventListener("change", (e) => {
+        const fileType = e.target.value;
+        switch (fileType) {
+            case \'all\':
+                this.preview.accept = \'*/*\';
+                break;
+            case \'pdf\':
+                this.preview.accept = \'application/pdf\';
+                break;
+            // case \'doc\':
+            //     this.preview.accept = \'.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document\';
+            //     break;
+            case \'img\':
+                this.preview.accept = \'image/*\';
+                break;
+        }
+        this.mountPreview(container);
+    });
+
+
+    // Mount the preview
+    this.mountPreview(container);
+    
+    
+}
+
 
     // Create UI for Clock element
     createClockElementUI(container) {
@@ -1506,6 +1377,20 @@ class ReportElementCreator {
             this.preview.label = e.target.value;
             this.mountPreview(container);
         });
+    }
+
+    createSignatureElementUI(container){
+        container.innerHTML = `
+            <div class="mb-3">
+                <input type="text" id="signatureLabel" class="form-control" placeholder="Überschrift angeben">
+            </div>
+        `;
+        this.preview = new ReportElementSignature("", "");
+        document.getElementById("signatureLabel").addEventListener("input", (e) => {
+            this.preview.label = e.target.value;
+            this.mountPreview(container);
+        });
+        this.mountPreview(container);
     }
 
 }
@@ -1531,11 +1416,7 @@ class ReportGeneratorElement {
         this._clicked = false;
         this._type = type;
         // If name of constructor Reportelementcell then do not increment
-        if(this.constructor.name !== "ReportElementCell"){
-            console.log("Cell detected, skipping");
-            ReportGeneratorElement.nextId++;
-        }
-        this._id = `${type}-${ReportGeneratorElement.nextId}`;
+        this._id = `${type}-${ReportGeneratorElement.nextId++}`;
         this._label = label || type.charAt(0).toUpperCase() + type.slice(1);  // Default to type if no label provided
     }
 
@@ -1550,6 +1431,11 @@ class ReportGeneratorElement {
             this._labelElement.innerText = this._label;
            
         }
+    }
+
+    // Getters and setters for type
+    get type(){
+        return this._type;
     }
 
     // Getters and setters for content
@@ -1601,7 +1487,7 @@ class ReportGeneratorElement {
     
         const baseParams = {
             id: this._id,
-            content: this._content,
+            content: this.content,
             style: this._style,
             type: this._type,
             label: this._label
@@ -1658,23 +1544,6 @@ class ReportGeneratorElement {
         const handleBar = this.handleBar();  // Calling the handleBar method from parent class
         wrapperDiv.appendChild(handleBar);  // Append the handleBar to the wrapperDiv
 
-        // wrapperDiv.addEventListener("mouseenter", () => {
-        //     console.log("Entered");
-        //     if (!this._clicked) {  // Only start the timeout if no click has occurred
-        //         this.handleBarTimeout = setTimeout(() => {
-        //             handleBar.style.display = "flex";  // Show handleBar using flex display
-        //             wrapperDiv.style.cursor = "move";  // Change cursor to move
-        //             handleBar.style.justifyContent = "center";  // Center the icon
-        //             handleBar.style.alignItems = "center";  // Center the icon
-        //         }, 1000);  // Show after 1 second
-        //     }
-        // });
-
-        // wrapperDiv.addEventListener("mouseleave", () => {
-        //     clearTimeout(this.handleBarTimeout);  // Clear any pending timeout
-        //     handleBar.style.display = "none";  // Hide the handleBar
-        //     wrapperDiv.style.cursor = "default";  // Reset cursor to default
-        // });
 
         wrapperDiv.addEventListener("mouseenter", () => this.detectMouseEnter(wrapperDiv, handleBar));
         wrapperDiv.addEventListener("mouseleave", () => this.detectMouseLeave(wrapperDiv, handleBar));
@@ -1752,6 +1621,8 @@ class ReportGeneratorElement {
 class ReportElementDisplay extends ReportGeneratorElement {
     constructor(content = "", style = "", label = "", contentType = "static") {
         super(content, style, "display", label);
+        //We need this to declare if a display is static or dynamic. Static means it just displays whatever has been set in the editor.
+        // Dynamic means it displays a value that is set by the server for example filianumber
         this.contentType = contentType;
     }
 
@@ -1781,6 +1652,12 @@ class ReportElementDisplay extends ReportGeneratorElement {
         
         // Append the contentDiv to the wrapperDiv
         wrapperDiv.appendChild(contentDiv);
+    }
+
+    get params(){
+        const baseParams = super.params;
+        baseParams.contentType = this._contentType;
+        return baseParams;
     }
 }
 
@@ -1855,6 +1732,9 @@ class ReportElementTable extends ReportGeneratorElement {
         this._cols = Math.max(cols, 1); 
         this._grid = [];
         this._content = [];
+        this._activeCell = null; // Reference to the last clicked cell
+        this._onActiveCellChange = null; // Callback function to handle active cell change. I will change this and use an event emitter class instead later on #FUTURE
+        this._extendable = false;  // Flag to indicate if the table is extendable
         // Initialize the grid with ReportElementCells
         console.log("Recieved id: " + this._id);
         if(content){
@@ -1870,19 +1750,21 @@ class ReportElementTable extends ReportGeneratorElement {
     initializeGrid() {
         const headerRow = [];
         for(let i = 0; i < this._cols; i++){
-        console.log("Passing id: " + `${this._id}-cell-0-${i}`);
-            //headerRow.push(new ReportElementCell("Überschrift", "", "th", `${this._id}-cell-0-${i}`, this.updateContent.bind(this))); 
-            const newCell = new ReportElementCell(new ReportElementDisplay("Überschrift"), `${this._id}-cell-0-${i}`);
-            newCell.setCellType("th"); 
+            const id = `${this._id}-cell-0-${i}`;
+            console.log("Passing id: " + id);
+            const newCell = new ReportElementCell("display", { content: "Überschrift" }, id);
+            newCell.cellType = "th";  // Use property setter
             headerRow.push(newCell);
         }
         this._grid.push(headerRow);
         for (let i = 1; i < this._rows; i++) {
             const row = [];
             for (let j = 0; j < this._cols; j++) {
-            console.log("Passing id: " + `${this._id}-cell-${i}-${j}`);
-                //row.push(new ReportElementCell("Cell", "", "td", `${this._id}-cell-${i}-${j}`, this.updateContent.bind(this)));
-                row.push(new ReportElementCell(new ReportElementDisplay("Zelle"), `${this._id}-cell-${i}-${j}`));
+                const id = `${this._id}-cell-${i}-${j}`;
+                console.log("Passing id: " + id);
+                const newCell = new ReportElementCell("display", { content: "Zelle" }, id);
+                // Default cellType is "td"; no need to set it
+                row.push(newCell);
             }
             this._grid.push(row);
         }
@@ -1893,28 +1775,29 @@ class ReportElementTable extends ReportGeneratorElement {
     initializeContent() {
         this._content = this._grid.map(row =>
             row.map(cell => ({
-                id: cell._id,
-                content: cell._contentElement.content,
-                contentType: cell._contentElement._type
+                id: cell.id,
+                content: cell.contentElement.content,
+                contentType: cell.contentElement.type
             }))
         );
     }
 
     initializeGridFromContent() {
-        this._grid = this._content.map((row, rowIndex) =>
-            row.map((cell) => new ReportElementCell(
-                this.createContentElement(cell.contentType, cell.content),
-                cell.id
-            ))
-        );
+        this._grid = this._content.map((row, rowIndex) => {
+        const newRow = row.map((cellData) => {
+            const { id, content, contentType, cellType } = cellData;
+            const cell = new ReportElementCell(contentType, { content: content }, id);
+            cell.cellType = cellType || (rowIndex === 0 ? "th" : "td");
+            return cell;
+        });
+        return newRow;
+        });
     }
 
 
     get grid() {
         return this._grid;
     }
-
-
 
     get rows() {
         return this._rows;
@@ -1929,8 +1812,14 @@ class ReportElementTable extends ReportGeneratorElement {
                 const newGridRow = [];
                 const newContentRow = [];
                 for (let j = 0; j < this._cols; j++) {
-                    newGridRow.push(new ReportElementCell(new ReportElementDisplay("Zelle"), `${this._id}-cell-${i}-${j}`));
-                    newContentRow.push(newGridRow[j].params);
+                    const id = `${this._id}-cell-${i}-${j}`;
+                    const newCell = new ReportElementCell("display", { content: "Zelle" }, id);
+                    newGridRow.push(newCell);
+                    newContentRow.push({
+                        id: newCell.id,
+                        content: newCell.contentElement.content,
+                        contentType: newCell.contentElement.type,
+                    });
                 }
                 this._grid.push(newGridRow);
                 this._content.push(newContentRow);
@@ -1948,22 +1837,41 @@ class ReportElementTable extends ReportGeneratorElement {
         return this._cols;
     }
 
+    get extendable() {
+        return this._extendable;
+    }
+
+    set extendable(value) {
+        this._extendable = value;
+    }
+
     set cols(newCols) {
         if (newCols < 1) newCols = 1; // Prevent less than 1 column
 
         if (newCols > this._cols) {
             // Add new columns to existing rows
             for (let j = this._cols; j < newCols; j++) {
-                    const cell = new ReportElementCell(new ReportElementDisplay("Überschrift"), `${this._id}-cell-0-${j}`);
-                    cell.setCellType("th");
-                    this._grid[0].push(cell);
-                    this._content[0].push(this._grid[0][j].params);
-                }
+                const headerId = `${this._id}-cell-0-${j}`;
+                const headerCell = new ReportElementCell("display", { content: "Überschrift" }, headerId);
+                headerCell.cellType = "th";
+                this._grid[0].push(headerCell);
+                this._content[0].push({
+                    id: headerCell.id,
+                    content: headerCell.contentElement.content,
+                    contentType: headerCell.contentElement.type,
+                });
+            }
 
             for (let i = 1; i < this._rows; i++) {
                 for (let j = this._cols; j < newCols; j++) {
-                    this._grid[i].push(new ReportElementCell(new ReportElementDisplay("Zelle") , `${this._id}-cell-${i}-${j}`));
-                    this._content[i].push(this._grid[i][j].params);
+                    const id = `${this._id}-cell-${i}-${j}`;
+                    const newCell = new ReportElementCell("display", { content: "Zelle" }, id);
+                    this._grid[i].push(newCell);
+                    this._content[i].push({
+                        id: newCell.id,
+                        content: newCell.contentElement.content,
+                        contentType: newCell.contentElement.type,
+                    });
                 }
             }
         } else if (newCols < this._cols) {
@@ -1981,6 +1889,10 @@ class ReportElementTable extends ReportGeneratorElement {
     appendContent(wrapperDiv) {
         const table = document.createElement("table");
         table.classList.add("table", "table-bordered", "report-element");
+        if(this._extendable){
+            // Set data-extendable attribute
+            table.setAttribute("data-extendable", "true");
+        }
         table.id = this._id;
         // Create the header row
         const thead = document.createElement("thead");
@@ -2013,32 +1925,41 @@ class ReportElementTable extends ReportGeneratorElement {
 
 
      addRow() {
-        const newRow = [];
-        for (let j = 0; j < this._cols; j++) {
-            newRow.push(new ReportElementCell(new ReportElementDisplay("New Cell"), `table-cell-${this._rows}-${j}`));
-        }
-        this._grid.push(newRow);
-        this._content.push(newRow.map(cell => ({
-            id: cell._id,
-            content: cell._contentElement.content,
-            contentType: cell._contentElement._type
-        })));
-        this._rows++;
+        const id = `${this._id}-cell-${newRowIndex}-${j}`;
+        const newCell = new ReportElementCell("display", { content: "New Cell" }, id);
+        newRow.push(newCell);
+        newContentRow.push({
+            id: newCell.id,
+            content: newCell.contentElement.content,
+            contentType: newCell.contentElement.type,
+            cellType: newCell.cellType
+        });
     }
 
     addColumn() {
-        this._grid[0].push(new ReportElementCell(new ReportElementDisplay("New Header"), `table-header-${this._cols}`).cellType("th"));
+        const newColIndex = this._cols;
+        // Add new header cell
+        const headerId = `${this._id}-cell-0-${newColIndex}`;
+        const headerCell = new ReportElementCell("display", { content: "New Header" }, headerId);
+        headerCell.cellType = "th";
+        this._grid[0].push(headerCell);
         this._content[0].push({
-            id: `table-header-${this._cols}`,
-            content: "New Header",
-            contentType: "display"
+            id: headerCell.id,
+            content: headerCell.contentElement.content,
+            contentType: headerCell.contentElement.type,
+            cellType: headerCell.cellType
         });
+
         for (let i = 1; i < this._rows; i++) {
-            this._grid[i].push(new ReportElementCell(new ReportElementDisplay("New Cell"), `table-cell-${i}-${this._cols}`));
+            const id = `${this._id}-cell-${i}-${newColIndex}`;
+            const newCell = new ReportElementCell("display", { content: "New Cell" }, id);
+            this._grid[i].push(newCell);
             this._content[i].push({
-                id: `table-cell-${i}-${this._cols}`,
-                content: "New Cell",
-                contentType: "input"
+                id: newCell.id,
+                content: newCell.contentElement.content,
+                contentType: newCell.contentElement.type,
+                cellType: newCell.cellType,
+                checked: cell.contentElement.checked || false
             });
         }
         this._cols++;
@@ -2069,7 +1990,7 @@ class ReportElementTable extends ReportGeneratorElement {
 
     // Access a specific cell
     getCell(row, col) {
-        if (row < this._rows && col < this._cols) {
+        if (row >= 0 && row < this._rows && col >= 0 && col < this._cols) {
             return this._grid[row][col];
         }else{
             throw new Error("Invalid row or column index");
@@ -2078,35 +1999,77 @@ class ReportElementTable extends ReportGeneratorElement {
     }
 
     // Change type of specified cell
-    changeCellContentType(row, col, type) {
-        if (row < this._rows && col < this._cols) {
-            this._grid[row][col].contentType = type;
-            this._content[row][col].contentType = type;
-            this.render();  // Re-render to reflect changes
-        }else{
-            throw new Error("Invalid row or column index");
+    changeCellChildElement(row, col, element) {
+        if (row >= 0 && row < this._rows && col >= 0 && col < this._cols) {
+        const cell = this._grid[row][col];
+        if (typeof element === \'string\') {
+            // `element` is the new contentType
+            cell.changeContentType(element);
+        } else if (element instanceof ReportGeneratorElement) {
+            // Assign a new contentElement to the cell
+            cell.contentElement = element;
+        } else {
+            throw new Error("Invalid element parameter. Must be a valid contentType string or a ReportGeneratorElement instance");
         }
+        // Update content representation
+        this._content[row][col] = {
+            id: cell.id,
+            content: cell.contentElement.content,
+            contentType: cell.contentElement.type,
+            cellType: cell.cellType
+        };
+        // Optionally re-render if needed
+    } else {
+        throw new Error("Invalid row or column index");
+    }
     }
 
-    changeCellType(row, col, type){
-        if(type !== "th" && type !== "td"){
+    changeCellType(row, col, type) {
+        if (type !== "th" && type !== "td") {
             throw new Error("Invalid cell type. Must be either \'th\' or \'td\'");
         }
-        if(row < this._rows && col < this._cols){
-            this._grid[row][col].type = type;
-            this._content[row][col].type = type;
-            this.render();
-        }else{
+        if (row >= 0 && row < this._rows && col >= 0 && col < this._cols) {
+            const cell = this._grid[row][col];
+            cell.cellType = type;
+            this._content[row][col].cellType = type;
+            // Optionally re-render if needed
+        } else {
             throw new Error("Invalid row or column index");
         }
     }
 
-    changeCellContent(row, col, content) {
-        if (row < this._rows && col < this._cols) {
-            this._grid[row][col].content = content;
-            this.render();  // Re-render to reflect changes
+    changeCellChildContent(row, col, content) {
+        if (row >= 0 && row < this._rows && col >= 0 && col < this._cols) {
+            const cell = this._grid[row][col];
+            cell.contentElement.content = content;
+            this._content[row][col].content = content;
+            // Optionally re-render if needed
+        } else {
+            throw new Error("Invalid row or column index");
         }
     }
+
+    handleCellClick(row, col) {
+    const cell = this._grid[row][col];
+    console.log("Active cell: " + this._activeCell.id);
+
+    // Remove highlight from the previous active cell
+    if (this._activeCell && this._activeCell !== cell) {
+        this._activeCell.element.classList.remove(\'active-cell\');
+    }
+
+    // Update the active cell
+    this._activeCell = cell;
+    console.log("Active cell: " + this._activeCell.id);
+
+    // Add highlight to the new active cell
+    this._activeCell.element.classList.add(\'active-cell\');
+
+    // Invoke the callback if its set
+    if (typeof this.onActiveCellChange === \'function\') {
+        this.onActiveCellChange(this._activeCell);
+    }
+}
 
 }
 
@@ -2118,50 +2081,136 @@ class ReportElementTable extends ReportGeneratorElement {
 ////////////////////////
 
 class ReportElementCell {
-    constructor(contentElement, id) {
-        this._contentElement = contentElement;  // This is an instance of a ReportElement, like ReportElementDisplay or ReportElementInput
-        this._id = id;  // Unique identifier tied to table and position
-        this._cellType = "td";
+    constructor(contentType, contentData = {}, id) {
+        this._id = id;  // Unique identifier for the cell
+        this._cellType = "td";  // Default cell type
+
+        // Create the content element
+        this._contentElement = this.createContentElement(contentType, contentData);
+
+        // Validate the content element
+        if (!(this._contentElement instanceof ReportGeneratorElement)) {
+            throw new Error("ContentElement of Cell must be an instance of ReportGeneratorElement");
+        }
     }
 
-    setContent(contentElement) {
-        this._contentElement = contentElement;
+    get contentElement(){
+        return this._contentElement;
     }
 
-    setCellType(cellType) {
+    set contentElement(contentElement) {
+        if (contentElement instanceof ReportGeneratorElement) {
+            this._contentElement = contentElement;
+        } else {
+            throw new Error("ContentElement must be an instance of ReportGeneratorElement");
+        }
+    }
+
+    get id() {
+        return this._id;
+    }
+
+    get cellType() {
+        return this._cellType;
+    }
+
+    set cellType(cellType) {
         if (cellType !== "td" && cellType !== "th") {
-            console.error("Unsupported cell type");
-            return;
+            throw new Error(`Unsupported cell type: ${cellType}`);
         }
         this._cellType = cellType;
     }
 
-    changeContentType(newContentType) {
-        switch (newContentType) {
+    createContentElement(contentType, contentData = {}) {
+        switch (contentType) {
             case "display":
-                this._contentElement = new ReportElementDisplay("Updated Display");
-                break;
+            case "text":
+                return new ReportElementDisplay(contentData.content || "");
             case "input":
-                this._contentElement = new ReportElementInput("Updated Input");
-                break;
-            case "table":
-                this._contentElement = new ReportElementTable(2, 2, "Nested Table");
-                break;
+                return new ReportElementInput(
+                    contentData.id || "",
+                    contentData.style || "",
+                    contentData.label || "Input Label"
+                );
+            case "textarea":
+                return new ReportElementTextarea(
+                    contentData.id || "",
+                    contentData.style || "",
+                    contentData.label || "Textarea Label"
+                );
+            case "upload":
+                return new ReportElementUpload(
+                    contentData.id || "",
+                    contentData.style || ""
+                );
+            case "checkbox":
+                return new ReportElementCheckbox(
+                    contentData.id || "",
+                    contentData.style || "",
+                    contentData.label || "Checkbox Label"
+                );
+            // Add more cases as needed
             default:
-                console.error("Unsupported content type");
+                throw new Error(`Unsupported content type: ${contentType}`);
         }
+    }
+
+    changeContentType(newContentType, contentData = {}) {
+        const newContentElement = this.createContentElement(newContentType, contentData);
+        this.contentElement = newContentElement;
     }
     
    render() {
-        const cell = this._cellType === "td" ? document.createElement("td") : document.createElement("th");
+        const cell = document.createElement(this._cellType);
         cell.id = this._id;
 
         // Use renderContentOnly to get content without wrapperDiv and handleBar
         const contentElement = this._contentElement.renderContentOnly();
         cell.appendChild(contentElement);
+
+        // Store a reference to the rendered element
+        this._element = cell;
+
         return cell;
     }
+
+    get element() {
+        return this._element;
+    }
 }
+
+////////////////////////
+/// ReportElementSignature.js
+////////////////////////
+
+class ReportElementSignature extends ReportGeneratorElement {
+    constructor(content = "", style = "", label = "") {
+        super(content, style, "signature", label);
+        this._label = label;
+    }
+
+    appendContent(wrapperDiv) {
+        // Use drawImage and getRect
+        const canvas = document.createElement("canvas");
+        canvas.id = this._id;
+        canvas.classList.add("report-element");
+        canvas.width = 100;
+        canvas.height = 100;
+        canvas.style.width = "15%";
+        canvas.style.height = "15%";
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#f9f9f9";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        wrapperDiv.appendChild(canvas);
+    }
+}
+
+
 
 
 ////////////////////////
@@ -2194,17 +2243,38 @@ class ReportElementInput extends ReportGeneratorElement {
 ////////////////////////
 
 class ReportElementUpload extends ReportGeneratorElement {
-    constructor( content = "", style ="", label = "", type = "file") {
-        super( content, style, "file", label);
+    constructor( content = "", style ="", label = "", type = "upload") {
+        super( content, style, "upload", label);
         this._label = label;
         this._content = [];
+        this._multiple = false;
+        this._accept = "*/*";
     }
+
+    get multiple() {
+        return this._multiple;
+    }
+
+    get accept() {
+        return this._accept;
+    }
+
+    set multiple(value) {
+        this._multiple = value;
+    }
+
+    set accept(value) {
+        this._accept = value;
+    }
+
 
 
     appendContent(wrapperDiv){
         const input = document.createElement("input");
         input.type = "file";
         input.id = this._id;
+        input.multiple = this._multiple;
+        input.accept = this._accept;
         input.classList.add("form-control", "report-element");
         input.addEventListener("change", (e) => {
             this._content = e.target.files;
@@ -2212,7 +2282,6 @@ class ReportElementUpload extends ReportGeneratorElement {
         input.disabled = true;
         wrapperDiv.appendChild(input);
     }
-
 
 }
 
@@ -2234,6 +2303,84 @@ class ReportElementClock extends ReportGeneratorElement {
     }
 
 }
+
+
+////////////////////////
+// Jump: ReportElementCheckbox.js
+////////////////////////
+
+class ReportElementCheckbox extends ReportGeneratorElement {
+    constructor(content = false, style = "", label = "") {
+        super(content, style, "checkbox", label);
+    }
+
+    set content(newContent) {
+        if(typeof newContent === "boolean"){
+            this._content = newContent;
+        }else{
+            this._content = false;
+            
+        }
+    }
+
+    appendContent(wrapperDiv) {
+        // Create a container for the checkbox and label
+        const container = document.createElement("div");
+        container.classList.add("form-check");
+
+        // Create the checkbox input
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = this._id;
+        checkbox.classList.add("report-element");
+        checkbox.checked = this.content;
+
+        // Create the label for the checkbox
+        const labelElement = document.createElement("label");
+        labelElement.classList.add("form-check-label");
+        labelElement.htmlFor = this._id;
+        labelElement.innerText = this._label;
+
+        // Event listener to update the checked state
+        checkbox.addEventListener("change", (e) => {
+            this.content = e.target.checked;
+        });
+
+        // Append elements to the container
+        container.appendChild(checkbox);
+        container.appendChild(labelElement);
+
+        // Append the container to the wrapper
+        wrapperDiv.appendChild(container);
+    }
+
+    // Override renderContentOnly to include the checkbox state
+    renderContentOnly() {
+        const checkbox = document.createElement("input");
+        checkbox.classList.add("report-element");
+        checkbox.type = "checkbox";
+        checkbox.id = this._id;
+        checkbox.checked = this.content;
+        checkbox.disabled = true;  // Disable the checkbox
+        return checkbox;
+    }
+
+    get params(){
+        const baseParams = super.params;
+        baseParams.checked = this.content;
+        return baseParams;
+    }
+
+    // Method to initialize from parameters
+    initializeFromParams(params){
+        if(params.checked !== undefined){
+            this.checked = params.checked;
+        }
+    }
+}
+
+
+
 
 
 </script>';
@@ -2297,6 +2444,10 @@ table {
 .form-check-input:focus {
     box-shadow: none;
     outline: none;
+}
+
+.active-cell {
+    outline: 2px solid blue;
 }
 
 
