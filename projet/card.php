@@ -2615,9 +2615,15 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			$dateString = 'From '.$_POST["date-from"].' to '.$_POST["date-to"];
 		}
 		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["fk_user"])) {
-			$technicianId = $_POST["fk_user"];
+			$technicianIds = $_POST["fk_user"];
+			
+			$filteredIds = array_filter($technicianIds, function($id) {
+				return !empty($id);
+			});
+			$technicianIdString = implode(",", $filteredIds);
 		}
-
+		var_dump($technicianIds);
+		var_dump($filteredIds);
 		$stringtoshow = '
 			<script type="text/javascript">
 				jQuery(document).ready(function() {
@@ -2772,28 +2778,31 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 				$stringtoshow .= '<input type="hidden" name="action" value="refresh">';
 				$stringtoshow .= '<input type="hidden" name="DOL_AUTOSET_COOKIE" value="DOLUSERCOOKIE_ticket_by_status:year,shownb,showtot">';
 				$stringtoshow .= $langs->trans("Geschäftspartner").": ".$form->select_company('', 'fk_businesspartner', '', 1, 1, '', $events, 0, 'minwidth400');
-				$stringtoshow .= $langs->trans("Techniker").": ".$form->selectcontactsListing("", "", 'fk_user', 3, '', '', 0, 'minwidth200');
-				$stringtoshow .= $langs->trans("von").' <input class="flat" size="4" type="date" name="date-from">';
-				$stringtoshow .= $langs->trans("bis").' <input class="flat" size="4" type="date" name="date-to">';
+				$stringtoshow .= $langs->trans("Techniker").": ".$form->selectcontactsListing("", $filteredIds, 'fk_user', 3, '', '', 0, 'minwidth200', '', '', '', '', '', '', true, 0);
+				$stringtoshow .= $langs->trans("von").' <input class="flat" size="4" type="date" name="date-from" value="'.$datefrom.'">';
+				$stringtoshow .= $langs->trans("bis").' <input class="flat" size="4" type="date" name="date-to" value="'.$dateto.'">';
 				$stringtoshow .= '<input type="image" alt="'.$langs->trans("Refresh").'" src="'.img_picto($langs->trans("Refresh"), 'refresh.png', '', '', 1).'">';
 			$stringtoshow .= '</form>';
 		$stringtoshow .= '</div>';
 
 		$ticketObject = new Ticket($db);
 		$technicianObject = new User($db);
-		$sql = 'SELECT t.rowid, t.ref, f.fk_user, t.fk_statut, f.parameters, te.dateofuse 
+		$storeObject = new Branch($db);
+		$sql = 'SELECT t.rowid, t.ref, t.fk_user_assign, t.fk_statut, f.parameters, te.dateofuse, te.fk_store
 				FROM llx_projet p
 					LEFT JOIN llx_ticket t on t.fk_project = p.rowid
 					LEFT JOIN llx_ticket_extrafields te on te.fk_object = t.rowid
 					LEFT JOIN llx_tec_forms f on f.fk_ticket = t.rowid
 				WHERE p.rowid = '.$object->id;
+		$sql .= ' AND t.fk_user_assign != "" ';
+		$sql .= ' AND t.fk_statut = 8 ';
 		if(isset($datefrom) && isset($dateto)){
 			$sql .= " AND CAST(te.dateofuse AS DATE) BETWEEN CAST('".$datefrom."' AS DATE) AND CAST('".$dateto."' AS DATE)";
 		}
-		if(isset($technicianId)){
-			$sql .= " AND f.fk_user = ".$technicianId;
+		if(isset($technicianIdString)){
+			$sql .= " AND t.fk_user_assign IN (".$technicianIdString.")";
 		}
-		var_dump($sql);
+		// var_dump($sql);
 		$result = $db->query($sql);
 		print '<div class="datefilter">';
 			print '<div class="div-table-responsive-no-min">';
@@ -2812,13 +2821,19 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 							print 'Ticket-Nummer';
 						print '</th>';
 						print '<th>';
-							print 'Filialnummer';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort=store_asc&mode=init#formmailbeforetitle">';
+								print 'Filialnummer';
+							print '</a>';
 						print '</th>';
 						print '<th>';
-							print 'Installationsdatum';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort=installation_asc&mode=init#formmailbeforetitle">';
+								print 'Installationsdatum';
+							print '</a>';
 						print '</th>';
 						print '<th>';
-							print 'Techniker Name';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort=technician_asc&mode=init#formmailbeforetitle">';
+								print 'Techniker Name';
+							print '</a>';
 						print '</th>';
 						print '<th>';
 							print 'Arbeitsbeginn';
@@ -2836,8 +2851,10 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 								$ticketObject->fetch($ticketObject->id);
 								$ticketObject->status = $objp->fk_statut;
 								$ticketObject->parameters = $objp->parameters;
-								$ticketObject->fk_user = $objp->fk_user;
+								$ticketObject->fk_store = $objp->fk_store;
+								$ticketObject->fk_user = $objp->fk_user_assign;
 								$ticketObject->dateofuse = $objp->dateofuse;
+								$storeObject->fetch($ticketObject->fk_store);
 								$technicianObject->fetch($ticketObject->fk_user);
 								$parameters = json_decode(base64_decode($ticketObject->parameters));
 								$installationDate = new DateTime($ticketObject->dateofuse);
@@ -2845,9 +2862,9 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 								$workStart = "";
 								$workEnd = "";
 								foreach ($parameters as $item) {
-									if ($item->name === 'store-number') {
-										$storeNumber = $item->value;
-									}
+									// if ($item->name === 'store-number') {
+									// 	$storeNumber = $item->value;
+									// }
 									if ($item->name === 'work-start') {
 										$workStart = $item->value;
 									}
@@ -2856,13 +2873,12 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 										break;
 									}
 								}
-	
 								print '<tr class="oddeven">';
 									print '<td class="nowrap tdoverflowmax200">';
 										print $ticketObject->ref;
 									print '</td>';
 									print '<td class="nowrap tdoverflowmax200">';
-										print $storeNumber;
+										print $storeObject->b_number;
 									print '</td>';
 									print '<td class="nowrap tdoverflowmax200">';
 										print $ticketObject->dateofuse ? $installationDate->format('d.m.y') : "";
