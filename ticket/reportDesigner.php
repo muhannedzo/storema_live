@@ -68,6 +68,9 @@ print '
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script>
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 ';
 dol_include_once('/ticket/class/ticket.class.php');
 dol_include_once('/societe/class/societe.class.php');
@@ -445,7 +448,7 @@ class ReportGenerator {
 
         document.addEventListener(\'keydown\', (e) => {
             if (e.key === \'Escape\') {
-                this.disableProperties();
+                
                 this.selectedElement = null;
 
             }
@@ -506,6 +509,10 @@ class ReportGenerator {
                     const checkboxElement = new ReportElementCheckbox(param.content, param.style, param.label);
                     this.addElement(checkboxElement);
                     break;
+                case "radio":
+                    const radioElement = new ReportElementRadio(param.content, param.style, param.label, param.group);
+                    this.addElement(radioElement);
+                    break;
                 case "signature":
                     const signatureElement = new ReportElementSignature(param.content, param.style, param.label);
                     this.addElement(signatureElement);
@@ -519,148 +526,170 @@ class ReportGenerator {
 
     // The basic design Mr. Michael wants
     loadBasicDesign(){
-        const displayElement = new ReportElementDisplay("Name vom Projekt / Report", "");
-        const tableElement = new ReportElementTable("", "", 2, 2);
-        console.log("tableElement id " + tableElement._id);
-        const descriptionElement = new ReportElementDisplay("Beschreibung", "");
-        const textElement  = new ReportElementTextarea("Text", "");
-        const textElement2 = new ReportElementTextarea("Text", "");
-        console.log(displayElement.content);
-        this.addElement(displayElement);
-        this.addElement(tableElement);
-        this.addElement(descriptionElement);
-        this.addElement(textElement);
-        this.addElement(textElement2);
+            const displayElement = new ReportElementDisplay("Name vom Projekt / Report", "");
+            const tableElement = new ReportElementTable("", "", 2, 2);
+            console.log("tableElement id " + tableElement._id);
+            const descriptionElement = new ReportElementDisplay("Beschreibung", "");
+            const textElement  = new ReportElementTextarea("Text", "");
+            const textElement2 = new ReportElementTextarea("Text", "");
+            console.log(displayElement.content);
+            this.addElement(displayElement);
+            this.addElement(tableElement);
+            this.addElement(descriptionElement);
+            this.addElement(textElement);
+            this.addElement(textElement2);
+        // const displayElement = new ReportElementDisplay("Name vom Projekt / Report", "font-size: 20px; font-weight: bold; width: 100%; text-align: center;", "", "dynamic");
+        // const tableElement = new ReportElementTable ("","",3,3);
+        // tableElement.changeCellChildElement(0, 0, tableElement.createCellContentElement("display", "Ticketnummer"));
+        // tableElement.changeCellChildElement(0, 2, tableElement.createCellContentElement("display", "Ticketart"));
+        // tableElement.changeCellChildElement(1, 0, tableElement.createCellContentElement("display", "Filiale"));
+        // tableElement.changeCellChildElement(1, 1, tableElement.createCellContentElement("display", "Stopp"));
+        // tableElement.changeCellChildElement(1, 2, tableElement.createCellContentElement("display", "Dringlichkeit"));
+        // tableElement.changeCellChildElement(2, 0, tableElement.createCellContentElement("display", "Strasse"));
+        // tableElement.changeCellChildElement(2, 2, tableElement.createCellContentElement("display", "Termin"));
+        // tableElement.changeCellChildElement(3, 0, tableElement.createCellContentElement("display", "Ort"));
+        // tableElement.changeCellChildElement(3, 2, tableElement.createCellContentElement("display", "Telefonnummer"));
+        // // For each through every cell in the table and add a display element
+        // tableElement.forEach((cell, rowIndex, cellIndex) => {
+        //     tableElement.changeCellChildElement(rowIndex, cellIndex, tableElement.createCellContentElement("display", ""));
+        // });
     }
 
     
 
     deleteSelectedElement() {
-    console.log("Delete Selected Element");
-    if (!this.selectedElement) {
-    console.log("No element selected");
-        return;
+        console.log("Delete Selected Element");
+        if (!this.selectedElement) {
+        console.log("No element selected");
+            return;
+        }
+
+        const elementId = this.selectedElement._type === "td" || this.selectedElement._type === "th" ? this.selectedElement._id.split("-")[0]+"-"+this.selectedElement._id.split("-")[1] : this.selectedElement._id;
+        console.log("Found elementId: " + elementId);
+        console.log("Selected Element: " + JSON.stringify(this.selectedElement));
+        // Find the index of the element with the given ID
+        const index = this.elements.findIndex(element => element._id === elementId);
+        console.log(this.elements);
+        console.log("Index: " + index);
+        // If the element is found, remove it from the array
+        if (index !== -1) {
+            this.elements.splice(index, 1);
+        }
+
+        // Update the positions of the remaining elements
+        this.updateElementOrder();
+
+        // Remove the element from the DOM
+        const element = document.querySelector(`.sortable-item[data-element-id="${elementId}"]`);
+        if (element) {
+            console.log("Element found");
+            element.remove();
+        }
+
+            // Clear the selected element
+            this.selectedElement = null;
+        }
+
+    editSelectedElement(){
+        console.log("Edit Selected Element");
+        if (!this.selectedElement) {
+            console.log("No element selected");
+            return;
+        }
+        // Overwrite selectedElement with element returend by editElement from creator
+        this.selectedElement = this.elementCreator.editElement(this.selectedElement);
+        // Shit code. The creator calls generator methods when the add button is clicked. #FUTURE: Change this
     }
-
-    const elementId = this.selectedElement._type === "td" || this.selectedElement._type === "th" ? this.selectedElement._id.split("-")[0]+"-"+this.selectedElement._id.split("-")[1] : this.selectedElement._id;
-    console.log("Found elementId: " + elementId);
-    console.log("Selected Element: " + JSON.stringify(this.selectedElement));
-    // Find the index of the element with the given ID
-    const index = this.elements.findIndex(element => element._id === elementId);
-    console.log(this.elements);
-    console.log("Index: " + index);
-    // If the element is found, remove it from the array
-    if (index !== -1) {
-        this.elements.splice(index, 1);
-    }
-
-    // Update the positions of the remaining elements
-    this.updateElementOrder();
-
-    // Remove the element from the DOM
-    const element = document.querySelector(`.sortable-item[data-element-id="${elementId}"]`);
-    if (element) {
-        console.log("Element found");
-        element.remove();
-    }
-
-    // Clear the selected element
-    this.selectedElement = null;
-}
 
     handleClick(e) {
-    console.log("Handle Click");
+        console.log("Handle Click");
 
-    const cell = e.target.closest("th", "td");
-    if(cell){
-        console.log("Table Cell Clicked", cell);
-        this.selectElement(cell);
-        return;
-    }
-     
-    console.log("Fired" + JSON.stringify(e.target));
-    const target = e.target.closest(".report-element");
-    // If add element button is clicked then do not select any element and disable draggable timeout for current element
-    if (e.target.id === "add-element-button-wrapper" && e.target.innerHTML === "+") {
-        console.log("Add Element Button Clicked");
-        if (this.selectedElement) {
-            this.selectedElement.clicked = false;  
-            this.selectedElement = null;
+        const cell = e.target.closest("th", "td");
+        if(cell){
+            console.log("Table Cell Clicked", cell);
+            this.selectElement(cell);
+            return;
         }
-        this.elementCreator.showModal();
-    } else if (target) {
-     // If a report element has been clicked disable draggable from currently selectedElement and set the clicked on element as the new selectedElement.
-     // Then remove the draggable timeout from the new selectedElement
-        console.log("Element Clicked");
-        if(this.selectedElement) {
-            this.selectedElement.clicked = false;  
-            this.selectedElement = null;
-        }
-        this.selectElement(target);
-        this.selectedElement.clicked = true; 
-        clearTimeout(this.selectedElement.handleBarTimeout); 
-        console.log("Selected" + JSON.stringify(this.selectedElement));
-    } else {
-        console.log("Nothing Clicked");
-    // If no ReportElement has been clicked then disable draggable from currently selectedElement and remove that element
-        if (this.selectedElement) {
+        
+        console.log("Fired" + JSON.stringify(e.target));
+        const target = e.target.closest(".report-element");
+        // If add element button is clicked then do not select any element and disable draggable timeout for current element
+        if (e.target.id === "add-element-button-wrapper" && e.target.innerHTML === "+") {
+            console.log("Add Element Button Clicked");
+            if (this.selectedElement) {
+                this.selectedElement.clicked = false;  
+                this.selectedElement = null;
+            }
+            this.elementCreator.showModal();
+        } else if (target) {
+        // If a report element has been clicked disable draggable from currently selectedElement and set the clicked on element as the new selectedElement.
+        // Then remove the draggable timeout from the new selectedElement
+            console.log("Element Clicked");
+            if(this.selectedElement) {
+                this.selectedElement.clicked = false;  
+                this.selectedElement = null;
+            }
+            this.selectElement(target);
+            this.selectedElement.clicked = true; 
+            clearTimeout(this.selectedElement.handleBarTimeout); 
+            console.log("Selected" + JSON.stringify(this.selectedElement));
+        } else {
+            console.log("Nothing Clicked");
+        // If no ReportElement has been clicked then disable draggable from currently selectedElement and remove that element
+            if (this.selectedElement) {
+                
+                this.selectedElement.clicked = false;  
             
-            this.selectedElement.clicked = false;  
-           
-            this.selectedElement = null;
-        }
+                this.selectedElement = null;
+            }
         
+        }
     }
-}
 
-handleGlobalClick(e) {
-    console.log("Handle global Click");
-    // Check if the click is inside the report container
-    if (!this.reportContainer.contains(e.target) && !this.propertyPanelElement.contains(e.target) && document.getElementById("elementModal").style.display != "block" && !document.getElementById("elementModal").contains(e.target)) {
-        // If clicked outside the report container, reset clicked state
-        if (this.selectedElement) {
-            this.selectedElement.clicked = false;
-            this.selectedElement = null;
-            this.disableProperties();
-            console.log("Clicked outside ReportDesigner, resetting state.");
+   
+
+    handleGlobalClick(e) {
+        console.log("Handle global Click");
+        // Check if the click is inside the report container
+        if (!this.reportContainer.contains(e.target) && !this.propertyPanelElement.contains(e.target) && document.getElementById("elementModal").style.display != "block" && !document.getElementById("elementModal").contains(e.target)) {
+            // If clicked outside the report container, reset clicked state
+            if (this.selectedElement) {
+                this.selectedElement.clicked = false;
+                this.selectedElement = null;
+                
+                console.log("Clicked outside ReportDesigner, resetting state.");
+            }
+        }else if(this.propertyPanelElement.contains(e.target)) {
+            console.log("Clicked inside property panel");
+            
+        }else if(document.getElementById("preview") && document.getElementById("preview").contains(e.target)) {
+            console.log("Clicked inside ElementModal");
+        }else {
+            console.log("Clicked inside ReportDesigner");
         }
-    }else if(this.propertyPanelElement.contains(e.target)) {
-        console.log("Clicked inside property panel");
-        
-    }else if(document.getElementById("preview") && document.getElementById("preview").contains(e.target)) {
-        console.log("Clicked inside ElementModal");
-    }else {
-        console.log("Clicked inside ReportDesigner");
     }
-}
 
 
     // Iterate through elements array and find element with id of target
     selectElement(target) {
-    // If the target is a table cell then search for the table
-    if(target.tagName === "TD" || target.tagName === "TH") {
-        
-        const table = target.closest("table");
-        const tableId = table.id;
-        
-        const tableObj = this.elements.find(element => element._id === tableId);
-        
-        this.selectedElement = tableObj.grid[target.id.split("-")[3]][target.id.split("-")[4]];
-        
-        this.showProperties();
-        return;
-    }
+        // If the target is a table cell then search for the table
+        if(target.tagName === "TD" || target.tagName === "TH") {
+            
+            const table = target.closest("table");
+            const tableId = table.id;
+            
+            const tableObj = this.elements.find(element => element._id === tableId);
+            
+            this.selectedElement = tableObj.grid[target.id.split("-")[3]][target.id.split("-")[4]];
+            
+            //this.showProperties();
+            return;
+        }
 
     
         this.selectedElement = this.elements.find(element => element._id === target.id);
-        this.showProperties();
+        //this.showProperties();
     }
-    
-showProperties() {
-// Implement seperate class for property panel
-return;
-}
-
     
     
     // Function to add a new ReportElement to the array
@@ -669,6 +698,14 @@ return;
         if (!(element instanceof ReportGeneratorElement)) {
             throw new TypeError("Element must be an instance of ReportGeneratorElement");
         }
+        element.onDelete((element) => {
+            this.selectedElement = element;
+            this.deleteSelectedElement();
+        });
+        element.onEdit((element) => {
+            this.selectedElement = element;
+            this.editSelectedElement();
+        });
         this.elements.push(element);
         element.pos = this.elements.length;
         // Sort elements by position after adding the new element
@@ -711,10 +748,6 @@ return;
 
     console.log("Elements reordered:", this.elements);
 }
-
-
-    
-
     
   generateReport() {
     this.reportContainer.innerHTML = ""; // Clear previous contents
@@ -743,6 +776,8 @@ return;
         elementNode.setAttribute(\'data-element-id\', element._id);
         sortableDiv.appendChild(elementNode);
     });
+
+
 
     // Add the sortableDiv to the form
     form.appendChild(sortableDiv);
@@ -788,7 +823,7 @@ return;
 
     // Make the elements inside the sortableDiv sortable, using the handleBar for dragging
     $(sortableDiv).sortable({
-        handle: ".handle-bar",  // Use the handleBar for dragging
+        handle: ".handle-bar",  // Use the dragButton insdie handleBar for dragging
         axis: "y",  // Restrict movement to vertical
         containment: "parent",  // Restrict dragging to the parent container
         tolerance: "pointer",  // Use the pointer for tolerance to avoid overlap
@@ -871,7 +906,7 @@ class ReportElementCreator {
         this.closeButton = closeButton;  // Reference to the "Close" button inside modal -> hideModal()
         this.selection = null;       // Current selected option in modal -> handleSelection()
         this.preview = null;         // Reference to preview element in the modal -> mountPreview()
-        
+        this.mode = "create";        // Mode to determine if the modal is in create or edit mode
 
         this.elements = [
             { value: "display", label: "Anzeige", factory: this.createDisplayElementUI.bind(this) },
@@ -909,15 +944,33 @@ class ReportElementCreator {
         // Add element button handler
          this.addButton.addEventListener("click", () => {
             if (this.preview) {
-            if(this.preview.type === "upload" && (this.preview.label === "" || this.preview.label === "undefined")) {
-                alert("Uploads müssen eine Überschrift haben, da dies der Dateiname ist.");
-            }else{
-                // Delegate adding the element to the reportGenerator
-                this.reportGenerator.addElement(this.createFinalElement());
-                //this.reportGenerator.addElement(this.preview);
-                this.hideModal(); // Optionally hide modal after adding the element
-            }
+                if(this.preview.type === "upload" && (this.preview.label === "" || this.preview.label === "undefined")) {
+                    alert("Uploads müssen eine Überschrift haben, da dies der Dateiname ist.");
+                }else if(this.mode === "create") {
+                    // Delegate adding the element to the reportGenerator
+                    this.reportGenerator.addElement(this.createFinalElement());
+                    //this.reportGenerator.addElement(this.preview);
+                    this.hideModal(); // Optionally hide modal after adding the element
+                }else if(this.mode === "edit") {
+                // Really bad code but no time. #FUTURE: Change this so that reportGenerator handles all of this
+                    const elements = this.reportGenerator.elements;
+                    const index = elements.findIndex(element => element._id === this.preview._id);
+                    elements[index] = this.preview;
+                    elements[index].clicked = false;
+                    this.hideModal();
+                    this.mode = "create";
+                    this.reportGenerator.selectedElement = null;
+                    this.reportGenerator.generateReport();
+                }
                
+            }
+        });
+        // Handle modal hiding when the user clicks outside the modal frame. This prevents the ReportElement from being stuck in the edit mode and undraggable
+        $(this.modal).on(\'hidden.bs.modal\', () => {
+            if(this.mode === "edit") {
+                this.mode = "create";
+                this.preview.clicked = false;
+                this.reportGenerator.selectedElement = null;   
             }
         });
 
@@ -941,6 +994,15 @@ class ReportElementCreator {
         this.selection = value;   // Save the selected value
         this.addButton.disabled = false;  // Enable the add button
         this.mountSelectionUI();  // Mount the corresponding configuration UI
+    }
+
+    editElement(element) {
+        // Do not mound the selection list since we are editing an element
+        this.mode = "edit";
+        this.preview = element;
+        this.handleSelection(element.type);
+        const bootstrapModal = new bootstrap.Modal(this.modal);
+        bootstrapModal.show();
     }
 
     // Mount selection-specific UI to the configuration box
@@ -1030,7 +1092,11 @@ class ReportElementCreator {
                 </select>
             </div>
         `;
-        this.preview = new ReportElementDisplay("Text eingeben", "font-size: 20px; font-weight: bold; width: 100%; text-align: center;");
+        if(this.mode === "create") {
+            this.preview = new ReportElementDisplay("Text eingeben", "font-size: 20px; font-weight: bold; width: 100%; text-align: center;");   
+        }
+        
+
         this.mountPreview(container);
 
         // Event listener for input changes
@@ -1162,8 +1228,16 @@ class ReportElementCreator {
                             <option value="textarea">Textarea</option>
                             <option value="upload">Upload</option>
                             <option value="checkbox">Checkbox</option>
+                            <option value="radio">Radio</option>
                         </select>
                     </div>
+                </div>
+                <div class="mb-3" id="radioGroup" style="display: none;">
+                    <label for="radioGroup">Radio Gruppe</label>
+                    <i class="bi bi-question-circle" data-bs-toggle="popover" data-bs-content="Bei Buttons, die einer Gruppe angehören, kann immer nur ein Button angeklickt sein" data-bs-placement="right"></i>
+                    <input type="text" id="radioGroupInput" class="form-control" value="Gruppe1">
+                    <select id="prevGroup" class="form-select" style="display: none;">
+                    </select>
                 </div>
                 <div class="mb-3" id="displayType">
                     <select id="predefinedText" class="form-select">
@@ -1189,14 +1263,25 @@ class ReportElementCreator {
 
         `;
         // Create the preview table
-        this.preview = new ReportElementTable();
-
+        if(this.mode === "create") {
+            this.preview = new ReportElementTable();
+        }
         // Assign the onActiveCellChange callback # FUTURE: Change if event emitter is implemented
         this.preview.onActiveCellChange = this.handleActiveCellChange.bind(this);
 
         // Set the default active cell
         this.preview._activeCell = this.preview._grid[0][0];
         this.handleActiveCellChange(this.preview._activeCell);
+        if(this.preview._activeCell.contentElement.type === "display") {
+            container.querySelector("#displayType").style.display = "block";
+            container.querySelector("#radioGroup").style.display = "none";
+        }else if(this.preview._activeCell.contentElement.type === "radio") {
+            container.querySelector("#radioGroup").style.display = "block";
+            container.querySelector("#displayType").style.display = "none";
+        }else{
+            container.querySelector("#displayType").style.display = "none";
+            container.querySelector("#radioGroup").style.display = "none";
+        }
 
         this.mountPreview(container);
 
@@ -1236,8 +1321,15 @@ class ReportElementCreator {
                 container.querySelector("#cellContent").value = "";
                 if(this.preview._activeCell.contentElement.type === "display") {
                     container.querySelector("#displayType").style.display = "block";
+                    container.querySelector("#radioGroup").style.display = "none";
+                }else if(this.preview._activeCell.contentElement.type === "radio") {
+                    container.querySelector("#radioGroup").style.display = "block";
+                    container.querySelector("#cellContent").disabled = true;
+                    this.preview._activeCell.contentElement.group = "Gruppe1";
+                    container.querySelector("#displayType").style.display = "none";
                 }else{
                     container.querySelector("#displayType").style.display = "none";
+                    container.querySelector("#radioGroup").style.display = "none";
                 }
                 if(currActiveCell.contentElement.type !== this.preview._activeCell.contentElement.type) {
                     container.querySelector("#predefinedText").value = "default";
@@ -1272,7 +1364,17 @@ class ReportElementCreator {
             }
         });
 
+        container.querySelector("#radioGroup").addEventListener("input", (e) => {
+            this.preview._activeCell.contentElement.group = e.target.value;
+            this.mountPreview(container);
+            this.preview.initializeContent();
+        });
 
+        // Initialisiert alle Popovers auf der Seite
+        var popoverTriggerList = [].slice.call(document.querySelectorAll(\'[data-bs-toggle="popover"]\'));
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+            return new bootstrap.Popover(popoverTriggerEl);
+        });
 
     }
 
@@ -1289,6 +1391,19 @@ class ReportElementCreator {
 
             // Update the content input field
             cellContentInput.value = activeCell.contentElement.content;
+            if(activeCell.contentElement.type === "display") {
+                this.configBox.querySelector("#displayType").style.display = "block";
+                this.configBox.querySelector("#radioGroup").style.display = "none";
+                this.configBox.querySelector("#cellContent").disabled = false;
+            }else if(activeCell.contentElement.type === "radio") {
+                this.configBox.querySelector("#radioGroup").style.display = "block";
+                this.configBox.querySelector("#displayType").style.display = "none";
+                this.configBox.querySelector("#cellContent").disabled = true;
+            }else{
+                this.configBox.querySelector("#displayType").style.display = "none";
+                this.configBox.querySelector("#radioGroup").style.display = "none";
+                this.configBox.querySelector("#cellContent").disabled = false;
+            }
         } else {
             console.error(\'UI elements not found.\');
         }
@@ -1418,6 +1533,9 @@ class ReportGeneratorElement {
         // If name of constructor Reportelementcell then do not increment
         this._id = `${type}-${ReportGeneratorElement.nextId++}`;
         this._label = label || type.charAt(0).toUpperCase() + type.slice(1);  // Default to type if no label provided
+        // Callbacks for deleting and editing
+        this.deleteCallback = null;
+        this.editCallback = null;
     }
 
     // Getters and setters for label
@@ -1483,6 +1601,14 @@ class ReportGeneratorElement {
         this._id = newId;
     }
 
+    onDelete(callback) {
+        this.deleteCallback = callback;
+    }
+
+    onEdit(callback) {
+        this.editCallback = callback;
+    }
+
     get params(){
     
         const baseParams = {
@@ -1519,17 +1645,60 @@ class ReportGeneratorElement {
     }
 
     handleBar() {
+        // const handleBar = document.createElement("div");
+        // handleBar.classList.add("handle-bar");
+        // handleBar.style.display = "none";  // Initially hidden
+        // handleBar.innerHTML = "&#x21C5;";  // Use a hamburger icon (or any icon)
+        // handleBar.style.cursor = "move";  // Cursor style to indicate draggable handle
+        // handleBar.style.padding = "5px";
+        // handleBar.style.backgroundColor = "rgba(224, 224, 224, 0.5)";
+        // handleBar.style.borderRight = "1px solid #ccc";
+        // handleBar.style.width = "100%";
+        // handleBar.style.height = "100%";
+        // handleBar.style.textAlign = "center";
+        
+        // return handleBar;
+
         const handleBar = document.createElement("div");
         handleBar.classList.add("handle-bar");
         handleBar.style.display = "none";  // Initially hidden
-        handleBar.innerHTML = "&#x21C5;";  // Use a hamburger icon (or any icon)
-        handleBar.style.cursor = "move";  // Cursor style to indicate draggable handle
+        handleBar.style.cursor = "move";  // Cursor style for the handle area
         handleBar.style.padding = "5px";
         handleBar.style.backgroundColor = "rgba(224, 224, 224, 0.5)";
         handleBar.style.borderRight = "1px solid #ccc";
         handleBar.style.width = "100%";
         handleBar.style.height = "100%";
         handleBar.style.textAlign = "center";
+        handleBar.style.alignItems = "center";
+
+        // Drag Button - this will act as the draggable handle
+        const dragButton = document.createElement("div");
+        dragButton.classList.add("drag-button"); // You can style this in CSS as needed
+        dragButton.style.cursor = "move";
+        dragButton.innerHTML = "&#x21C5;";  // Icon or symbol to represent dragging
+        dragButton.style.marginRight = "auto";
+        handleBar.appendChild(dragButton);
+
+        // Edit Button
+        const editButton = document.createElement("button");
+        editButton.classList.add("btn", "btn-sm", "btn-primary", "me-1");
+        editButton.innerHTML = "<i class=\'bi bi-pencil\'></i>";
+        handleBar.appendChild(editButton);
+        editButton.addEventListener(\'click\', () => {
+            event.preventDefault();
+            this.editCallback(this); // Call the edit callback with the current element
+        });
+
+        // Delete Button
+        const deleteButton = document.createElement("button");
+        deleteButton.classList.add("btn", "btn-sm", "btn-danger");
+        deleteButton.innerHTML = "<i class=\'bi bi-trash\'></i>";
+        deleteButton.addEventListener(\'click\', () => {
+            event.preventDefault();
+            this.deleteCallback(this); // Call the delete callback with the current element
+        });
+        handleBar.appendChild(deleteButton);
+
         return handleBar;
     }
 
@@ -1553,9 +1722,6 @@ class ReportGeneratorElement {
     }
 
      detectMouseEnter(wrapperDiv, handleBar) {
-        console.log("Entered");
-        console.log(wrapperDiv);
-        console.log(handleBar);
         if (!this._clicked) {
             this.handleBarTimeout = setTimeout(() => {
                 handleBar.style.display = "flex";  // Show handleBar
@@ -2149,6 +2315,12 @@ class ReportElementCell {
                     contentData.style || "",
                     contentData.label || "Checkbox Label"
                 );
+            case "radio":
+                return new ReportElementRadio(
+                    contentData.id || "",
+                    contentData.style || "",
+                    contentData.label || "Radio Label",
+                );
             // Add more cases as needed
             default:
                 throw new Error(`Unsupported content type: ${contentType}`);
@@ -2379,6 +2551,81 @@ class ReportElementCheckbox extends ReportGeneratorElement {
     }
 }
 
+
+////////////////////////
+// Jump: ReportElementRadio.js
+////////////////////////
+
+class ReportElementRadio extends ReportGeneratorElement{
+    constructor(content = false, style = "", label = "", group=""){
+        super(content, style, "radio", label);
+        this._group = group;
+    }
+    
+    get group(){
+        return this._group;
+    }
+
+    set group(newGroup){
+        if(typeof newGroup === "string"){
+            this._group = newGroup;
+        }else{
+            this._group = "";
+            alert("Group must be a string");
+        }
+    }
+
+    appendContent(wrapperDiv){
+        // Create a container for the radio button and label
+        const container = document.createElement("div");
+        container.classList.add("form-check");
+
+        // Create the radio input
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.id = this._id;
+        radio.name = this._group;
+        radio.classList.add("form-check-input", "report-element");
+        radio.checked = this.content;
+
+        // Create the label for the radio button
+        const labelElement = document.createElement("label");
+        labelElement.classList.add("form-check-label");
+        labelElement.htmlFor = this._id;
+        labelElement.innerText = this._label;
+
+        // Event listener to update the checked state
+        radio.addEventListener("change", (e) => {
+            this.content = e.target.checked;
+        });
+
+        // Append elements to the container
+        container.appendChild(radio);
+        container.appendChild(labelElement);
+
+        // Append the container to the wrapper
+        wrapperDiv.appendChild(container);
+    }
+
+    renderContentOnly(){
+        const radio = document.createElement("input");
+        radio.classList.add("report-element");
+        radio.type = "radio";
+        radio.id = this._id;
+        radio.name = this._group;
+        radio.checked = this.content;
+        radio.disabled = true;  // Disable the radio button
+        return radio;
+    }
+
+    get params(){
+        const baseParams = super.params;
+        baseParams.checked = this.content;
+        baseParams.group = this._group;s
+        return baseParams;
+    }
+
+}
 
 
 
