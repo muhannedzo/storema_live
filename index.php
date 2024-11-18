@@ -158,11 +158,15 @@ if($user->socid || $result[0] != "0") {
 				$object->datehour = $objp->datehour;
 				$object->datemin = $objp->datemin;
 				$object->dateofuse = $objp->dateofuse;
-				
-				
 				$store = new Branch($db);
 				$store->fetch($objp->fk_store);
-
+				
+				// Karim's code: Query through the llx_reports to see if a design has been assigned to the proj of this ticket. If not, show muhannad tecreport
+				$newObj = new Ticket($db);
+				$newObj->fetch($objp->rowid);
+				$sql = "SELECT * FROM llx_reports WHERE projectid = ".$newObj->fk_project;
+				$result2 = $db->query($sql)->fetch_all()[0];
+				echo "<br>";
 				print '<tr class="oddeven" colspan="6">';
 
 				// Ref
@@ -202,7 +206,14 @@ if($user->socid || $result[0] != "0") {
 				print "</td>";
 
 				print '<td class="nowraponall right">';
-				print '<a class="btn" href="./tecreportKarim.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
+				
+				// if((strpos($companyAlias, 'ZETA') !== false && strpos($companyAlias, 'ZETA') >= 0) || (strpos($companyAlias, 'ROS') >= 0 && strpos($companyAlias, 'ROS') !== false) || $companyNom == "ROSSMANN"){
+				if($result2 == NULL){	
+					print '<a class="btn" href="./tecreport.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
+				}else{
+					//print '<a class="btn" href="./tecreportKarim.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
+					print '<a class="btn" href="./tecreportKarim.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
+				}
 				print "</td>";
 				print '<td class="nowraponall">';
 				print "</td>";

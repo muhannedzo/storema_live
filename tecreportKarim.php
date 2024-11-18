@@ -138,9 +138,6 @@ echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="ima
 </div>';
 }else{
     echo "no report found";
-    echo "<script>
-        window.location.href = './tecreport.php?id=".$ticketId."';
-    </script>";
     exit;
 }
 }
