@@ -266,7 +266,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // Query to enable all input type text and checkbox
-    var inputs = document.querySelectorAll("input[type=text], input[type=checkbox]");
+    var inputs = document.querySelectorAll("input[type=text], input[type=checkbox], input[type=radio]");
     inputs.forEach(function(input) {
         input.disabled = false;
     });
@@ -571,7 +571,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 input.setAttribute("id", newId);
             }
 
-            if (input.type === "checkbox") {
+            if (input.type === "checkbox" || input.type === "radio") {
                 input.checked = false;
             } else {
                 input.value = "";
@@ -624,7 +624,7 @@ saveFormButtonWrapper.addEventListener("click", (event) => {
     elements.forEach((element) => {
         const id = element.id;
         let value = "";
-        if (element.type === "checkbox") {
+        if (element.type === "checkbox" || element.type === "radio") {
             value = element.checked;
             parameters.push({ id: id, value: value });
         } else if (element.type === "file") {
@@ -700,7 +700,7 @@ saveStayButton.addEventListener("click", (event) => {
     elements.forEach((element) => {
         const id = element.id;
         let value = "";
-        if (element.type === "checkbox") {
+        if (element.type === "checkbox" || element.type === "radio") {
             value = element.checked;
             parameters.push({ id: id, value: value });
         } else if (element.type === "file") {
@@ -821,7 +821,7 @@ echo '<script>
                 case "kategorie":
                     element.innerHTML = "Kategorie: '.$object->category_label.'";
                     break;
-                case "beschreibung/auftrag":
+                case "beschreibung":
                     element.innerHTML = "Auftrag: '.$object->message.'";
                     break;
                 case "straße":
@@ -864,8 +864,9 @@ echo
         params.forEach(param => {
             const element = document.getElementById(param.id);
             console.log("Element:", element);
+            console.log("Param:", param);
             if (element) {
-                if (element.type === "checkbox") {
+                if (element.type === "checkbox" || element.type === "radio") {
                     element.checked = param.value;
                 } else if (element.type === "file") {
                     // Do not attempt to set element.value
