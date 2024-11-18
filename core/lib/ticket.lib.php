@@ -148,8 +148,12 @@ function ticket_prepare_head($object)
 	$head[$h][2] = 'ticketHistory';
 	$h++;
 
+	// Karim's code: Conditional tab
+
+
 	// Report 
-	$head[$h][0] = DOL_URL_ROOT.'/ticket/reportOverview.php?id='.$object->id.'&action=view';
+
+	$head[$h][0] = DOL_URL_ROOT.'/ticket/redirect.php?id='.$object->id;
 	$head[$h][1] = $langs->trans("Report");
 	$head[$h][2] = 'tabTicketReport';
 	$h++;
