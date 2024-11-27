@@ -1384,6 +1384,7 @@ print load_fiche_titre($langs->trans("Reportübersicht - ").$project->title, '',
                            <option>Serverschrank nachher</option>
                            <option>Health Check</option>
                            <option>Arbeitssplatz nachher</option>
+                           <option>Bon mit TSE Nr</option>
                            <option>Testprotokoll</option>
                         </select>
                      </div>

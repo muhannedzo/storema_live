@@ -2600,8 +2600,14 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 
 		print '</div></div>';
 	}
-
+	// $_SESSION["dateString"] = "";
+	// $_SESSION["startDate"] = "";
+	// $_SESSION["endDate"] = "";
+	// $_SESSION["techniciansList"] = "";
+	// $_SESSION["techniciansString"] = "";
 	if($action == 'csv'){
+		session_start();
+		$sort = GETPOST('sort');
 		$currentDate = new DateTime();
 		// var_dump($currentDate->format('Y-m-d'));
 		$currentDay = $currentDate->format('Y-m-d');
@@ -2613,6 +2619,9 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			$datefrom = $_POST["date-from"];
 			$dateto = $_POST["date-to"];
 			$dateString = 'From '.$_POST["date-from"].' to '.$_POST["date-to"];
+			$_SESSION["dateString"] = $dateString;
+			$_SESSION["startDate"] = $_POST["date-from"];
+			$_SESSION["endDate"] = $_POST["date-to"];
 		}
 		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["fk_user"])) {
 			$technicianIds = $_POST["fk_user"];
@@ -2621,9 +2630,14 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 				return !empty($id);
 			});
 			$technicianIdString = implode(",", $filteredIds);
+			$_SESSION["techniciansList"] = $filteredIds;
+			$_SESSION["techniciansString"] = $technicianIdString;
 		}
-		var_dump($technicianIds);
-		var_dump($filteredIds);
+		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["fk_businesspartner"])) {
+			$businesspartnerId = $_POST["fk_businesspartner"];
+			
+			$_SESSION["businesspartnerId"] = $businesspartnerId;
+		}
 		$stringtoshow = '
 			<script type="text/javascript">
 				jQuery(document).ready(function() {
@@ -2718,59 +2732,59 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 					URL.revokeObjectURL(url);
 				}
 			</script>';
-			$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/projet/ajax/contacts.php', 1), 'htmlname' => 'fk_user', 'params' => array('add-customer-contact' => 'disabled'));
-			$customer='fk_businesspartner';
-			print '<script type="text/javascript">
-			$(document).ready(function () {
+		$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/projet/ajax/contacts.php', 1), 'htmlname' => 'fk_user', 'params' => array('add-customer-contact' => 'disabled'));
+		$customer='fk_businesspartner';
+		print '<script type="text/javascript">
+				$(document).ready(function () {
 
-				jQuery("#'.$customer.'").change(function () {
-					var obj = '.json_encode($events).';
-					$.each(obj, function(key,values) {
-						if (values.method.length) {
-							runJsCodeForEvent'.$customer.'(values);
-						}
-					});
-				});
-				function runJsCodeForEvent'.$customer.'(obj) {
-					console.log("Run runJsCodeForEvent'.$customer.'");
-					var id = $("#'.$customer.'").val();
-					var method = obj.method;
-					var url = obj.url;
-					var htmlname = obj.htmlname;
-					var showempty = obj.showempty;
-					$.getJSON(url,
-							{
-								action: method,
-								id: id,
-								htmlname: htmlname,
-								showempty: showempty
-							},
-							function(response) {
-								$.each(obj.params, function(key,action) {
-									if (key.length) {
-										var num = response.num;
-										if (num > 0) {
-											$("#" + key).removeAttr(action);
-										} else {
-											$("#" + key).attr(action, action);
-										}
-									}
-								});
-								$("select#" + htmlname).html(response.value);
-								if (response.num) {
-									var selecthtml_str = response.value;
-									var selecthtml_dom=$.parseHTML(selecthtml_str);
-									if (typeof(selecthtml_dom[0][0]) !== \'undefined\') {
-										$("#inputautocomplete"+htmlname).val(selecthtml_dom[0][0].innerHTML);
-									}
-								} else {
-									$("#inputautocomplete"+htmlname).val("");
-								}
-								$("select#" + htmlname).change();	/* Trigger event change */
+					jQuery("#'.$customer.'").change(function () {
+						var obj = '.json_encode($events).';
+						$.each(obj, function(key,values) {
+							if (values.method.length) {
+								runJsCodeForEvent'.$customer.'(values);
 							}
-					);
-				}
-			});
+						});
+					});
+					function runJsCodeForEvent'.$customer.'(obj) {
+						console.log("Run runJsCodeForEvent'.$customer.'");
+						var id = $("#'.$customer.'").val();
+						var method = obj.method;
+						var url = obj.url;
+						var htmlname = obj.htmlname;
+						var showempty = obj.showempty;
+						$.getJSON(url,
+								{
+									action: method,
+									id: id,
+									htmlname: htmlname,
+									showempty: showempty
+								},
+								function(response) {
+									$.each(obj.params, function(key,action) {
+										if (key.length) {
+											var num = response.num;
+											if (num > 0) {
+												$("#" + key).removeAttr(action);
+											} else {
+												$("#" + key).attr(action, action);
+											}
+										}
+									});
+									$("select#" + htmlname).html(response.value);
+									if (response.num) {
+										var selecthtml_str = response.value;
+										var selecthtml_dom=$.parseHTML(selecthtml_str);
+										if (typeof(selecthtml_dom[0][0]) !== \'undefined\') {
+											$("#inputautocomplete"+htmlname).val(selecthtml_dom[0][0].innerHTML);
+										}
+									} else {
+										$("#inputautocomplete"+htmlname).val("");
+									}
+									$("select#" + htmlname).change();	/* Trigger event change */
+								}
+						);
+					}
+				});
 			</script>';
 		$stringtoshow .= '<div class="center hideobject" id="idfilterDOLUSERCOOKIE_ticket_by_status">'; // hideobject is to start hidden
 			$stringtoshow .= '<form class="flat formboxfilter" method="POST" action="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&mode=init#formmailbeforetitle">';
@@ -2778,9 +2792,9 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 				$stringtoshow .= '<input type="hidden" name="action" value="refresh">';
 				$stringtoshow .= '<input type="hidden" name="DOL_AUTOSET_COOKIE" value="DOLUSERCOOKIE_ticket_by_status:year,shownb,showtot">';
 				$stringtoshow .= $langs->trans("Geschäftspartner").": ".$form->select_company('', 'fk_businesspartner', '', 1, 1, '', $events, 0, 'minwidth400');
-				$stringtoshow .= $langs->trans("Techniker").": ".$form->selectcontactsListing("", $filteredIds, 'fk_user', 3, '', '', 0, 'minwidth200', '', '', '', '', '', '', true, 0);
-				$stringtoshow .= $langs->trans("von").' <input class="flat" size="4" type="date" name="date-from" value="'.$datefrom.'">';
-				$stringtoshow .= $langs->trans("bis").' <input class="flat" size="4" type="date" name="date-to" value="'.$dateto.'">';
+				$stringtoshow .= $langs->trans("Techniker").": ".$form->selectcontactsListing("", $_SESSION["techniciansList"], 'fk_user', 3, '', '', 0, 'minwidth200', '', '', '', '', '', '', true, 0);
+				$stringtoshow .= $langs->trans("von").' <input class="flat" size="4" type="date" name="date-from" value="'.$_SESSION["startDate"].'">';
+				$stringtoshow .= $langs->trans("bis").' <input class="flat" size="4" type="date" name="date-to" value="'.$_SESSION["endDate"].'">';
 				$stringtoshow .= '<input type="image" alt="'.$langs->trans("Refresh").'" src="'.img_picto($langs->trans("Refresh"), 'refresh.png', '', '', 1).'">';
 			$stringtoshow .= '</form>';
 		$stringtoshow .= '</div>';
@@ -2788,19 +2802,42 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 		$ticketObject = new Ticket($db);
 		$technicianObject = new User($db);
 		$storeObject = new Branch($db);
-		$sql = 'SELECT t.rowid, t.ref, t.fk_user_assign, t.fk_statut, f.parameters, te.dateofuse, te.fk_store
+		$sql = 'SELECT t.rowid, t.ref, t.fk_user_assign, t.fk_statut, f.parameters, te.dateofuse, te.fk_store, s.b_number, u.firstname
 				FROM llx_projet p
 					LEFT JOIN llx_ticket t on t.fk_project = p.rowid
 					LEFT JOIN llx_ticket_extrafields te on te.fk_object = t.rowid
 					LEFT JOIN llx_tec_forms f on f.fk_ticket = t.rowid
+					LEFT JOIN llx_stores_branch s on te.fk_store = s.rowid
+					LEFT JOIN llx_user u on t.fk_user_assign = u.rowid
 				WHERE p.rowid = '.$object->id;
 		$sql .= ' AND t.fk_user_assign != "" ';
 		$sql .= ' AND t.fk_statut = 8 ';
-		if(isset($datefrom) && isset($dateto)){
-			$sql .= " AND CAST(te.dateofuse AS DATE) BETWEEN CAST('".$datefrom."' AS DATE) AND CAST('".$dateto."' AS DATE)";
+		if(isset($_SESSION["businesspartnerId"])){
+			$sql .= " AND u.fk_soc = ".$_SESSION["businesspartnerId"];
 		}
-		if(isset($technicianIdString)){
-			$sql .= " AND t.fk_user_assign IN (".$technicianIdString.")";
+		if(isset($_SESSION["startDate"]) && isset($_SESSION["endDate"])){
+			$sql .= " AND CAST(te.dateofuse AS DATE) BETWEEN CAST('".$_SESSION["startDate"]."' AS DATE) AND CAST('".$_SESSION["endDate"]."' AS DATE)";
+		}
+		if(isset($_SESSION["techniciansString"])){
+			$sql .= " AND t.fk_user_assign IN (".$_SESSION["techniciansString"].")";
+		}
+		if(isset($sort) && $sort == "store_asc"){
+			$sql .= " ORDER BY s.b_number ASC";
+		}
+		if(isset($sort) && $sort == "store_desc"){
+			$sql .= " ORDER BY s.b_number DESC";
+		}
+		if(isset($sort) && $sort == "installation_asc"){
+			$sql .= " ORDER BY te.dateofuse ASC";
+		}
+		if(isset($sort) && $sort == "installation_desc"){
+			$sql .= " ORDER BY te.dateofuse DESC";
+		}
+		if(isset($sort) && $sort == "technician_asc"){
+			$sql .= " ORDER BY u.firstname ASC";
+		}
+		if(isset($sort) && $sort == "technician_desc"){
+			$sql .= " ORDER BY u.firstname DESC";
 		}
 		// var_dump($sql);
 		$result = $db->query($sql);
@@ -2813,6 +2850,27 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 				print '</table>';
 			print '</div>';
 		print '</div>';
+		$storeSort = "store_asc";
+		$technicianSort = "technician_asc";
+		$installationSort = "installation_asc";
+		if($sort == "store_asc"){
+			$storeSort = "store_desc";
+		}
+		if($sort == "store_desc"){
+			$storeSort = "store_asc";
+		}
+		if($sort == "technician_asc"){
+			$technicianSort = "technician_desc";
+		}
+		if($sort == "technician_desc"){
+			$technicianSort = "technician_asc";
+		}
+		if($sort == "installation_asc"){
+			$installationSort = "installation_desc";
+		}
+		if($sort == "installation_desc"){
+			$installationSort = "installation_asc";
+		}
 		print '<div class="row summary-table" id="summary-table">';
 			print '<table class="noborder centpercent">';
 				print '<tbody>';
@@ -2821,17 +2879,17 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 							print 'Ticket-Nummer';
 						print '</th>';
 						print '<th>';
-							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort=store_asc&mode=init#formmailbeforetitle">';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort='.$storeSort.'&mode=init#formmailbeforetitle">';
 								print 'Filialnummer';
 							print '</a>';
 						print '</th>';
 						print '<th>';
-							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort=installation_asc&mode=init#formmailbeforetitle">';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort='.$installationSort.'&mode=init#formmailbeforetitle">';
 								print 'Installationsdatum';
 							print '</a>';
 						print '</th>';
 						print '<th>';
-							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort=technician_asc&mode=init#formmailbeforetitle">';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort='.$technicianSort.'&mode=init#formmailbeforetitle">';
 								print 'Techniker Name';
 							print '</a>';
 						print '</th>';

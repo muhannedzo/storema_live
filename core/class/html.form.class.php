@@ -2110,7 +2110,7 @@ class Form
 							if (is_array($limitto) && count($limitto) && !in_array($obj->rowid, $limitto)) {
 								$disabled = 1;
 							}
-							if (!empty($selected) && in_array($obj->rowid, $selected)) {
+							if (!empty($selected) && in_array($obj->original_id, $selected)) {
 								$out .= '<option value="' . $contactstatic->original_id . '"';
 								if ($disabled) {
 									$out .= ' disabled';

@@ -1437,6 +1437,7 @@ dol_include_once('/stores/compress.php');
                               <option>Serverschrank nachher</option>
                               <option>Health Check</option>
                               <option>Arbeitssplatz nachher</option>
+                              <option>Bon mit TSE Nr</option>
                               <option>Testprotokoll</option>
                            </select>
                         </div>
