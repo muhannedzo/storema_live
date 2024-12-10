@@ -317,6 +317,7 @@ if ($object->id > 0) {
 
 		$obj = new Compress();	
 		print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">
+					<input type="text" name="index" value="0" hidden>;
 					<h2>'.$langs->trans("StoreImages").'</h2>
 					<p style="display:flex">
 						<input placeholder="Enter Images Label" type="text" id="images-lable" name="images-label">';
@@ -351,378 +352,610 @@ if ($object->id > 0) {
 						print '<br><br>	
 						<input type="file" name="files[]" multiple>
 						<br>';
-					print'	<input type="submit" name="submit" value="Upload" >
+					print'	<input type="submit" name="submitAdd" value="Upload" >
 					</p>
 				</form>';
 
-				$imagesList = array();
-				$images = array();	
-				$query = 'SELECT images FROM llx_stores_branch WHERE rowid = '.$id;
-				$list = $db->query($query)->fetch_row();
-				if($list[0 != null]){
-					$arr = json_decode($list[0],true);
-					foreach($arr as $elm){
-						array_push($imagesList, $elm);
-					}
-				}
+				// $imagesList = array();
+				// $images = array();	
+				// $query = 'SELECT images FROM llx_stores_branch WHERE rowid = '.$id;
+				// $list = $db->query($query)->fetch_row();
+				// if($list[0] != null){
+				// 	$arr = json_decode($list[0],true);
+				// 	foreach($arr as $elm){
+				// 		array_push($imagesList, $elm);
+				// 	}
+				// }
 				// var_dump($imagesList);
 
 			
-
-				$dir = DOL_DOCUMENT_ROOT.'/custom/stores/img/';
-				if(!is_dir($dir)){
-					mkdir($dir);
+				$dir = DOL_DOCUMENT_ROOT . '/custom/stores/img/';
+				$dirUrl = DOL_URL_ROOT . '/custom/stores/img/';
+				if (!is_dir($dir)) {
+					mkdir($dir); 
 				}
-				// var_dump($images);
-				if(isset($_POST['submit'])) {
-					// var_dump($_POST);
-					// Configure upload directory and allowed file types
-					$allowed_types = array('jpg', 'png', 'jpeg', 'gif');
-					 
-					$maxsize = 1024 * 1024;
-					
-					// Checks if user sent an empty form
-					if(!empty(array_filter($_FILES['files']['name']))) {
-						
-				 
-						// Loop through each file in files[] array
-						foreach ($_FILES['files']['tmp_name'] as $key => $value) {
-							
-							$file_tmpname = $_FILES['files']['tmp_name'][$key];
-							$file_name = $_FILES['files']['name'][$key];
-							$file_size = $_FILES['files']['size'][$key];
-							$imageQuality = 20;
-							$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
-							
-							// Set upload file path
-							$filepath = $dir.$file_name;
-				 
-							// Check file type is allowed or not
-							if(in_array(strtolower($file_ext), $allowed_types)) {
-
-									if(file_exists($filepath)) {
-										$fileN = time().$file_name;
-										$filepath = $dir.$fileN;
-										$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
-										if( $compressedImage) {
-											array_push($images, $fileN);
-										}else {                    
-											dol_htmloutput_errors("Error uploading {$file_name} <br />");
-										}
-									}else {
-										$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
-										if($compressedImage) {
-											array_push($images,$file_name);
-										}else {                    
-											dol_htmloutput_errors("Error uploading {$file_name} <br />");
-										}
-									}
-									
-								// }        
-				 
-							}else {
-								dol_htmloutput_errors("Error uploading {$file_name} ");
-								dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
-							}
-						}
-					}else {
-						dol_htmloutput_errors("No files selected.");
-					}
-					$object = [
-						"title" => $_POST['images-label'],
-						"images" => $images
-					];
-					array_push($imagesList, $object);
-					$list = json_encode($imagesList);
-					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-					$db->query($sql,0,'ddl');
-					// var_dump($db->query($sql,0,'ddl'));
-				}
-			//////////////////////List Of images//////////////////////	
-			$query = 'SELECT images FROM llx_stores_branch WHERE rowid = '.$id;
-			$list = $db->query($query)->fetch_row();
-			$imagesList = [];
-			if($list[0 != null]){
-				$arr = json_decode($list[0],true);
 				
-				foreach($arr as $elm){
-					array_push($imagesList, $elm);
-				}
-			}
-			print '<table class="noborder" width="100%">';
+				// var_dump($images);
+				
+			//////////////////////List Of images//////////////////////	
+			$imagesList = array();
+			$query = 'SELECT images FROM llx_stores_branch WHERE rowid = ' . $id;
+			$list = $db->query($query)->fetch_row();
 			
-							$obj->print_list($imagesList);
-				if(isset($_POST['delete'])) {
-					$imagesList = array_reverse($imagesList);
-					$key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
-					unlink($dir.$_POST["img"]);
-					unset($imagesList[$_POST["objectIndex"]]["images"][$key]);
-					$list = json_encode(array_reverse($imagesList));
-					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-					$db->query($sql,0,'ddl');
-					print '<script>window.location.href = window.location.href;
-					</script>';
-				}
-				if(isset($_POST['edit'])) {
-					$imagesList = array_reverse($imagesList);
-					$key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
-					$imagesList[$_POST["objectIndex"]]["images"][$key] = explode("|",$imagesList[$_POST["objectIndex"]]["images"][$key])[0]."|".$_POST["description"];
-					$list = json_encode(array_reverse($imagesList));
-					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-					$db->query($sql,0,'ddl');
-					print '<script>window.location.href = window.location.href;
-					</script>';
-				}	
-				if(isset($_POST['edit-label'])) {
-					$imagesList = array_reverse($imagesList);
-					$imagesList[$_POST["objectIndex"]]["title"] = $_POST["label"];
-					$list = json_encode(array_reverse($imagesList));
-					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-					$db->query($sql,0,'ddl');
-					print '<script>window.location.href = window.location.href;
-					</script>';
-				}	
-				if(isset($_POST['delete-group'])) {		
-					$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('DeleteBranch'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
-					// var_dump($_POST);
-					$imagesList = array_reverse($imagesList);
-					$imagesCount = count($imagesList[$_POST["objectIndex"]]["images"]);
-					if($imagesCount > 0){
-						foreach($imagesList[$_POST["objectIndex"]]["images"] as $elem){
-							// var_dump(explode("|",$elem)[0]);
-							unlink($dir.explode("|",$elem)[0]);
-						}
-					}
-					unset($imagesList[$_POST["objectIndex"]]);
-					$list = json_encode(array_reverse($imagesList));
-					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-					$db->query($sql,0,'ddl');
-					print '<script>window.location.href = window.location.href;
-					</script>';
-				}	
-				if(isset($_POST['submitAdd'])) {
-					$imagesList = array_reverse($imagesList);
- 
-					// Configure upload directory and allowed file types
-					$allowed_types = array('jpg', 'png', 'jpeg', 'gif');
-					 
-					$maxsize = 1024 * 1024;
+			
+				
+				$arr = json_decode(base64_decode($list[0], true), true);
+				
+					//Ensure 'directory' and 'source' are set
+					$arr['directoryPath'] = DOL_DOCUMENT_ROOT . '/custom/stores/img/';
 					
-					// Checks if user sent an empty form
-					if(!empty(array_filter($_FILES['files']['name']))) {
-						
-				 
-						// Loop through each file in files[] array
-						foreach ($_FILES['files']['tmp_name'] as $key => $value) {
-							
-							$file_tmpname = $_FILES['files']['tmp_name'][$key];
-							$file_name = $_FILES['files']['name'][$key];
-							$file_size = $_FILES['files']['size'][$key];
-							$imageQuality = 20;
-							$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
-							
-							// Set upload file path
-							$filepath = $dir.$file_name;
-				 
-							// Check file type is allowed or not
-							if(in_array(strtolower($file_ext), $allowed_types)) {
+					$arr['directoryUrl'] = DOL_URL_ROOT . '/custom/stores/img/';
+					$arr['source'] = 'branch';
+					$arr['id'] = $id; // rowid of the store branch
+					$arr['title'] = 'Branch Images';
+					$arr['images'] = $arr['images'] ?? array();
+					array_push($imagesList, $arr);
+					
+					// foreach ($arr as $item) {
+					// 	echo "<br>";
+					// 	echo "Item";
+					// 	echo "<br>";
+					// 	var_dump($item);
+					// 	echo "<br>";
+					// 	$item['directoryPath'] = $item['directoryPath'] ?? $dirUrl;
+					// 	$item['directoryUrl'] = $item['directoryUrl'] ?? $dir;
+					// 	$item['source'] = 'branch';
+					// 	$item['id'] = $id; // rowid of the store branch
+					// 	$imagesList[] = $item;
+					// }
+					
+				
+			
 
-									if(file_exists($filepath)) {
-										$fileN = time().$file_name;
-										$filepath = $dir.$fileN;
-										$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
-										if( $compressedImage) {
-											array_push($imagesList[$_POST["index"]]["images"], $fileN);
-										}else {                    
-											dol_htmloutput_errors("Error uploading {$file_name} <br />");
-										}
-									}else {
-										$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
-										if($compressedImage) {
-											array_push($imagesList[$_POST["index"]]["images"], $file_name);
-										}else {                    
-											dol_htmloutput_errors("Error uploading {$file_name} <br />");
-										}
-									}
-									
-								// }        
-				 
-							}else {
-								dol_htmloutput_errors("Error uploading {$file_name} ");
-								dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
-							}
-						}
-					}else {
-						dol_htmloutput_errors("No files selected.");
-					}
-					$list = json_encode(array_reverse($imagesList));
-					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-					$db->query($sql,0,'ddl');
-					print '<script>window.location.href = window.location.href;
-					</script>';
-				}
+			print '<table class="noborder" width="100%">';
+				//var_dump($imagesList);
+				
+					
+				
+				
+				
 			////////////////////////////End Normal Images/////////////////////////////////	
 
 			////////////////////////////Forms tickets images//////////////////////////////
 			// var_dump(count($imagesList));
 			$groupIndex = count($imagesList);
-			$query = 'SELECT f.rowid, f.fk_ticket, f.images FROM llx_tec_forms f
-					  WHERE fk_store = '.$id;
+			$formsList = array();
+			$query = 'SELECT f.rowid, f.fk_ticket, f.images FROM llx_tec_forms f WHERE fk_store = ' . $id;
+			// var_dump($query);
 			$forms = $db->query($query)->fetch_all();
-			$formsList = [];
-			$formObject = [];
-			if($forms){
-				foreach($forms as $form){
+			
+			if ($forms) {
+				foreach ($forms as $form) {	
+					$formId = $form[0];          // f.rowid
+					$ticketId = $form[1];        // f.fk_ticket
+					$imagesEncoded = $form[2];   // f.images
+
+					// Fetch the ticket to get the group title
+					$ticket->fetch($ticketId);
+					$groupTitle = $ticket->getNomUrl(); // Use the ticket URL as the title
+
+					// Decode the images
+					$imagesGroup = json_decode(base64_decode($imagesEncoded), true);
+
+					// Prepare the images array
+					$images = array();
+					if ($imagesGroup) {
+							
+							$type = isset($imagesGroup['type']) ? $imagesGroup['type'] : '';
+							if (isset($imagesGroup['images'])) {
+								
+								foreach ($imagesGroup['images'] as $image) {
+									// Combine image name and type as description
+									$images[] = $image . ($type ? '|' . $type : '');
+								}
+							}
+						
+					}
+					
+
+					// Build the form object with the desired format
 					$formObject = [
-						"formId" => $form[0],
-						"ticketId" => $form[1],
-						"images" => $form[2]
+						"title" => $groupTitle,
+						"images" => $images,
+						"directoryUrl" => DOL_URL_ROOT . "/formsImages/",
+						"directoryPath" => DOL_DOCUMENT_ROOT . "/formsImages/",
+						"source" => 'form',
+						"formId" => $formId,
 					];
 					array_push($formsList, $formObject);
 				}
 			}
-			$listImages = [];
-			if($formsList) {
-				foreach($formsList as $form) {
-					$ticket->fetch($form["ticketId"]);
-					$imagesGroup = json_decode(base64_decode($form["images"]));
-					$k = 0;
-					print '<div class="group">';
-						print '<div class="group-header">';
-							print '<div style="display: flex">';
-								print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-									print $ticket->getNomUrl();
-									// print '<div class="edit-icon" id="edit-icon '.$k.'"><span id="'.$k.'" class="fa fa-pen" onclick="changeLabel(this.id)"></span></div>';
-									// print '<button type="submit" name="edit-label" id="save-edit '.$k.'" hidden>Save</button></td>';
-									// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
 
-								print '</form>';
-							print '</div>';  
-							print '<div style="display: flex; align-items:center">';
-								// print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-								// print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
-								// print '<button type="submit" id="delete-group delete '.$k.'" name="delete-group" hidden>delete</button></td>';
-								print '<span id="addmore '.$groupIndex.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
-								// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
-								// print '</form>';  
-							print '</div>';
-						print '</div>';
-						// var_dump($imagesGroup);
-						foreach($imagesGroup as $elem){
-							$elements = $elem->images;
-							$exploded_elements = array_map(function($element) {
-								$parts = explode("|", $element);
-								return $parts[0];
-							}, $elements);
-							$exploded_texts = array_map(function($element) {
-								$parts = explode("|", $element);
-								return $parts[1];
-							}, $elements);
-							
-							$text = implode(", ", $exploded_elements);
-							$titles = implode(", ", $exploded_texts);
-									
-							// $text = implode(", ", $elements);
-							print '<input type="text" class="array '.$k.'" value="'.$text.'" hidden>';
-							foreach($elements as $key => $image){
+			
+			// Karim test
+			
+			// foreach($formsList as $form){
+			// 	var_dump($form);
+			// 	echo '<br>';
+			// }
+			//var_dump($formsList);
+			// Merge the images from branch and forms
+			// $imagesList = array_reverse($imagesList);
+			// $formsList = array_reverse($formsList);
+			
+			$fullImageList = array_merge($imagesList, $formsList);
+			// echo "<br>";
+			// echo "<br>";
+			// foreach ($fullImageList as $elem){
+			// 	var_dump($elem);
+			// 	echo "<br>";
+			// }	
+			// Display the images
+			$obj->print_list($fullImageList);
+			if (isset($_POST['submitAdd'])) {
+				
+				$groupIndex = $_POST['index'];
+				$source = $fullImageList[$groupIndex]['source'];
+				$directoryPath = $fullImageList[$groupIndex]['directoryPath'];
+				$directoryUrl = $fullImageList[$groupIndex]['directoryUrl'];
+				
+				// echo "Full Image List: <br>";
+				// var_dump($fullImageList);
+				// echo "<br>";
+				// echo "Alternative directory path". $fullImageList[$groupIndex]['directoryPath']."<br>";
+				// echo "Alternative directory URL". $fullImageList[$groupIndex]['directoryUrl']."<br>";	
+				// Ensure DOL_DOCUMENT_ROOT ends without a trailing slash
+				$documentRoot = rtrim(DOL_DOCUMENT_ROOT, '/\\');
+			
+				// Construct directory path using DIRECTORY_SEPARATOR
+				//$directoryPath = $documentRoot . DIRECTORY_SEPARATOR . 'custom' . DIRECTORY_SEPARATOR . 'stores' . DIRECTORY_SEPARATOR . 'img' . DIRECTORY_SEPARATOR;
+			
+				// Output for debugging
+			
+			
+				// Ensure the directory exists
+				if (!is_dir($directoryPath)) {
+					if (!mkdir($directoryPath, 0777, true)) {
+						dol_htmloutput_errors("Failed to create directory: {$directoryPath}");
+						exit();
+					}
+				}
+			
+				// Ensure the directory is writable
+				if (!is_writable($directoryPath)) {
+					dol_htmloutput_errors("Directory is not writable: {$directoryPath}");
+					exit();
+				}
+			
+				// Configure allowed file types and maximum size
+				$allowed_types = array('jpg', 'jpeg', 'png', 'gif');
+				$maxsize = 1024 * 1024; // 1MB
+			
+				// Check if user sent an empty form
+				if (!empty(array_filter($_FILES['files']['name']))) {
+					// Loop through each file in files[] array
+					foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+						$file_error = $_FILES['files']['error'][$key];
+						if ($file_error === UPLOAD_ERR_OK) {
+							$file_tmpname = $_FILES['files']['tmp_name'][$key];
+							$original_file_name = $_FILES['files']['name'][$key];
+							$file_size = $_FILES['files']['size'][$key];
+							$imageQuality = 20; // Adjust as needed
+							$file_ext = strtolower(pathinfo($original_file_name, PATHINFO_EXTENSION));
+			
+							// Sanitize the original filename to remove any special characters
+							$safe_file_name = preg_replace('/[^A-Za-z0-9.\-_]/', '_', $original_file_name);
+			
+							// Prepend the timestamp to the filename
+							$timestamp = time();
+							$file_name = $timestamp . '_' . $safe_file_name;
+			
+							// Set upload file path
+							$filepath = $directoryPath . $file_name;
 
-								print '<div class="group-element">';
-								print '<input type="file" name="files[]" multiple hidden>';
-								print '<div class="element-image">';
-									print '<img class="myImg" id="'.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" width="100" height="100" onclick="ss(this.id, 2);">';
-								print '</div>';
-								print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-								print '<div class="element-description">';
-									print '<input id="desc '.$k.' '.$key.'" name="description"type="text" placeholder="Description.." value="'.$elem->type.'" disabled>';
-								print '</div>';
-									print '<div class="element-buttons">';
-										print '<button type="submit" name="delete-form-img" onclick="return confirmDelete();">Delete</button>';
-									print '</div>';
-									print '<div id="form-modal '.$k.' '.$key.'" class="modal '.$k.' '.$key.'">
-												<!-- Modal content -->
-													<div class="modal-content">
-														<div class="modal-header">
-															<p class="'.$k.' '.$key.'" id="rotate '.$k.' '.$key.'" onclick="rotateImage(this.id,this.className, 2)">Rotate</p>
-															<span class="form-close '.$k.' '.$key.'" id="form-close '.$k.' '.$key.'">&times;</span>
-														</div>
-														<div class="modal-body">  
-															<div class="modal-image" style="display: flex; align-items: center; justify-content: space-evenly;">
-																<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="prevImage(this.id, this.className, 2)"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
-																<img class="'.$k.' '.$key.'" id="form-img rotate '.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" onclick="se(this.id,this.className, 2);"
-																						style="cursor: pointer">
-																<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="nextImage(this.id, this.className, 2)"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
-															</div>';
-															// if($desc != ""){
-																print '<div><p id="form-txt rotate '.$k.' '.$key.'">'.$desc.'</p></div>';
-															// }
-													print '</div>
-														<div class="modal-footer">
-														</div>
-													</div>
-											</div>';
-									print '<div id="form-full-model '.$k.' '.$key.'" class="full-view '.$key.'">
-												<span class="form-full-view-close '.$k.' '.$key.'" id="form-full-view-close '.$k.' '.$key.'">&times;</span>
-													<img class="full-view-content" id="form-full-view-img rotate '.$k.' '.$key.'" src="../../formsImages/'.explode("|", $image)[0].'">
-											</div>';    
-									print '<input type="hidden" name="objectIndex" value="'.$k.'">';
-									print '<input type="hidden" name="imgIndex" value="'.$key.'">';
-									print '<input type="hidden" name="img" value="'.explode("|", $image)[0].'">';
-								print '</form>';
-								print '</div>';
+							// If $POST['images-label'] is set, use it as the description that comes after the | symbol
+							$imagesLabel = $_POST['images-label'];
+							if ($imagesLabel) {
+								$file_name = $file_name . '|' . $imagesLabel;
 							}
-							$k++;
+
+			
+						
+							
+							// Check if file type is allowed
+							if (in_array($file_ext, $allowed_types)) {
+								// Compress and save the image
+								// if (!file_exists($file_tmpname)) {
+								// 	echo "Temporary file does not exist: $file_tmpname<br>";
+								// 	exit();
+								// }
+								$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
+								
+								if ($compressedImage) {
+									//echo "File compressed and uploaded successfully.<br>";
+									// Add the file name to the images list
+									array_push($fullImageList[$groupIndex]["images"], $file_name);
+								} else {
+									dol_htmloutput_errors("Error compressing and uploading {$original_file_name}<br />");
+								}
+							} else {
+								dol_htmloutput_errors("Error uploading {$file_name}<br />");
+								dol_htmloutput_errors("({$file_ext} file type is not allowed)<br />");
+							}
+						} else {
+							dol_htmloutput_errors("Error uploading {$original_file_name}: Error code {$file_error}<br />");
 						}
-						print '<div class="addmore '.$groupIndex.'" style="display:none">';
-						  print '<form action="" method="POST"  enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
-							print '<div class="row">';
-								print '<div class="col">
-											<select id="images-types-selector" style="width: 100%" name="image-type">
-												<option selected disabled>Bildtyp auswählen</option>
-												<option>Serverschrank vorher</option>
-												<option>Serverschrank nachher</option>
-												<option>Arbeitssplatz nachher</option>
-												<option>Seriennummer router</option>
-												<option>Seriennummer firewall</option>
-												<option>Firewall (Beschriftung Patchkabel)</option>
-												<option>Kabeletikett</option>
-												<option>Testprotokoll</option>
-											</select>
-										</div>';
-								print '<div class="col">
-											<input style="width: 100%" type="file" name="files[]">
-										</div>';
-								print '<div class="col">
-											<input type="submit" name="submitAddForm" value="add more...">
-									   </div>';
-								print '<input type="text" name="index" value="'.$groupIndex.'" hidden>';
-								print '<input type="hidden" name="formId" value="'.$form["formId"].'">';
-							print '</div>';
-						  print '</form>';  
-						print '</div>';
-					print '</div>';
-					// print '<div class="row mt-2">';
-					// 	print '<div class="col-12" style="background: #aaa;padding: 5px 0 5px 10px;">';
-					// 		print $ticket->getNomUrl();
-					// 	print '</div>';
-					// 	foreach($imagesGroup as $group){
-					// 		print '<div class="row mt-2">';
-					// 				foreach($group->images as $image){
-					// 					array_push($listImages, $image);
-					// 					print '<div class="col-3 col-md-3 mt-2">';
-					// 						print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-					// 							print '<img class="group-image mb-2" src="../../formsImages/'.$image.'" id="'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src, this.id)">';
-					// 							print '<input type="text" value="'.$group->type.'" name="type" disabled>'.' '.'<input class="btn btn-danger" type="submit" value="Delete" name="delete">';
-					// 							print '<input type="text" name="ticketId" value="'.$form["ticketId"].'" hidden>';
-					// 							print '<input type="text" name="formId" value="'.$form["formId"].'" hidden>';
-					// 							print '<input type="text" name="images" value="'.$form["formId"].'" hidden>';
-					// 						print '</form>';
-					// 					print '</div>';
-					// 				}
-					// 		print '</div>';
-					// 	}
-					// print '</div>';
+					}
+			
+					// Re-encode the images list
+					//var_dump($fullImageList);
+					$list = base64_encode(json_encode($fullImageList[$groupIndex]));
+					
+					// Update the appropriate database table
+					if ($source === 'branch') {
+						$sql = 'UPDATE llx_stores_branch SET images = "' . $list . '" WHERE rowid = ' . $id;
+					} else if ($source === 'form') {
+						$formId = $fullImageList[$groupIndex]['formId'];
+						$sql = 'UPDATE llx_tec_forms SET images = "' . $list . '" WHERE rowid = ' . $formId;
+					}
+					//var_dump($sql);
+					$db->query($sql);
+					
+					// Redirect to avoid form resubmission
+					// header("Location: " . $_SERVER['REQUEST_URI']);
+					// exit();
+					print '<script>window.location.href = window.location.href;</script>';
+			
+				} else {
+					dol_htmloutput_errors("No files selected.");
 				}
 			}
+
+			// if (isset($_POST['submit'])) {
+			// 	echo "Moin";
+			// 	// Configure upload directory and allowed file types
+			// 	$allowed_types = array('jpg', 'png', 'jpeg', 'gif');
+			// 	$maxsize = 1024 * 1024;
+			
+			// 	// Check if user sent an empty form
+			// 	if (!empty(array_filter($_FILES['files']['name']))) {
+			// 		$images = array(); // Initialize images array
+			
+			// 		// Loop through each file in files[] array
+			// 		foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+			// 			$file_tmpname = $_FILES['files']['tmp_name'][$key];
+			// 			$file_name = $_FILES['files']['name'][$key];
+			// 			$file_size = $_FILES['files']['size'][$key];
+			// 			$imageQuality = 20;
+			// 			$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+			
+			// 			// Set upload file path
+			// 			$filepath = $dir . $file_name;
+			
+			// 			// Check if file type is allowed
+			// 			if (in_array(strtolower($file_ext), $allowed_types)) {
+			// 				// Check if file already exists
+			// 				if (file_exists($filepath)) {
+			// 					$fileN = time() . $file_name;
+			// 					$filepath = $dir . $fileN;
+			// 				} else {
+			// 					$fileN = $file_name;
+			// 				}
+			
+			// 				// Compress and save the image
+			// 				$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
+			// 				if ($compressedImage) {
+			// 					array_push($images, $fileN);
+			// 				} else {
+			// 					dol_htmloutput_errors("Error uploading {$file_name} <br />");
+			// 				}
+			// 			} else {
+			// 				dol_htmloutput_errors("Error uploading {$file_name} ");
+			// 				dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+			// 			}
+			// 		}
+			
+			// 		// Create the image group object
+			// 		$object = [
+			// 			"title" => $_POST['images-label'],
+			// 			"images" => $images,
+			// 			"directoryUrl" => $dirUrl,
+			// 			"directoryPath" => $dir,
+			// 			"source" => "branch",
+			// 			"id" => $id
+			// 		];
+					
+			// 		array_push($imagesList, $object);
+			// 		$list = json_encode($imagesList);
+			// 		echo "<br>";
+			// 		echo "List: ";
+			// 		echo "<br>";
+			// 		var_dump($list);
+			// 		$sql = 'UPDATE llx_stores_branch SET images = "' . addslashes($list) . '" WHERE rowid = ' . $id;
+			// 		echo "SQL: ";
+			// 		echo "<br>";
+			// 		var_dump($sql);
+			// 		$db->query($sql);
+			// 		echo "Test";
+			// 	} else {
+			// 		dol_htmloutput_errors("No files selected.");
+			// 	}
+			// }
+			
+			
+			if (isset($_POST['delete'])) {
+				//$imagesList = array_reverse($imagesList);
+				$groupIndex = $_POST["objectIndex"];
+				$imageIndex = $_POST["imgIndex"];
+				$imageName = $_POST["img"];
+				$source = $_POST["source"];
+				$directoryUrl = $fullImageList[$groupIndex]['directoryUrl'];
+				$directory = str_replace(DOL_URL_ROOT, DOL_DOCUMENT_ROOT, $directoryUrl);
+				$imagePath = $directory . $imageName;
+				
+				// Delete the image file
+				if (file_exists($imagePath)) {
+					unlink($imagePath);
+				}
+			
+				// Remove the image from the list
+				unset($fullImageList[$groupIndex]["images"][$imageIndex]);
+				
+				// Reindex images
+				$fullImageList[$groupIndex]["images"] = array_values($fullImageList[$groupIndex]["images"]);
+				
+				$list = base64_encode((json_encode($fullImageList[$groupIndex])));
+				
+				
+				// Update the appropriate database table
+				if ($source === 'branch') {
+					$id = $fullImageList[$groupIndex]['id'];
+
+					
+
+					$sql = 'UPDATE llx_stores_branch SET images = "' . $list. '" WHERE rowid = ' . $id;
+				} else if ($source === 'form') {
+					$formId = $fullImageList[$groupIndex]['formId'];
+					$sql = 'UPDATE llx_tec_forms SET images = "' . $list . '" WHERE rowid = ' . $formId;
+				}
+				$db->query($sql);
+				
+				print '<script>window.location.href = window.location.href;</script>';
+			}
+			
+			if(isset($_POST['edit'])) {
+				
+				$groupIndex = $_POST["objectIndex"];
+				
+
+				$imageIndex = $_POST["imgIndex"];
+				
+				
+				$imageEntry = $fullImageList[$groupIndex]["images"][$imageIndex];
+				
+				
+				// Update the description
+				$parts = explode("|", $imageEntry, 2);
+				$imageFilename = $parts[0];
+				
+				$newDescription = $_POST["description"];
+				
+				$fullImageList[$groupIndex]["images"][$imageIndex] = $imageFilename . '|' . $newDescription;
+				
+				$list = json_encode(array_reverse($fullImageList[$groupIndex]));
+				if($fullImageList[$groupIndex]['source'] == 'branch') {
+					$sql = 'UPDATE llx_stores_branch SET images = "' . base64_encode($list) . '" WHERE rowid = ' . $id;
+				} else if ($fullImageList[$groupIndex]['source'] == 'form') {
+					$formId = $fullImageList[$groupIndex]['formId'];
+					$sql = 'UPDATE llx_tec_forms SET images = "' . base64_encode($list) . '" WHERE rowid = ' . $formId;
+				}
+				
+				$db->query($sql);
+				print '<script>window.location.href = window.location.href;</script>';
+			}	
+			// if(isset($_POST['edit-label'])) {
+				
+			// 	$fullImageList = array_reverse($fullImageList);
+			// 	$fullImageList[$_POST["objectIndex"]]["title"] = $_POST["label"];
+			// 	$list = json_encode(array_reverse($fullImageList));
+			// 	$sql = 'UPDATE llx_stores_branch set images = "'.$list.'" WHERE rowid = '.$id;
+			// 	//$db->query($sql,0,'ddl');
+				
+			// 	// print '<script>window.location.href = window.location.href;
+			// 	// </script>';
+			// }	
+			if (isset($_POST['delete-group'])) {
+				$groupIndex = $_POST["objectIndex"];
+				
+				$source = $fullImageList[$groupIndex]['source'];
+				
+				$directoryUrl = $fullImageList[$groupIndex]['directoryUrl'];
+				
+				$directory = str_replace(DOL_URL_ROOT, DOL_DOCUMENT_ROOT, $directoryUrl);
+				
+
+				$images = $fullImageList[$groupIndex]["images"];
+				
+				if (!empty($images)) {
+					foreach ($images as $elem) {
+						$parts = explode("|", $elem, 2);
+						
+						$imageFilename = $parts[0];
+						
+
+						$imagePath = $directory . $imageFilename;
+						
+
+						if (file_exists($imagePath)) {
+							
+							unlink($imagePath);
+						}
+					}
+				}
+				
+				// $list = base64_encode(json_encode(array_reverse($imagesList)));
+				// echo "List: ";
+				// echo "<br>";
+				// var_dump($list);
+
+				// Update the appropriate database table
+				if ($source == 'branch') {
+					$sql = 'UPDATE llx_stores_branch SET images = NULL WHERE rowid = ' . $id;
+				} else if ($source == 'form') {
+					$formId = $fullImageList[$groupIndex]['formId'];
+					$sql = 'UPDATE llx_tec_forms SET images = NULL WHERE rowid = ' . $formId;
+				}
+				
+				$fullImageList[$groupIndex] = null;
+				unset($fullImageList[$groupIndex]);
+				$db->query($sql);
+				print '<script>window.location.href = window.location.href;</script>';
+			}
+
+			// if($formsList) {
+			// 	foreach($formsList as $form) {
+			// 		$ticket->fetch($form["ticketId"]);
+			// 		$imagesGroup = json_decode(base64_decode($form["images"]));
+			// 		$k = 0;
+			// 		print '<div class="group">';
+			// 			print '<div class="group-header">';
+			// 				print '<div style="display: flex">';
+			// 					print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+			// 						print $ticket->getNomUrl();
+			// 						// print '<div class="edit-icon" id="edit-icon '.$k.'"><span id="'.$k.'" class="fa fa-pen" onclick="changeLabel(this.id)"></span></div>';
+			// 						// print '<button type="submit" name="edit-label" id="save-edit '.$k.'" hidden>Save</button></td>';
+			// 						// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+
+			// 					print '</form>';
+			// 				print '</div>';  
+			// 				print '<div style="display: flex; align-items:center">';
+			// 					// print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+			// 					// print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
+			// 					// print '<button type="submit" id="delete-group delete '.$k.'" name="delete-group" hidden>delete</button></td>';
+			// 					print '<span id="addmore '.$groupIndex.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
+			// 					// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+			// 					// print '</form>';  
+			// 				print '</div>';
+			// 			print '</div>';
+			// 			// var_dump($imagesGroup);
+			// 			foreach($imagesGroup as $elem){
+			// 				$elements = $elem->images;
+			// 				$exploded_elements = array_map(function($element) {
+			// 					$parts = explode("|", $element);
+			// 					return $parts[0];
+			// 				}, $elements);
+			// 				$exploded_texts = array_map(function($element) {
+			// 					$parts = explode("|", $element);
+			// 					return $parts[1];
+			// 				}, $elements);
+							
+			// 				$text = implode(", ", $exploded_elements);
+			// 				$titles = implode(", ", $exploded_texts);
+									
+			// 				// $text = implode(", ", $elements);
+			// 				print '<input type="text" class="array '.$k.'" value="'.$text.'" hidden>';
+			// 				foreach($elements as $key => $image){
+			// 					echo $key;
+			// 					echo $k;
+			// 					echo $elements;
+			// 					print '<div class="group-element">';
+			// 					print '<input type="file" name="files[]" multiple hidden>';
+			// 					print '<div class="element-image">';
+			// 						print '<img class="myImg" id="'.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" width="100" height="100" onclick="ss(this.id, 2);">';
+			// 					print '</div>';
+			// 					print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+			// 					print '<div class="element-description">';
+			// 						print '<input id="desc '.$k.' '.$key.'" name="description"type="text" placeholder="Description.." value="'.$elem->type.'" disabled>';
+			// 					print '</div>';
+			// 						print '<div class="element-buttons">';
+			// 							print '<button type="submit" name="delete-form-img" onclick="return confirmDelete();">Delete</button>';
+			// 						print '</div>';
+			// 						print '<div id="form-modal '.$k.' '.$key.'" class="modal '.$k.' '.$key.'">
+			// 									<!-- Modal content -->
+			// 										<div class="modal-content">
+			// 											<div class="modal-header">
+			// 												<p class="'.$k.' '.$key.'" id="rotate '.$k.' '.$key.'" onclick="rotateImage(this.id,this.className, 2)">Rotate</p>
+			// 												<span class="form-close '.$k.' '.$key.'" id="form-close '.$k.' '.$key.'">&times;</span>
+			// 											</div>
+			// 											<div class="modal-body">  
+			// 												<div class="modal-image" style="display: flex; align-items: center; justify-content: space-evenly;">
+			// 												'.$image.'
+			// 													<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="prevImage(this.id, this.className, 2)"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
+			// 													<img class="'.$k.' '.$key.'" id="form-img rotate '.$k.' '.$key.'" alt="img" src="../../formsImages/'.explode("|", $image)[0].'" onclick="se(this.id,this.className, 2);"
+			// 																			style="cursor: pointer">
+			// 													<a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="nextImage(this.id, this.className, 2)"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
+			// 												</div>';
+			// 												// if($desc != ""){
+			// 													print '<div><p id="form-txt rotate '.$k.' '.$key.'">'.$desc.'</p></div>';
+			// 												// }
+			// 										print '</div>
+			// 											<div class="modal-footer">
+			// 											</div>
+			// 										</div>
+			// 								</div>';
+			// 						print '<div id="form-full-model '.$k.' '.$key.'" class="full-view '.$key.'">
+			// 									<span class="form-full-view-close '.$k.' '.$key.'" id="form-full-view-close '.$k.' '.$key.'">&times;</span>
+			// 										<img class="full-view-content" id="form-full-view-img rotate '.$k.' '.$key.'" src="../../formsImages/'.explode("|", $image)[0].'">
+			// 								</div>';    
+			// 						print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+			// 						print '<input type="hidden" name="imgIndex" value="'.$key.'">';
+			// 						print '<input type="hidden" name="img" value="'.explode("|", $image)[0].'">';
+			// 					print '</form>';
+			// 					print '</div>';
+			// 				}
+			// 				$k++;
+			// 			}
+			// 			print '<div class="addmore '.$groupIndex.'" style="display:none">';
+			// 			  print '<form action="" method="POST"  enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+			// 				print '<div class="row">';
+			// 					print '<div class="col">
+			// 								<select id="images-types-selector" style="width: 100%" name="image-type">
+			// 									<option selected disabled>Bildtyp auswählen</option>
+			// 									<option>Serverschrank vorher</option>
+			// 									<option>Serverschrank nachher</option>
+			// 									<option>Arbeitssplatz nachher</option>
+			// 									<option>Seriennummer router</option>
+			// 									<option>Seriennummer firewall</option>
+			// 									<option>Firewall (Beschriftung Patchkabel)</option>
+			// 									<option>Kabeletikett</option>
+			// 									<option>Testprotokoll</option>
+			// 								</select>
+			// 							</div>';
+			// 					print '<div class="col">
+			// 								<input style="width: 100%" type="file" name="files[]">
+			// 							</div>';
+			// 					print '<div class="col">
+			// 								<input type="submit" name="submitAddForm" value="add more...">
+			// 						   </div>';
+			// 					print '<input type="text" name="index" value="'.$groupIndex.'" hidden>';
+			// 					print '<input type="hidden" name="formId" value="'.$form["formId"].'">';
+			// 				print '</div>';
+			// 			  print '</form>';  
+			// 			print '</div>';
+			// 		print '</div>';
+			// 		// print '<div class="row mt-2">';
+			// 		// 	print '<div class="col-12" style="background: #aaa;padding: 5px 0 5px 10px;">';
+			// 		// 		print $ticket->getNomUrl();
+			// 		// 	print '</div>';
+			// 		// 	foreach($imagesGroup as $group){
+			// 		// 		print '<div class="row mt-2">';
+			// 		// 				foreach($group->images as $image){
+			// 		// 					array_push($listImages, $image);
+			// 		// 					print '<div class="col-3 col-md-3 mt-2">';
+			// 		// 						print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+			// 		// 							print '<img class="group-image mb-2" src="../../formsImages/'.$image.'" id="'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src, this.id)">';
+			// 		// 							print '<input type="text" value="'.$group->type.'" name="type" disabled>'.' '.'<input class="btn btn-danger" type="submit" value="Delete" name="delete">';
+			// 		// 							print '<input type="text" name="ticketId" value="'.$form["ticketId"].'" hidden>';
+			// 		// 							print '<input type="text" name="formId" value="'.$form["formId"].'" hidden>';
+			// 		// 							print '<input type="text" name="images" value="'.$form["formId"].'" hidden>';
+			// 		// 						print '</form>';
+			// 		// 					print '</div>';
+			// 		// 				}
+			// 		// 		print '</div>';
+			// 		// 	}
+			// 		// print '</div>';
+			// 	}
+			// }
 			$imgText = implode(",", $listImages);
 			print '
 					<div id="popup" class="closed">
@@ -830,9 +1063,9 @@ $db->close();
 		// var_dump($imagesGroup);
 		$list = json_encode($imagesGroup);
 		if($result){
-			var_dump(1);
+			//var_dump(1);
 			$sql = 'UPDATE llx_tec_forms SET images = "'.base64_encode($list).'" WHERE rowid = '.$_POST["formId"];
-			var_dump($sql);
+			//var_dump($sql);
 			$db->query($sql,0,'ddl');
 			print '<script>window.location.href = window.location.href;
 			</script>';
@@ -844,7 +1077,7 @@ $db->close();
 		}
 	}
 	if(isset($_POST['delete'])) {
-		var_dump($_POST);
+		//var_dump($_POST);
 		// var_dump($formsList);
 		// var_dump(1);
 		// $imagesList = array_reverse($imagesList);

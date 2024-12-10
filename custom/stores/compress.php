@@ -33,281 +33,237 @@ class Compress {
         // Return compressed image 
         return $originalPath; 
     }
-
+    // Fix this later, this is bad code:
     public function print_list($imagesList){
-        $imagesList = array_reverse($imagesList);
-        $tickett = new Ticket($db);
-        foreach($imagesList as $k => $elem){
-            print '<div class="group">';
-              print '<div class="group-header">';
-                print '<div style="display: flex">';
-                    print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-                        print '<input id="main-label '.$k.'" name="label" type="text" placeholder="Label..." value="'.$elem["title"].'" disabled>';
-                        print '<div class="edit-icon" id="edit-icon '.$k.'"><span id="'.$k.'" class="fa fa-pen" onclick="changeLabel(this.id)"></span></div>';
-                        print '<button type="submit" name="edit-label" id="save-edit '.$k.'" hidden>Save</button></td>';
-                        print '<input type="hidden" name="objectIndex" value="'.$k.'">';
-                    print '</form>';
-                print '</div>';  
-                // print '<div style="display: flex; align-items:center">';
-                //     if(isset($elem["ticket"]) && $elem["ticket"] != null){
-                      
-                //       print '<a href="../../ticket/card.php?id='.explode("|", $elem["ticket"])[0].'">'.explode("|", $elem["ticket"])[1].'</a>';
-                //     }
-                // print '</div>';  
-                print '<div style="display: flex; align-items:center">';
-                  print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-                    print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
-                    print '<button type="submit" id="delete-group delete '.$k.'" name="delete-group" hidden>delete</button></td>';
-                    print '<span id="addmore '.$k.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
-                    print '<input type="hidden" name="objectIndex" value="'.$k.'">';
-                  print '</form>';  
-                print '</div>';
-              print '</div>';
-            $elements = array_reverse($elem["images"]);
+        // Process each image group to make 'images' a sequential array
+        foreach($imagesList as &$elem){
+            // Ensure 'images' is a sequential array
+            $elem['images'] = array_values($elem['images']);
+        }
+        unset($elem);
     
-            // var_dump($titles);
-            $exploded_elements = array_map(function($element) {
-                $parts = explode("|", $element);
-                return $parts[0];
-            }, $elements);
-            $exploded_texts = array_map(function($element) {
-                $parts = explode("|", $element);
-                return $parts[1];
-            }, $elements);
-            
-            $text = implode(", ", $exploded_elements);
-            $titles = implode(", ", $exploded_texts);
-                    
-            // $text = implode(", ", $elements);
-            print '<input type="text" class="array '.$k.'" value="'.$text.'" hidden>';
-            foreach($elements as $key => $image){
-                $desc = "";
-                if(count(explode("|", $image)) > 1){
-                  $desc = explode("|", $image)[1];
+        // Output the main modal and full-view modal once
+        echo '
+        <!-- Image Modal -->
+        <div id="imageModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <p id="rotateButton" onclick="rotateImage()">Rotate</p>
+                    <span class="close" id="closeModal">&times;</span>
+                </div>
+                <div class="modal-body">  
+                    <div class="modal-image" style="display: flex; align-items: center; justify-content: space-evenly;">
+                        <a id="prevButton" onclick="prevImage()"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
+                        <img id="modalImage" alt="img" src="" onclick="openFullView();" style="cursor: pointer">
+                        <a id="nextButton" onclick="nextImage()"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
+                    </div>
+                    <div><p id="modalDescription"></p></div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Full View Modal -->
+        <div id="fullViewModal" class="full-view">
+            <span class="full-view-close" id="closeFullView">&times;</span>
+            <img id="fullViewImage" class="full-view-content" src="">
+        </div>
+        ';
+    
+        // Loop over each image group
+        foreach($imagesList as $groupIndex => $elem){
+            echo '<div class="group">';
+                echo '<div class="group-header">';
+                    // Group title displayed directly
+                    echo '<div style="display: flex; align-items: center;">';
+                        echo '<div>';
+                            echo $elem["title"]; // Display the group title directly
+                        echo '</div>';
+                    echo '</div>';
+                    // Delete group and add more images options
+                    echo '<div style="display: flex; align-items:center">';
+                        echo '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+                            echo '<span id="delete-'.$groupIndex.'" class="fa fa-trash" style="color:red;margin:5px; cursor: pointer;" onclick="conf('.$groupIndex.')"></span>';
+                            echo '<button type="submit" id="delete-group-delete-'.$groupIndex.'" name="delete-group" hidden>delete</button>';
+                            echo '<span id="addmore-'.$groupIndex.'" class="fa fa-plus-circle add-icon" onclick="see('.$groupIndex.')"></span>';
+                            echo '<input type="hidden" name="objectIndex" value="'.$groupIndex.'">';
+                        echo '</form>';  
+                    echo '</div>';
+                echo '</div>';
+    
+                // Output each image in the group
+                foreach($elem["images"] as $imageIndex => $image){
+                    $parts = explode("|", $image, 2);
+                    $imageName = $parts[0];
+                    $desc = isset($parts[1]) ? $parts[1] : '';
+                    $src = $elem['directoryUrl'] . $imageName;
+                    echo '<div class="group-element">';
+                        // Image thumbnail
+                        echo '<div class="element-image">';
+                            echo '<img class="myImg" alt="img" src="'.$src.'" width="100" height="100" onclick="openModal('.$groupIndex.', '.$imageIndex.');">';
+                        echo '</div>';
+                        // Form for editing description and deleting image
+                        echo '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+                            echo '<div class="element-description">';
+                                echo '<input id="desc-'.$groupIndex.'-'.$imageIndex.'" name="description" type="text" placeholder="Description.." value="'.htmlspecialchars($desc, ENT_QUOTES).'" disabled>';
+                            echo '</div>';
+                            echo '<div class="element-buttons">';
+                                echo '<button type="submit" name="delete" onclick="return confirmDelete();">Delete</button>';
+                                echo '<button type="button" id="edit-button-'.$groupIndex.'-'.$imageIndex.'" onclick="toggleEdit('.$groupIndex.', '.$imageIndex.')">Edit</button>';
+                                echo '<button type="submit" name="edit" id="save-button-'.$groupIndex.'-'.$imageIndex.'" hidden>Save</button>';
+                            echo '</div>';
+                            // Hidden inputs for identification
+                            echo '<input type="hidden" name="objectIndex" value="'.$groupIndex.'">';
+                            echo '<input type="hidden" name="imgIndex" value="'.$imageIndex.'">';
+                            echo '<input type="hidden" name="img" value="'.htmlspecialchars($imageName, ENT_QUOTES).'">';
+                            echo '<input type="hidden" name="source" value="'.$elem['source'].'">';
+                            if(isset($elem['id'])) {
+                                echo '<input type="hidden" name="id" value="'.$elem['id'].'">';
+                            }
+                            if(isset($elem['formId'])) {
+                                echo '<input type="hidden" name="formId" value="'.$elem['formId'].'">';
+                            }
+                        echo '</form>';
+                    echo '</div>';
                 }
-                print '<div class="group-element">';
-                print '<input type="file" name="files[]" multiple hidden>';
-                  print '<div class="element-image">';
-                    print '<img class="myImg" id="'.$k.' '.$key.'" alt="img" src="./img/'.explode("|", $image)[0].'" width="100" height="100" onclick="ss(this.id, 1);">';
-                  print '</div>';
-                  print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-                  print '<div class="element-description">';
-                    print '<input id="desc '.$k.' '.$key.'" name="description"type="text" placeholder="Description.." value="'.$desc.'" disabled>';
-                  print '</div>';
-                  print '<div class="element-buttons">';
-                    print '<button type="submit" name="delete" onclick="return confirmDelete();">Delete</button>';
-                    print '<button type="button" class="'.$k.' '.$key.'" id="edit-button '.$k.' '.$key.'" onclick="toggleEdit(this.className)">Edit</button>';
-                    print '<button type="submit" name="edit" id="save-button '.$k.' '.$key.'" hidden>Save</button></td>';
-                  print '</div>';
-                  print '<div id="modal '.$k.' '.$key.'" class="modal '.$k.' '.$key.'">
-                              <!-- Modal content -->
-                                  <div class="modal-content">
-                                      <div class="modal-header">
-                                          <p class="'.$k.' '.$key.'" id="rotate '.$k.' '.$key.'" onclick="rotateImage(this.id,this.className, 1)">Rotate</p>
-                                          <span class="close '.$k.' '.$key.'" id="close '.$k.' '.$key.'">&times;</span>
-                                      </div>
-                                      <div class="modal-body">  
-                                          <div class="modal-image" style="display: flex; align-items: center; justify-content: space-evenly;">
-                                              <a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="prevImage(this.id, this.className, 1)"><i class="fa fa-arrow-left" style="font-size:20px"></i></a>
-                                              <img class="'.$k.' '.$key.'" id="img rotate '.$k.' '.$key.'" alt="img" src="./img/'.explode("|", $image)[0].'" onclick="se(this.id,this.className, 1);"
-                                                                      style="cursor: pointer">
-                                              <a class="'.$k.' '.$key.'" id="'.$text.'|'.$titles.'" onclick="nextImage(this.id, this.className, 1)"><i class="fa fa-arrow-right" style="font-size:20px"></i></a>
-                                          </div>';
-                                          // if($desc != ""){
-                                              print '<div><p id="txt rotate '.$k.' '.$key.'">'.$desc.'</p></div>';
-                                          // }
-                                print '</div>
-                                      <div class="modal-footer">
-                                      </div>
-                                  </div>
-                          </div>';
-                  print '<div id="full-model '.$k.' '.$key.'" class="full-view '.$key.'">
-                              <span class="full-view-close '.$k.' '.$key.'" id="full-view-close '.$k.' '.$key.'">&times;</span>
-                                  <img class="full-view-content" id="full-view-img rotate '.$k.' '.$key.'" src="./img/'.explode("|", $image)[0].'">
-                          </div>';    
-                  print '<input type="hidden" name="objectIndex" value="'.$k.'">';
-                  print '<input type="hidden" name="imgIndex" value="'.$key.'">';
-                  print '<input type="hidden" name="img" value="'.explode("|", $image)[0].'">';
-                  print '</form>';
-                print '</div>';
+    
+                // Form to add more images to the group
+                echo '<div class="addmore-'.$groupIndex.'" style="display:none">';
+                    echo '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+                        echo '<input type="file" name="files[]" multiple>';
+                        echo '<input type="submit" name="submitAdd" value="add more...">';
+                        echo '<input type="text" name="index" value="'.$groupIndex.'" hidden>';
+                    echo '</form>';  
+                echo '</div>';
+            echo '</div>';
+        
+        // JavaScript code (adjusted as needed)
+        $imagesListJson = json_encode($imagesList);
+        echo '<script>
+        var imagesList = '.$imagesListJson.';
+        var currentIndex = 0;
+        var currentGroupKey = 0;
+        var rotation = 0;
+        var imageKeys = {};
+    
+        function openModal(groupKey, imageKey) {
+            currentGroupKey = groupKey.toString(); // Ensure groupKey is a string
+            rotation = 0; // Reset rotation
+            var group = imagesList[currentGroupKey];
+            var images = group["images"];
+    
+            // Get and store the reversed keys for this group if not already done
+            if (!imageKeys[currentGroupKey]) {
+                imageKeys[currentGroupKey] = Object.keys(images);
             }
-              print '<div class="addmore '.$k.'" style="display:none">';
-                print '<form action="" method="POST"  enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
-                  print '<input type="file" name="files[]" multiple>';
-                  print '<input type="submit" name="submitAdd" value="add more...">';
-                  print '<input type="text" name="index" value="'.$k.'" hidden>';
-                print '</form>';  
-              print '</div>';
-            print '</div>';
-            print '<script>
-                      
-                      var currentIndex = 0;
-                      function prevImage(id, className) {
-                          var lists = id.split("|")[0].split(", ");
-                          var listTexts = id.split("|")[1].split(", ");
-                          var className1 = "img rotate " + className;
-                          var imgElement = document.getElementById(className1);
-                          var src = imgElement.getAttribute("src");
-                          var imageName = src.split("/").pop();
-                          var imageIndex = lists.indexOf(imageName);
-                          if (imageIndex === 0) {
-                            currentIndex = lists.length - 1;
-                          } else {
-                              currentIndex = imageIndex - 1;
-                          }
-                          updateImage(currentIndex, className, lists, listTexts);
-                      }
-                  
-                      function nextImage(id, className, number) {
-                          var lists = id.split("|")[0].split(", ");
-                          var listTexts = id.split("|")[1].split(", ");
-                          if(number == 1){
-                            var className1 = "img rotate " + className;
-                          } else {
-                            var className1 = "form-img rotate " + className;
-                          }
-                          var imgElement = document.getElementById(className1);
-                          var src = imgElement.getAttribute("src");
-                          var imageName = src.split("/").pop();
-                          var imageIndex = lists.indexOf(imageName);
-                          if (imageIndex === lists.length - 1) {
-                            currentIndex = 0;
-                          } else {
-                              currentIndex = imageIndex + 1;
-                          }
-                          updateImage(currentIndex, className, lists, listTexts);
-                      }
-                      function updateImage(index, className, lists, listTexts) {
-                          var classImg = "img rotate " + className;
-                          var classText = "txt rotate " + className;
-                          var imgElement = document.getElementById(classImg);
-                          var txtElement = document.getElementById(classText);
-                          imgElement.src = "./img/" + lists[currentIndex];
-                          txtElement.innerHTML = listTexts[currentIndex];
-                      }
-                        function conf(i){
-                          var m = "delete-group "+ i;
-                          document.getElementById(m).click();
-                        }
-                        function changeLabel(i){
-                            var desc = "main-label " +i;
-                            var btnS = "save-edit " +i;
-                            var tt = "edit-icon "+ i;
-                            var input = document.getElementById(desc);
-                            var editB = document.getElementById(tt);
-                            var buttonS = document.getElementById(btnS);
-                            if (input.disabled) {
-                                input.disabled = false;
-                                editB.style.display = "none";
-                                buttonS.hidden = false;
-                            } else {
-                                input.disabled = true;
-                                editB.style.display = "block";
-                                buttonS.hidden = true;
-                            }
-                        }
-                        function see(i){
-                          var e = "addmore "+i;
-                          document.getElementsByClassName(e)[0].style.display="block";
-                        }
-                        var rotation = 0;
-                        var angle = 90;
-                        function rotateImage(i,j, number) {
-                            if(number == 1){
-                              var c = "img "+i;
-                              var n = "full-view-img "+i;
-                            } else {
-                              var c = "form-img "+i;
-                              var n = "form-full-view-img "+i;
-                            }
-                            var rotated = document.getElementById(c);
-                            var rotated1 = document.getElementById(n);
-                            var rotated2 = document.getElementById(j);
-                            // alert(rotated2);
-                            rotation = (rotation + angle) % 360;
-                            rotated.style.transform = `rotate(${rotation}deg)`;
-                            rotated.style.transform = `scale(${rotation}deg)`;
-                            rotated1.style.transform = `rotate(${rotation}deg)`;
-                            rotated1.style.transform = `scale(${rotation}deg)`;
-                            rotated2.style.transform = `rotate(${rotation}deg)`;
-                            rotated2.style.transform = `scale(${rotation}deg)`;
-                        }
-                        function se(i,j, number){
-                            if(number == 1){
-                              var m = "full-model "+j;
-                              var n = "full-view-img rotate "+j;
-                              var spann = "full-view-close " +j;
-                            } else {
-                              var m = "form-full-model "+j;
-                              var n = "form-full-view-img rotate "+j;
-                              var spann = "form-full-view-close " +j;
-                            }
-                            var img = document.getElementById(i);
-                            var modal = document.getElementById(m);
-                            // img.onclick = function(){
-                                modal.style.display = "block";
-                            // }
-                            
-                            var span = document.getElementById(spann);
-
-                            span.onclick = function() { 
-                                modal.style.display = "none";
-                            }
-                            
-                            window.onclick = function(event) {
-                            if (event.target == modal) {
-                                modal.style.display = "none";
-                                }
-                            }
-                            
-                        }  
-                    </script>';
-            print   '<script>
-                        function toggleEdit(i) {
-                            var desc = "desc " +i;
-                            var btn = "edit-button " +i;
-                            var btnS = "save-button " +i;
-                            // alert(btnS);
-                            var input = document.getElementById(desc);
-                            var button = document.getElementById(btn);
-                            var buttonS = document.getElementById(btnS);
-                            var img = document.getElementById(i);
-                            if (input.disabled) {
-                                input.disabled = false;
-                                // button.innerHTML = "Save";
-                                button.hidden = true;
-                                buttonS.hidden = false;
-                            } else {
-                                input.disabled = true;
-                                // button.innerHTML = "Edit";
-                                button.hidden = false;
-                                buttonS.hidden = true;
-                            }
-                        }
-                    </script>';
-            print '<script>
-                        function ss(i, number){
-                            // alert(i);
-                            if(number == 1){
-                              var c = "close " +i;
-                              var m = "modal "+i;
-                            } else {
-                              var c = "form-close " +i;
-                              var m = "form-modal "+i;
-                            }
-                            var modal = document.getElementById(m);
-                            modal.style.display = "block";
-                            var span = document.getElementById(c); 
-                            span.onclick = function() {
-                                modal.style.display = "none";
-                            }
-                            window.onclick = function(event) {
-                            if (event.target == modal) {
-                                modal.style.display = "none";
-                                }
-                            }
-                        }
-                    </script>'; 
+    
+            // Find the index of the current image key in the keys array
+            currentIndex = imageKeys[currentGroupKey].indexOf(imageKey.toString());
+    
+            // Handle case where imageKey is not found
+            if (currentIndex === -1) {
+                currentIndex = 0; // Default to first image
+            }
+    
+            updateModalContent();
+            document.getElementById("imageModal").style.display = "block";
+        }
+    
+        function updateModalContent() {
+            var group = imagesList[currentGroupKey];
+            var images = group["images"];
+            var keys = imageKeys[currentGroupKey];
+            var currentKey = keys[currentIndex];
+    
+            var imageData = images[currentKey].split("|");
+            var imageSrc = group["directoryUrl"] + imageData[0];
+            var imageDesc = imageData.length > 1 ? imageData.slice(1).join("|") : "";
+            console.log(imageData);
+            console.log(group["directoryUrl"]);
+            var modalImage = document.getElementById("modalImage");
+            var modalDescription = document.getElementById("modalDescription");
+            modalImage.src = imageSrc;
+            modalDescription.innerText = imageDesc;
+            modalImage.style.transform = "rotate(" + rotation + "deg)";
+        }
+    
+        function prevImage() {
+            var images = imagesList[currentGroupKey]["images"];
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            updateModalContent();
+        }
+    
+        function nextImage() {
+            var images = imagesList[currentGroupKey]["images"];
+            currentIndex = (currentIndex + 1) % images.length;
+            updateModalContent();
+        }
+    
+        function rotateImage() {
+            rotation = (rotation + 90) % 360;
+            var modalImage = document.getElementById("modalImage");
+            modalImage.style.transform = "rotate(" + rotation + "deg)";
+        }
+    
+        function openFullView() {
+            var modalImageSrc = document.getElementById("modalImage").src;
+            var fullViewImage = document.getElementById("fullViewImage");
+            fullViewImage.src = modalImageSrc;
+            fullViewImage.style.transform = "rotate(" + rotation + "deg)";
+            document.getElementById("fullViewModal").style.display = "block";
+        }
+    
+        document.getElementById("closeModal").onclick = function() {
+            document.getElementById("imageModal").style.display = "none";
+            resetRotation();
+        };
+    
+        document.getElementById("closeFullView").onclick = function() {
+            document.getElementById("fullViewModal").style.display = "none";
+        };
+    
+        function resetRotation() {
+            rotation = 0;
+            var modalImage = document.getElementById("modalImage");
+            modalImage.style.transform = "rotate(0deg)";
+        }
+    
+        function conf(groupIndex){
+            var deleteButton = document.getElementById("delete-group-delete-" + groupIndex);
+            if(confirm("Are you sure you want to delete this group?")){
+                deleteButton.click();
+            }
+        }
+    
+        function see(groupIndex){
+            var addMoreDiv = document.querySelector(".addmore-" + groupIndex);
+            addMoreDiv.style.display = "block";
+        }
+    
+        function toggleEdit(groupIndex, imageIndex) {
+            var descId = "desc-" + groupIndex + "-" + imageIndex;
+            var editButtonId = "edit-button-" + groupIndex + "-" + imageIndex;
+            var saveButtonId = "save-button-" + groupIndex + "-" + imageIndex;
+    
+            var input = document.getElementById(descId);
+            var editButton = document.getElementById(editButtonId);
+            var saveButton = document.getElementById(saveButtonId);
+    
+            if (input.disabled) {
+                input.disabled = false;
+                editButton.style.display = "none";
+                saveButton.hidden = false;
+            } else {
+                input.disabled = true;
+                editButton.style.display = "inline-block";
+                saveButton.hidden = true;
+            }
+        }
+    
+        function confirmDelete() {
+            return confirm("Are you sure you want to delete this image?");
+        }
+        </script>';
+    
             print '<style>
             /* The Modal (background) */
             .modal-image {
