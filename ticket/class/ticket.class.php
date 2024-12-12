@@ -1688,14 +1688,14 @@ class Ticket extends CommonObject
 		if ($resql) {
 			$this->fk_user_assign = $id_assign_user; // May be used by trigger
 
-			if (!$notrigger) {
-				// Call trigger
-				$result = $this->call_trigger('TICKET_ASSIGNED', $user);
-				if ($result < 0) {
-					$error++;
-				}
-				// End call triggers
-			}
+			// if (!$notrigger) {
+			// 	// Call trigger
+			// 	$result = $this->call_trigger('TICKET_ASSIGNED', $user);
+			// 	if ($result < 0) {
+			// 		$error++;
+			// 	}
+			// 	// End call triggers
+			// }
 
 			if (!$error) {
 				$this->db->commit();

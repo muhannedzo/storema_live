@@ -2812,7 +2812,7 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 				WHERE p.rowid = '.$object->id;
 		$sql .= ' AND t.fk_user_assign != "" ';
 		$sql .= ' AND t.fk_statut = 8 ';
-		if(isset($_SESSION["businesspartnerId"])){
+		if(isset($_SESSION["businesspartnerId"]) && $_SESSION["businesspartnerId"] != -1){
 			$sql .= " AND u.fk_soc = ".$_SESSION["businesspartnerId"];
 		}
 		if(isset($_SESSION["startDate"]) && isset($_SESSION["endDate"])){

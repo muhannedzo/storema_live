@@ -74,7 +74,6 @@ if (!$res && file_exists("../../../main.inc.php")) {
 if (!$res) {
 	die("Include of main fails");
 }
-
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
@@ -83,7 +82,7 @@ dol_include_once('/stores/class/branch.class.php');
 dol_include_once('/stores/class/mediahardware.class.php');
 dol_include_once('/stores/class/poshardware.class.php');
 dol_include_once('/stores/class/storecontact.class.php');
-dol_include_once('/mymodule/lib/mymodule_myobject.lib.php');
+dol_include_once('/stores/lib/stores_branch.lib.php');
 
 // Load translation files required by the page
 // $langs->loadLangs(array("mymodule@mymodule", "companies", "other", "mails"));
@@ -91,7 +90,7 @@ dol_include_once('/mymodule/lib/mymodule_myobject.lib.php');
 // Get parameters
 $action  = GETPOST('action', 'aZ09');
 $confirm = GETPOST('confirm');
-$id  = (GETPOST('socid', 'int') ? GETPOST('socid', 'int') : GETPOST('id', 'int'));
+$id = GETPOST('id', 'int');
 $ref = GETPOST('ref', 'alpha');
 
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
@@ -115,30 +114,35 @@ if (!$sortfield) {
 // Initialize technical objects
 $object = new Branch($db);
 $extrafields = new ExtraFields($db);
-$diroutputmassaction = $conf->mymodule->dir_output.'/temp/massgeneration/'.$user->id;
-$hookmanager->initHooks(array($object->element.'document', 'globalcard')); // Note that conf->hooks_modules contains array
+
+$extrafields = new ExtraFields($db);
+$diroutputmassaction = $conf->stores->dir_output . '/temp/massgeneration/' . $user->id;
+$hookmanager->initHooks(array('branchcard', 'globalcard')); // Note that conf->hooks_modules contains array
 
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
+
+$search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
 
 // Load object
 include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be include, not include_once  // Must be include, not include_once. Include fetch and fetch_thirdparty but not fetch_optionals
 
 if ($id > 0 || !empty($ref)) {
-	$upload_dir = $conf->mymodule->multidir_output[$object->entity ? $object->entity : $conf->entity]."/myobject/".get_exdir(0, 0, 0, 1, $object);
+	$upload_dir = $conf->stores->dir_output."/".dol_sanitizeFileName($object->b_number);
 }
 
 // Permissions
 // (There are several ways to check permission.)
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
 $enablepermissioncheck = 1;
-if ($enablepermissioncheck) {
-	$permissiontoread = $user->hasRight('mymodule', 'myobject', 'read');
-	$permissiontoadd  = $user->hasRight('mymodule', 'myobject', 'write'); // Used by the include of actions_addupdatedelete.inc.php and actions_linkedfiles.inc.php
-} else {
-	$permissiontoread = 1;
-	$permissiontoadd  = 1;
-}
+$permissiontoadd  = 1;
+// if ($enablepermissioncheck) {
+// 	$permissiontoread = $user->hasRight('mymodule', 'myobject', 'read');
+// 	$permissiontoadd  = $user->hasRight('mymodule', 'myobject', 'write'); // Used by the include of actions_addupdatedelete.inc.php and actions_linkedfiles.inc.php
+// } else {
+// 	$permissiontoread = 1;
+// 	$permissiontoadd  = 1;
+// }
 
 // Security check (enable the most restrictive one)
 //if ($user->socid > 0) accessforbidden();
@@ -169,19 +173,21 @@ include DOL_DOCUMENT_ROOT.'/core/actions_linkedfiles.inc.php';
  */
 
 $form = new Form($db);
-
+// var_dump($object);
 // Header
 // ------
-$title = $langs->trans("Stores")." - ".$langs->trans("Files");
+$title = $object->b_number." - ".$langs->trans("Files");
 //$title = $object->ref." - ".$langs->trans("Files");
 $help_url = '';
 //Example $help_url='EN:Module_Third_Parties|FR:Module_Tiers|ES:Empresas';
-llxHeader('', $title, $help_url, '', 0, 0, '', '', '', 'mod-mymodule page-card_document');
+// llxHeader('', $title, $help_url, '', 0, 0, '', '', '', 'mod-mymodule page-card_document');
+llxHeader('', $title, $help_url);
 
+// var_dump($object->b_number);
 // Show tabs
-$head = myobjectPrepareHead($object);
-
-print dol_get_fiche_head($head, 'document', $langs->trans("MyObject"), -1, $object->picto);
+$head = branchPrepareHead($object);
+// var_dump(1);
+print dol_get_fiche_head($head, 'document', $langs->trans("Branch"), -1, $object->picto);
 
 
 // Build file list
@@ -193,7 +199,7 @@ foreach ($filearray as $key => $file) {
 
 // Object card
 // ------------------------------------------------------------
-$linkback = '<a href="'.dol_buildpath('/mymodule/myobject_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
+$linkback = '<a href="'.dol_buildpath('/stores/branch_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
 $morehtmlref = '<div class="refidno">';
 /*
@@ -233,14 +239,12 @@ $morehtmlref = '<div class="refidno">';
  }
  }*/
 $morehtmlref .= '</div>';
-
 dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
 
 print '<div class="fichecenter">';
 
 print '<div class="underbanner clearboth"></div>';
 print '<table class="border centpercent tableforfield">';
-
 // Number of files
 print '<tr><td class="titlefield">'.$langs->trans("NbOfAttachedFiles").'</td><td colspan="3">'.count($filearray).'</td></tr>';
 
@@ -253,13 +257,12 @@ print '</div>';
 
 print dol_get_fiche_end();
 
-$modulepart = 'mymodule';
+$modulepart = 'stores';
 $param = '&id='.$object->id;
 //$relativepathwithnofile='myobject/' . dol_sanitizeFileName($object->id).'/';
-$relativepathwithnofile = 'myobject/'.dol_sanitizeFileName($object->ref).'/';
+$relativepathwithnofile = ''.dol_sanitizeFileName($object->b_number).'/';
 
 include DOL_DOCUMENT_ROOT.'/core/tpl/document_actions_post_headers.tpl.php';
-
 // End of page
 llxFooter();
 $db->close();
