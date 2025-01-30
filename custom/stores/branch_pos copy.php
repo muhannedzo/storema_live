@@ -83,7 +83,7 @@ require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
 dol_include_once('/stores/class/branch.class.php');
 dol_include_once('/stores/lib/stores_branch.lib.php');
 
-include('compress.php');
+include_once('compress.php');
 
 
 // Load translation files required by the page
@@ -560,11 +560,12 @@ if ($object->id > 0) {
 					$db->query($sql,0,'ddl');
 					print '<script>window.location.href = window.location.href;
 					</script>';
-				}	
+				}
 			////////////////////////////End Normal Images/////////////////////////////////	
 
 			////////////////////////////Forms tickets images//////////////////////////////
-			
+			// var_dump(count($imagesList));
+			$groupIndex = count($imagesList);
 			$query = 'SELECT f.rowid, f.fk_ticket, f.images FROM llx_tec_forms f
 					  WHERE fk_store = '.$id;
 			$forms = $db->query($query)->fetch_all();
@@ -581,13 +582,10 @@ if ($object->id > 0) {
 				}
 			}
 			$listImages = [];
-			$formsList = array_reverse($formsList);
-			// var_dump($formsList);
 			if($formsList) {
 				foreach($formsList as $form) {
 					$ticket->fetch($form["ticketId"]);
 					$imagesGroup = json_decode(base64_decode($form["images"]));
-					// var_dump($imagesGroup);
 					$k = 0;
 					print '<div class="group">';
 						print '<div class="group-header">';
@@ -597,17 +595,19 @@ if ($object->id > 0) {
 									// print '<div class="edit-icon" id="edit-icon '.$k.'"><span id="'.$k.'" class="fa fa-pen" onclick="changeLabel(this.id)"></span></div>';
 									// print '<button type="submit" name="edit-label" id="save-edit '.$k.'" hidden>Save</button></td>';
 									// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
+
 								print '</form>';
 							print '</div>';  
 							print '<div style="display: flex; align-items:center">';
 								// print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
 								// print '<span id="delete '.$k.'" class="fa fa-trash" style="color:red;margin:5px" onclick="conf(this.id)"></span>';
 								// print '<button type="submit" id="delete-group delete '.$k.'" name="delete-group" hidden>delete</button></td>';
-								// print '<span id="addmore '.$k.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
+								print '<span id="addmore '.$groupIndex.'" class="fa fa-plus-circle add-icon" onclick="see(this.id)"></span>';
 								// print '<input type="hidden" name="objectIndex" value="'.$k.'">';
 								// print '</form>';  
 							print '</div>';
 						print '</div>';
+						// var_dump($imagesGroup);
 						foreach($imagesGroup as $elem){
 							$elements = $elem->images;
 							$exploded_elements = array_map(function($element) {
@@ -672,8 +672,34 @@ if ($object->id > 0) {
 							}
 							$k++;
 						}
+						print '<div class="addmore '.$groupIndex.'" style="display:none">';
+						  print '<form action="" method="POST"  enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+							print '<div class="row">';
+								print '<div class="col">
+											<select id="images-types-selector" style="width: 100%" name="image-type">
+												<option selected disabled>Bildtyp auswählen</option>
+												<option>Serverschrank vorher</option>
+												<option>Serverschrank nachher</option>
+												<option>Arbeitssplatz nachher</option>
+												<option>Seriennummer router</option>
+												<option>Seriennummer firewall</option>
+												<option>Firewall (Beschriftung Patchkabel)</option>
+												<option>Kabeletikett</option>
+												<option>Testprotokoll</option>
+											</select>
+										</div>';
+								print '<div class="col">
+											<input style="width: 100%" type="file" name="files[]">
+										</div>';
+								print '<div class="col">
+											<input type="submit" name="submitAddForm" value="add more...">
+									   </div>';
+								print '<input type="text" name="index" value="'.$groupIndex.'" hidden>';
+								print '<input type="hidden" name="formId" value="'.$form["formId"].'">';
+							print '</div>';
+						  print '</form>';  
+						print '</div>';
 					print '</div>';
-					print '<hr>';
 					// print '<div class="row mt-2">';
 					// 	print '<div class="col-12" style="background: #aaa;padding: 5px 0 5px 10px;">';
 					// 		print $ticket->getNomUrl();
@@ -719,20 +745,118 @@ if ($object->id > 0) {
 llxFooter();
 $db->close();
 
-if(isset($_POST['delete'])) {
-	var_dump($_POST);
-	// var_dump($formsList);
-	// var_dump(1);
-	// $imagesList = array_reverse($imagesList);
-	// $key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
-	// unlink($dir.$_POST["img"]);
-	// unset($imagesList[$_POST["objectIndex"]]["images"][$key]);
-	// $list = json_encode(array_reverse($imagesList));
-	// $sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
-	// $db->query($sql,0,'ddl');
-	// print '<script>window.location.href = window.location.href;
-	// 		</script>';
-}
+	
+	$images = array();	
+	$dir = DOL_DOCUMENT_ROOT.'/formsImages/';
+	if(isset($_POST['submitAddForm'])) {
+		$allowed_types = array('jpg', 'png', 'jpeg', 'gif');
+		
+		$maxsize = 1024 * 1024;
+		
+		if(!empty(array_filter($_FILES['files']['name']))) {
+		
+	
+			foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+				
+				$file_tmpname = $_FILES['files']['tmp_name'][$key];
+				$file_name = $_FILES['files']['name'][$key];
+				$file_names = $_FILES['files']['name'][$key];
+				$file_size = $_FILES['files']['size'][$key];
+				$imageQuality = 20;
+				$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+				if($_POST['image-type'] == "Testprotokoll"){
+					$file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$object->city."_VKST_".explode("-", $object->b_number)[2].".".$file_ext;
+				} else if($_POST['image-type'] == "Serverschrank nachher") {
+					$file_names = "VKST_".explode("-", $object->b_number)[2]."_".explode(" ", $_POST['image-type'])[0].".".$file_ext;
+				} else {
+					$file_names = "VKST_".explode("-", $object->b_number)[2]."_".$_POST['image-type'].".".$file_ext;
+				}
+				$filepath = $dir.$file_names;
+		
+
+				if(in_array(strtolower($file_ext), $allowed_types)) {
+					//Karim test
+					if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
+						$exif = exif_read_data($file_tmpname);
+						if (!empty($exif['Orientation'])) {
+							$image = imagecreatefromjpeg($file_tmpname);
+							switch ($exif['Orientation']) {
+								case 3:
+										$image = imagerotate($image, 180, 0);
+										break;
+								case 6:
+										$image = imagerotate($image, -90, 0);
+										break;
+								case 8:
+										$image = imagerotate($image, 90, 0);
+										break;
+							}
+							imagejpeg($image, $file_tmpname, 90); // Save the rotated image
+							imagedestroy($image);
+						}
+					}
+					// var_dump($dir);
+					if(file_exists($filepath)) {
+						unlink($filepath);
+						//  $fileN = time().$file_names;
+						$filepath = $dir.$file_names;
+						$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
+						if( $compressedImage) {
+							array_push($images, $file_names);
+						} else {                    
+							dol_htmloutput_errors("Error uploading {$file_name} <br />");
+						}
+					} else {
+						$compressedImage = $obj->compress_image($file_tmpname, $filepath, $imageQuality);
+						if($compressedImage) {
+							array_push($images,$file_names);
+						} else {  
+							dol_htmloutput_errors("Error uploading {$file_name} <br />");
+						}
+					}
+				} else {
+					dol_htmloutput_errors("Error uploading {$file_name} ");
+					dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+				}
+			}
+		} else {
+			dol_htmloutput_errors("No files selected.");
+		}
+		$node = [
+			"type" => $_POST['image-type'],
+			"images" => $images
+		];
+		array_push($imagesGroup, (object)$node);
+		// var_dump($imagesGroup);
+		$list = json_encode($imagesGroup);
+		if($result){
+			var_dump(1);
+			$sql = 'UPDATE llx_tec_forms SET images = "'.base64_encode($list).'" WHERE rowid = '.$_POST["formId"];
+			var_dump($sql);
+			$db->query($sql,0,'ddl');
+			print '<script>window.location.href = window.location.href;
+			</script>';
+		} else {
+			$sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("'.$ticketId.'", "'.$user->id.'", "'.$object->fk_soc.'", "'.$storeid.'", "'.base64_encode($list).'")';
+			// $db->query($sql,0,'ddl');
+			// print '<script>window.location.href = window.location.href;
+			// </script>';
+		}
+	}
+	if(isset($_POST['delete'])) {
+		var_dump($_POST);
+		// var_dump($formsList);
+		// var_dump(1);
+		// $imagesList = array_reverse($imagesList);
+		// $key = array_search($_POST["img"],$imagesList[$_POST["objectIndex"]]["images"]);
+		// unlink($dir.$_POST["img"]);
+		// unset($imagesList[$_POST["objectIndex"]]["images"][$key]);
+		// $list = json_encode(array_reverse($imagesList));
+		// $sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
+		// $db->query($sql,0,'ddl');
+		// print '<script>window.location.href = window.location.href;
+		// 		</script>';
+	}
 print '<script>';
     
 	print '
@@ -824,365 +948,3 @@ print '<style>';
 			  }
 		   }';
 print '</style>';
-print '<script>
-                      
-var currentIndex = 0;
-function prevImage(id, className) {
-	var lists = id.split("|")[0].split(", ");
-	var listTexts = id.split("|")[1].split(", ");
-	var className1 = "img rotate " + className;
-	var imgElement = document.getElementById(className1);
-	var src = imgElement.getAttribute("src");
-	var imageName = src.split("/").pop();
-	var imageIndex = lists.indexOf(imageName);
-	if (imageIndex === 0) {
-	  currentIndex = lists.length - 1;
-	} else {
-		currentIndex = imageIndex - 1;
-	}
-	updateImage(currentIndex, className, lists, listTexts);
-}
-
-function nextImage(id, className, number) {
-	var lists = id.split("|")[0].split(", ");
-	var listTexts = id.split("|")[1].split(", ");
-	if(number == 1){
-	  var className1 = "img rotate " + className;
-	} else {
-	  var className1 = "form-img rotate " + className;
-	}
-	var imgElement = document.getElementById(className1);
-	var src = imgElement.getAttribute("src");
-	var imageName = src.split("/").pop();
-	var imageIndex = lists.indexOf(imageName);
-	if (imageIndex === lists.length - 1) {
-	  currentIndex = 0;
-	} else {
-		currentIndex = imageIndex + 1;
-	}
-	updateImage(currentIndex, className, lists, listTexts);
-}
-function updateImage(index, className, lists, listTexts) {
-	var classImg = "img rotate " + className;
-	var classText = "txt rotate " + className;
-	var imgElement = document.getElementById(classImg);
-	var txtElement = document.getElementById(classText);
-	imgElement.src = "./img/" + lists[currentIndex];
-	txtElement.innerHTML = listTexts[currentIndex];
-}
-  function conf(i){
-	var m = "delete-group "+ i;
-	document.getElementById(m).click();
-  }
-  function changeLabel(i){
-	  var desc = "main-label " +i;
-	  var btnS = "save-edit " +i;
-	  var tt = "edit-icon "+ i;
-	  var input = document.getElementById(desc);
-	  var editB = document.getElementById(tt);
-	  var buttonS = document.getElementById(btnS);
-	  if (input.disabled) {
-		  input.disabled = false;
-		  editB.style.display = "none";
-		  buttonS.hidden = false;
-	  } else {
-		  input.disabled = true;
-		  editB.style.display = "block";
-		  buttonS.hidden = true;
-	  }
-  }
-  function see(i){
-	var e = "addmore "+i;
-	document.getElementsByClassName(e)[0].style.display="block";
-  }
-  var rotation = 0;
-  var angle = 90;
-  function rotateImage(i,j, number) {
-	  if(number == 1){
-		var c = "img "+i;
-		var n = "full-view-img "+i;
-	  } else {
-		var c = "form-img "+i;
-		var n = "form-full-view-img "+i;
-	  }
-	  var rotated = document.getElementById(c);
-	  var rotated1 = document.getElementById(n);
-	  var rotated2 = document.getElementById(j);
-	  // alert(rotated2);
-	  rotation = (rotation + angle) % 360;
-	  rotated.style.transform = `rotate(${rotation}deg)`;
-	  rotated.style.transform = `scale(${rotation}deg)`;
-	  rotated1.style.transform = `rotate(${rotation}deg)`;
-	  rotated1.style.transform = `scale(${rotation}deg)`;
-	  rotated2.style.transform = `rotate(${rotation}deg)`;
-	  rotated2.style.transform = `scale(${rotation}deg)`;
-  }
-  function se(i,j, number){
-	  if(number == 1){
-		var m = "full-model "+j;
-		var n = "full-view-img rotate "+j;
-		var spann = "full-view-close " +j;
-	  } else {
-		var m = "form-full-model "+j;
-		var n = "form-full-view-img rotate "+j;
-		var spann = "form-full-view-close " +j;
-	  }
-	  var img = document.getElementById(i);
-	  var modal = document.getElementById(m);
-	  // img.onclick = function(){
-		  modal.style.display = "block";
-	  // }
-	  
-	  var span = document.getElementById(spann);
-
-	  span.onclick = function() { 
-		  modal.style.display = "none";
-	  }
-	  
-	  window.onclick = function(event) {
-	  if (event.target == modal) {
-		  modal.style.display = "none";
-		  }
-	  }
-	  
-  }  
-</script>';
-print   '<script>
-  function toggleEdit(i) {
-	  var desc = "desc " +i;
-	  var btn = "edit-button " +i;
-	  var btnS = "save-button " +i;
-	  // alert(btnS);
-	  var input = document.getElementById(desc);
-	  var button = document.getElementById(btn);
-	  var buttonS = document.getElementById(btnS);
-	  var img = document.getElementById(i);
-	  if (input.disabled) {
-		  input.disabled = false;
-		  // button.innerHTML = "Save";
-		  button.hidden = true;
-		  buttonS.hidden = false;
-	  } else {
-		  input.disabled = true;
-		  // button.innerHTML = "Edit";
-		  button.hidden = false;
-		  buttonS.hidden = true;
-	  }
-  }
-</script>';
-print '<script>
-  function ss(i, number){
-	  // alert(i);
-	  if(number == 1){
-		var c = "close " +i;
-		var m = "modal "+i;
-	  } else {
-		var c = "form-close " +i;
-		var m = "form-modal "+i;
-	  }
-	  var modal = document.getElementById(m);
-	  modal.style.display = "block";
-	  var span = document.getElementById(c); 
-	  span.onclick = function() {
-		  modal.style.display = "none";
-	  }
-	  window.onclick = function(event) {
-	  if (event.target == modal) {
-		  modal.style.display = "none";
-		  }
-	  }
-  }
-</script>'; 
-print '<style>
-/* The Modal (background) */
-.modal-image {
-overflow: auto;
-// float: left;
-}
-.edit-icon{
-display: flex;
-align-items: center;
-}
-.group-header input:disabled, textarea:disabled, select[disabled="disabled"] {
-background: none;
-}
-.group-header{
-background-color: #4444;
-display: flex;
-justify-content: space-between;
-padding: 0px 10px 0px 10px;
-}
-.add-icon{
-display: flex;
-align-items: center;
-}
-.group-element{
-display: inline-flex;
-flex-direction: column;
-padding: 7px;
-column-gap: 1px;
-text-align: center;
-border: 1px solid #4444;
-margin: 6px;
-}
-.modal {
-display: none; /* Hidden by default */
-position: fixed; /* Stay in place */
-z-index: 999999999999999; /* Sit on top */
-padding-top: 5vh; /* Location of the box */
-left: 0;
-top: 0;
-width: 100%; /* Full width */
-height: 100%; /* Full height */
-overflow: auto; /* Enable scroll if needed */
-background-color: rgb(0,0,0); /* Fallback color */
-background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-}
-.myImg {
-cursor: pointer
-}
-.delBtn {
-cursor: pointer;
-border: 1px solid;
-color: black;
-background: #e9e9e9;
-}
-/* Modal Content */
-.modal-content {
-position: relative;
-background-color: #fefefe;
-margin: auto;
-padding: 0;
-border: 1px solid #888;
-width: 80%;
-box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
--webkit-animation-name: animatetop;
--webkit-animation-duration: 0.4s;
-animation-name: animatetop;
-animation-duration: 0.4s
-}
-
-/* Add Animation */
-@-webkit-keyframes animatetop {
-from {top:-300px; opacity:0} 
-to {top:0; opacity:1}
-}
-
-@keyframes animatetop {
-from {top:-300px; opacity:0}
-to {top:0; opacity:1}
-}
-
-/* The Close Button */
-.close, .form-close {
-color: #333333;
-float: right;
-font-size: 28px;
-font-weight: bold;
-}
-
-.close:hover,
-.close:focus, .form-close:hover,
-.form-close:focus {
-color: #000;
-text-decoration: none;
-cursor: pointer;
-}
-
-.modal-header {
-height: 3em;  
-padding: 2px 16px;
-background-color: #e9e9e9;
-color: white;
-}
-
-.modal-header p {
-float: left;
-color: black;
-cursor: pointer;
-}
-.modal-body {
-padding: 2px 16px;
-text-align: center;
-}
-.modal-body img{
-width: 50%;
-height: 35rem
-}
-
-.modal-footer {
-padding: 2px 16px;
-background-color: #e9e9e9;
-color: white;
-}
-</style>';
-print '<style>
-.full-view {
-display: none; /* Hidden by default */
-position: fixed; /* Stay in place */
-z-index: 999999999999999999; /* Sit on top */
-left: 0;
-top: 0;
-width: 100%; /* Full width */
-height: 100%; /* Full height */
-overflow: auto; /* Enable scroll if needed */
-background-color: rgb(0,0,0); /* Fallback color */
-background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
-}
-
-/* Modal Content (image) */
-.full-view-content {
-margin: auto;
-display: block;
-width: 80%;
-max-width: 700px;
-}
-
-/* Add Animation */
-.full-view-content {  
--webkit-animation-name: zoom;
--webkit-animation-duration: 0.6s;
-animation-name: zoom;
-animation-duration: 0.6s;
-}
-
-@-webkit-keyframes zoom {
-from {-webkit-transform:scale(0)} 
-to {-webkit-transform:scale(1)}
-}
-
-@keyframes zoom {
-from {transform:scale(0)} 
-to {transform:scale(1)}
-}
-
-/* The Close Button */
-.full-view-close, .form-full-view-close {
-position: absolute;
-top: 15px;
-right: 35px;
-color: #f1f1f1;
-font-size: 40px;
-font-weight: bold;
-transition: 0.3s;
-}
-
-.full-view-close:hover,
-.full-view-close:focus,
-.form-full-view-close:hover,
-.form-full-view-close:focus {
-color: #bbb;
-text-decoration: none;
-cursor: pointer;
-}
-
-/* 100% Image Width on Smaller Screens */
-@media only screen and (max-width: 700px){
-.full-view-content {
-width: 100%;
-}
-}
-</style>';
-
-print '<script>
-</script>';  

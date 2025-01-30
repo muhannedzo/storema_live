@@ -1162,7 +1162,7 @@ while ($i < $imaxinloop) {
 					print $object->showOutputField($val, $key, $db->jdate($obj->$key), '');
 				} elseif ($key == 'ref') {
 					print $object->showOutputField($val, $key, $obj->$key, '');
-
+					
 					// display a warning on untreated tickets
 					$is_open = ($object->status != Ticket::STATUS_CLOSED && $object->status != Ticket::STATUS_CANCELED);
 					$should_show_warning = (getDolGlobalString('TICKET_DELAY_SINCE_LAST_RESPONSE') || getDolGlobalString('TICKET_DELAY_BEFORE_FIRST_RESPONSE'));

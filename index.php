@@ -114,7 +114,7 @@ if($user->socid || $result[0] != "0") {
 
 	$object = new Ticket($db);
 
-	$sql = "SELECT t.rowid, t.ref, t.track_id, t.fk_soc, third.nom, t.datec, t.subject, t.type_code, t.category_code, t.severity_code, t.fk_statut, t.progress,";
+	$sql = "SELECT t.rowid, t.ref, t.track_id, t.fk_soc, third.nom, t.datec, t.subject, t.type_code, t.category_code, t.severity_code, t.fk_statut, t.progress,te.stopnummer,";
 	$sql .= " type.code as type_code, type.label as type_label, te.datehour, te.datemin,te.dateofuse,";
 	$sql .= " category.code as category_code, category.label as category_label,";
 	$sql .= " severity.code as severity_code, severity.label as severity_label,";
@@ -135,6 +135,12 @@ if($user->socid || $result[0] != "0") {
 	if(isset($sort) && $sort == "installation_desc"){
 		$sql .= $db->order("te.dateofuse", "DESC");
 	}
+	if(isset($sort) && $sort == "stop_asc"){
+		$sql .= $db->order("te.stopnummer", "ASC");
+	}
+	if(isset($sort) && $sort == "stop_desc"){
+		$sql .= $db->order("te.stopnummer", "DESC");
+	}
 
 	$result = $db->query($sql);
 
@@ -146,6 +152,8 @@ if($user->socid || $result[0] != "0") {
 		// $transRecordedType = $langs->trans("LatestNewTickets", $max);
 		$installationDateSort = 'installation_asc';
 		$installationDateSortIcon = '';
+		$stopSort = 'stop_asc';
+		$stopSortIcon = '';
 		if($sort == "installation_asc"){
 			$installationDateSort = "installation_desc";
 			$installationDateSortIcon = '<i class="fas fa-sort-up"></i>';
@@ -154,13 +162,24 @@ if($user->socid || $result[0] != "0") {
 			$installationDateSort = "installation_asc";
 			$installationDateSortIcon = '<i class="fas fa-sort-down"></i>';
 		}
+		if($sort == "stop_asc"){
+			$stopSort = "stop_desc";
+			$stopSortIcon = '<i class="fas fa-sort-up"></i>';
+		}
+		if($sort == "stop_desc"){
+			$stopSort = "stop_asc";
+			$stopSortIcon = '<i class="fas fa-sort-down"></i>';
+		}
 
 		print '<div class="div-table-responsive-no-min">';
 			print '<table class="noborder centpercent">';
 				print '<tr class="liste_titre">';
 					print '<th>'.$langs->trans("yourtickets").'</th>';
-					print '<th colspan="3">';
+					print '<th colspan="1">';
 						print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?token='.newToken().'&sort='.$installationDateSort.'">'.$installationDateSortIcon.'Installationsdatum</a>';
+					print '</th>';
+					print '<th colspan="3" class="left">';
+						print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?token='.newToken().'&sort='.$stopSort.'">'.$stopSortIcon.'Stop Nr</a>';
 					print '</th>';
 				print '</tr>';
 				if ($num > 0) {
@@ -178,6 +197,7 @@ if($user->socid || $result[0] != "0") {
 						$object->datehour = $objp->datehour;
 						$object->datemin = $objp->datemin;
 						$object->dateofuse = $objp->dateofuse;
+						$object->stopnummer = $objp->stopnummer;
 						
 						
 						$store = new Branch($db);
@@ -185,25 +205,26 @@ if($user->socid || $result[0] != "0") {
 
 						print '<tr class="oddeven" colspan="6">';
 
-						// Ref
-						print '<td class="nowraponall">';
-						print $object->getNomUrl(1);
-						print "</td>\n";
+							// Ref
+							print '<td class="nowraponall">';
+								print $object->getNomUrl(1);
+							print "</td>\n";
 
-						// Creation date
-						print '<td class="left">';
-						print dol_print_date($db->jdate($objp->dateofuse), 'day').' '.$object->datehour.':'.$object->datemin;
-						print "</td>";
+							// Severity
+							print '<td class="nowrap">';
+								$s = $langs->getLabelFromKey($db, 'TicketSeverityShort'.$objp->severity_code, 'c_ticket_severity', 'code', 'label', $objp->severity_code);
+								print '<span title="'.dol_escape_htmltag($s).'">'.$objp->severity_code.'</span>';
+							print "</td>";
 
-						// Severity
-						print '<td class="nowrap">';
-						$s = $langs->getLabelFromKey($db, 'TicketSeverityShort'.$objp->severity_code, 'c_ticket_severity', 'code', 'label', $objp->severity_code);
-						print '<span title="'.dol_escape_htmltag($s).'">'.$objp->severity_code.'</span>';
-						print "</td>";
+							// Stop number
+							print '<td class="left">';
+								print $objp->stopnummer;
+							print "</td>";
 
-						// Creation date
-						print '<td class="left">';
-						print "</td>";
+							// Creation date
+							print '<td class="center">';
+								print dol_print_date($db->jdate($objp->dateofuse), 'day').' '.$object->datehour.':'.$object->datemin;
+							print "</td>";
 						print '</tr>';
 
 						print '<tr class="oddeven" colspan="6">';
@@ -220,11 +241,11 @@ if($user->socid || $result[0] != "0") {
 							print '<span title="'.dol_escape_htmltag($s).'">'.$s.'</span>';
 						}
 						print "</td>";
-
-						print '<td class="nowraponall right">';
-						print '<a class="btn" href="./tecreport.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
-						print "</td>";
 						print '<td class="nowraponall">';
+						print "</td>";
+
+						print '<td class="nowraponall center">';
+						print '<a class="btn" href="./tecreport.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
 						print "</td>";
 
 						print "</tr>\n";

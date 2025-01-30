@@ -727,15 +727,17 @@ class FormTicket
 		$ticketstatic = new Ticket($this->db);
 		$store = new Branch($this->db);
 		$proj = new Project($this->db);
-		$mainticket = new Ticket($this->db);
-		$mainticket->fetch($mainid);
-		$mainticketref = $mainticket->ref;
-		$sql = 'SELECT * FROM llx_ticket_extrafields WHERE parentticket = '.$mainid;
-		$total = $this->db->query($sql)->num_rows;
-		$parts = explode("-", $mainticketref);
-		$parts[0] = "27";
-		$parts[] = $total + 1;
-		$newRef = implode("-", $parts);
+		if($mainid){
+			$mainticket = new Ticket($this->db);
+			$mainticket->fetch($mainid);
+			$mainticketref = $mainticket->ref;
+			$sql = 'SELECT * FROM llx_ticket_extrafields WHERE parentticket = '.$mainid;
+			$total = $this->db->query($sql)->num_rows;
+			$parts = explode("-", $mainticketref);
+			$parts[0] = "27";
+			$parts[] = $total + 1;
+			$newRef = implode("-", $parts);
+		}
 		
 		
 
@@ -833,13 +835,15 @@ class FormTicket
 		}
 		
 		// Parent Ticket
-		$parentticket = $mainid;
-		if(isset($_COOKIE["parentticket"])){
-			$parentticket = $_COOKIE["parentticket"];
+		if($mainid){
+			$parentticket = $mainid;
+			if(isset($_COOKIE["parentticket"])){
+				$parentticket = $_COOKIE["parentticket"];
+			}
+			print '<tr><td class="titlefieldcreate"><span class="fieldrequired">'.$langs->trans("Parent Ticket").'</span></td><td>';
+			print $form->selectTickets($parentticket,'options_parentticket');
+			print '</td></tr>';
 		}
-		print '<tr><td class="titlefieldcreate"><span class="fieldrequired">'.$langs->trans("Parent Ticket").'</span></td><td>';
-		print $form->selectTickets($parentticket,'options_parentticket');
-		print '</td></tr>';
 
 		$externalref = "";
 		if(isset($_COOKIE["externalref"])){
