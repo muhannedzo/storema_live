@@ -289,6 +289,35 @@ if (empty($reshook)) {
 				}
 				// Muhannad's code end
 
+				// Karim's code start:
+				// Every new project created should get assigned the default design
+				
+				$projectId = $object->id;
+				$sql = "INSERT INTO llx_reports (";
+				//echo $sql;
+				$sql.= "fk_user, parameters, content, title, date, description, projectId";
+				//echo $sql;
+				$sql.= ") SELECT ";
+				//echo $sql;
+				$sql.= $user->id.", parameters, content, title, ";
+				//echo $sql;
+				$sql.= "'".date("Y-m-d H:i:s")."', ";  // or use date("Y-m-d H:i:s") if suitable
+				//echo $sql;
+				$sql.= "description, ".$projectId;
+				//echo $sql;
+				$sql.= " FROM llx_reports";
+				//echo $sql;
+				$sql.= " WHERE rowid = 0";
+				echo $sql;
+				// 2) Execute the SQL
+				 $resql = $db->query($sql);
+				if (!$resql) {
+				 	setEventMessages($db->lasterror(), null, 'errors');
+				 	// Potentially do more error handling
+				 }
+
+				// Karim's code end
+
 				if (!empty($backtopage)) {
 					$backtopage = preg_replace('/--IDFORBACKTOPAGE--|__ID__/', $object->id, $backtopage); // New method to autoselect project after a New on another form object creation
 					$backtopage = $backtopage.'&projectid='.$object->id; // Old method
@@ -1172,7 +1201,7 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 	print '</table>';
 
 	print dol_get_fiche_end();
-
+	
 	print $form->buttonsSaveCancel('CreateDraft');
 
 	print '</form>';
@@ -1937,7 +1966,7 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			print count($stores);
 			print "</td></tr>";
 		}
-
+		
 		print '</table>';
 
 		print '<script>';
@@ -1988,6 +2017,169 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			print $num ? $num : 0;
 			print "</td></tr>";
 		}
+		// Karims code:
+		// Report Design
+		// $sql = "SELECT * FROM llx_reports WHERE projectid = ".$object->id.";";
+		// $result = $db->query($sql)->fetch_all(MYSQLI_ASSOC)[0];
+		// //var_dump($result);
+		// if (isModEnabled('reportdesigner')) {
+		// 	if(isset($result)){
+		// 		print '<tr><td class="valignmiddle">'.$langs->trans("ReportDesign").'</td><td>';
+		// 		print '<a href="'.DOL_URL_ROOT.'/custom/reportdesigner/reportdesignerindex.php?action=edit&reportId='.$result["rowid"].'">'.$result["title"].'</a>';
+		// 		print "</td></tr>";
+		// 	}else{
+		// 		print '<tr><td class="valignmiddle">'.$langs->trans("ReportDesign").'</td><td>';
+		// 		print '<a href="'.DOL_URL_ROOT.'/custom/reportdesigner/reportdesignerindex.php?action=overview">Noch kein Design zugewiesen.</a>';
+		// 		print "</td></tr>";
+		// 	}			
+		// }
+
+				
+		// Fetch the current report design for the project
+		$sql = "SELECT * FROM llx_reports WHERE projectid = " . intval($object->id) . " LIMIT 1;";
+		$resql = $db->query($sql);
+
+		if (!$resql) {
+			// Handle query error
+			echo "Error: " . $db->lasterror();
+			exit;
+		}
+
+		$reports = $resql->fetch_all(MYSQLI_ASSOC);
+		$currentReport = isset($reports[0]) ? $reports[0] : null;
+
+
+
+		// Check if the 'reportdesigner' module is enabled
+		
+		if (isModEnabled('reportdesigner')) {
+			echo '<tr><td class="valignmiddle">' . $langs->trans("ReportDesign") . '</td><td>';
+
+			// Display the design link or the no-design link
+			if ($currentReport) {
+				echo '<a href="' . DOL_URL_ROOT . '/custom/reportdesigner/reportdesignerindex.php?action=edit&reportId=' . intval($currentReport["rowid"]) . '">' . htmlspecialchars($currentReport["title"]) . '</a>';
+			} else {
+				echo 'Noch keinem Design zugewiesen';
+			}
+
+			// Add the checkbox options
+			echo '<div class="mt-2">';
+
+			// Standard-Design Checkbox
+			echo '<div class="form-check">';
+			echo '<input class="form-check-input" type="checkbox" name="designType" id="standardDesign" value="standard" ' . (!$currentReport ? 'checked' : '') . '>';
+			echo '<label class="form-check-label" for="standardDesign">Standard-Design</label>';
+			echo '</div>';
+
+			// Ausgewähltes Design Checkbox
+			echo '<div class="form-check">';
+			echo '<input class="form-check-input" type="checkbox" name="designType" id="selectedDesign" value="selected" ' . ($currentReport ? 'checked' : '') . '>';
+			echo '<label class="form-check-label" for="selectedDesign">Design auswählen</label>';
+			echo '</div>';
+
+			echo '</div>';
+
+			echo "</td></tr>";
+		}
+
+
+
+		echo "
+		<script>
+			// Wait for the DOM to load
+			document.addEventListener('DOMContentLoaded', function() {
+				const standardDesignCheckbox = document.getElementById('standardDesign');
+				const selectedDesignCheckbox = document.getElementById('selectedDesign');
+
+				// Function to enforce mutual exclusivity
+				function enforceMutualExclusivity(checkedBox, otherBox) {
+					if (checkedBox.checked) {
+						otherBox.checked = false;
+					} else {
+						// Prevent both from being unchecked
+						if (!standardDesignCheckbox.checked && !selectedDesignCheckbox.checked) {
+							checkedBox.checked = true;
+						}
+					}
+				}
+
+				// Function to handle Standard-Design selection (Unassign)
+				function handleStandardDesignSelection() {
+					if (standardDesignCheckbox.checked) {
+						if (!confirm('Möchten Sie das Design wirklich auf Standard-Design zurücksetzen?')) {
+							// Revert checkbox state if user cancels
+							standardDesignCheckbox.checked = false;
+							selectedDesignCheckbox.checked = true;
+							return;
+						}
+
+						const projectId = ".$object->id.";
+
+						// Send AJAX request to unassign the design
+						$.ajax({
+							url: \"../custom/reportdesigner/reportDesignerUpload.php\", // Updated URL path
+							type: \"POST\",
+							data: { 
+								action: 'unassign',
+								projectId: projectId 
+							},
+							dataType: 'json', // Expect JSON response from the server
+							success: function(data) {
+								if(data.success){
+									alert('Design erfolgreich auf Standard-Design zurückgesetzt.');
+									// Reload the page to reflect changes
+									location.reload();
+								} else {
+									alert('Fehler beim Zurücksetzen des Designs: ' + data.error);
+									// Revert checkbox state in case of error
+									$('#standardDesign').prop('checked', false);
+									$('#selectedDesign').prop('checked', true);
+								}
+							},
+							error: function(xhr, status, error) {
+								console.error(\"Request failed with status: \" + xhr.status + \", Error: \" + error);
+								alert(\"Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.\");
+								// Revert checkbox state in case of error
+								$('#standardDesign').prop('checked', false);
+								$('#selectedDesign').prop('checked', true);
+							}
+						});
+					}	
+				}
+
+				// Function to handle Ausgewähltes Design selection (Assign)
+				function handleSelectedDesignSelection() {
+					if (selectedDesignCheckbox.checked) {
+						// Redirect to the design selection page
+						window.location.href = '".DOL_URL_ROOT."/custom/reportdesigner/reportdesignerindex.php?action=overview&projectid=".$object->id."';
+					}
+				}
+
+				// Event listeners for checkboxes
+				standardDesignCheckbox.addEventListener('change', function() {
+					enforceMutualExclusivity(this, selectedDesignCheckbox);
+					handleStandardDesignSelection();
+				});
+
+				selectedDesignCheckbox.addEventListener('change', function() {
+					enforceMutualExclusivity(this, standardDesignCheckbox);
+					handleSelectedDesignSelection();
+				});
+
+				// Initialize mutual exclusivity on page load
+				enforceMutualExclusivity(standardDesignCheckbox, selectedDesignCheckbox);
+			});
+			</script>
+
+			<style>
+			/* Optional: Highlight selected rows or elements if needed */
+			.selected-row {
+				background-color: #cce5ff !important;
+			}
+			</style>
+		";
+
+		// Karims code ende
 		print '</table>';
 		print '<br>';
 
@@ -2348,6 +2540,9 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 				print '<a class="butAction" href="'.DOL_URL_ROOT.'/comm/action/card.php?action=create&amp;origin=' . $object->element . '&amp;originid=' . $object->id . '&amp;socid=' . $object->socid . '&amp;projectid=' . $object->id . '">' . $langs->trans("AddAction") . '</a>';
 			}*/
 
+			// CSV
+			print dolGetButtonAction('', $langs->trans('csv'), 'default', $_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&mode=init#formmailbeforetitle', '');
+
 			// Send
 			if (empty($user->socid)) {
 				if ($object->statut != Project::STATUS_CLOSED) {
@@ -2425,7 +2620,6 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 
 			// Buttons Create
 			if (!getDolGlobalString('PROJECT_HIDE_CREATE_OBJECT_BUTTON')) {
-				// 110 and 120 are for assigning and creating new report designs for the current project
 				$arrayforbutaction = array(
 					10 => array('lang'=>'propal', 'enabled'=>isModEnabled("propal"), 'perm'=>$user->hasRight('propal', 'creer'), 'label' => 'AddProp', 'url'=>'/comm/propal/card.php?action=create&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
 					20 => array('lang'=>'orders', 'enabled'=>isModEnabled("commande"), 'perm'=>$user->hasRight('commande', 'creer'), 'label' => 'CreateOrder', 'url'=>'/commande/card.php?action=create&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
@@ -2436,9 +2630,7 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 					70 => array('lang'=>'interventions', 'enabled'=>isModEnabled("ficheinter"), 'perm'=>$user->hasRight('fichinter', 'creer'), 'label' => 'AddIntervention', 'url'=>'/fichinter/card.php?action=create&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
 					80 => array('lang'=>'contracts', 'enabled'=>isModEnabled("contrat"), 'perm'=>$user->hasRight('contrat', 'creer'), 'label' => 'AddContract', 'url'=>'/contrat/card.php?action=create&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
 					90 => array('lang'=>'trips', 'enabled'=>isModEnabled("expensereport"), 'perm'=>$user->hasRight('expensereport', 'creer'), 'label' => 'AddTrip', 'url'=>'/expensereport/card.php?action=create&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
-				   	100 => array('lang'=>'donations', 'enabled'=>isModEnabled("don"), 'perm'=>$user->hasRight('don', 'creer'), 'label' => 'AddDonation', 'url'=>'/don/card.php?action=create&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
-					110 => array('lang'=>'createDesign', 'enabled', 'perm'=>$user->hasRight('projet', 'creer'), 'label' => 'CreateDesign', 'url'=>'/ticket/reportDesigner.php?action=new&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
-				   	120 => array('lang'=>'assignDesign', 'enabled', 'perm'=>$user->hasRight('projet', 'creer'), 'label' => 'AssignDesign', 'url'=>'/ticket/reportDesigner.php?action=overview&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
+				   100 => array('lang'=>'donations', 'enabled'=>isModEnabled("don"), 'perm'=>$user->hasRight('don', 'creer'), 'label' => 'AddDonation', 'url'=>'/don/card.php?action=create&amp;projectid='.$object->id.'&amp;socid='.$object->socid),
 				);
 
 				$params = array('backtopage' => $_SERVER["PHP_SELF"].'?id='.$object->id);
@@ -2534,7 +2726,7 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 
 	}
 
-	if ($action != 'presend' && $action != 'reportsMail') {
+	if ($action != 'presend' && $action != 'reportsMail' && $action != 'csv') {
 		print '<div class="fichecenter"><div class="fichehalfleft">';
 		print '<a name="builddoc"></a>'; // ancre
 
@@ -2599,6 +2791,373 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 		$somethingshown = $formactions->showactions($object, 'project', 0, 1, '', $MAXEVENT, '', $morehtmlcenter);
 
 		print '</div></div>';
+	}
+	// $_SESSION["dateString"] = "";
+	// $_SESSION["startDate"] = "";
+	// $_SESSION["endDate"] = "";
+	// $_SESSION["techniciansList"] = "";
+	// $_SESSION["techniciansString"] = "";
+	if($action == 'csv'){
+		session_start();
+		$sort = GETPOST('sort');
+		$currentDate = new DateTime();
+		// var_dump($currentDate->format('Y-m-d'));
+		$currentDay = $currentDate->format('Y-m-d');
+		$currentMonth = $currentDate->format('m');
+		$currentYear = $currentDate->format('Y');
+		$startyear = $currentYear;
+		$dateString = 'From '. $startyear . '-'.$currentMonth.'-01 To '. $currentDay;
+		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["date-from"]) && isset($_POST["date-to"]) && $_POST["date-from"] != "" && $_POST["date-to"] != "") {
+			$datefrom = $_POST["date-from"];
+			$dateto = $_POST["date-to"];
+			$dateString = 'From '.$_POST["date-from"].' to '.$_POST["date-to"];
+			$_SESSION["dateString"] = $dateString;
+			$_SESSION["startDate"] = $_POST["date-from"];
+			$_SESSION["endDate"] = $_POST["date-to"];
+		}
+		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["fk_user"])) {
+			$technicianIds = $_POST["fk_user"];
+			
+			$filteredIds = array_filter($technicianIds, function($id) {
+				return !empty($id);
+			});
+			$technicianIdString = implode(",", $filteredIds);
+			$_SESSION["techniciansList"] = $filteredIds;
+			$_SESSION["techniciansString"] = $technicianIdString;
+		}
+		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["fk_businesspartner"])) {
+			$businesspartnerId = $_POST["fk_businesspartner"];
+			
+			$_SESSION["businesspartnerId"] = $businesspartnerId;
+		}
+		$stringtoshow = '
+			<script type="text/javascript">
+				jQuery(document).ready(function() {
+					jQuery("#idsubimgDOLUSERCOOKIE_ticket_by_status").click(function() {
+						jQuery("#idfilterDOLUSERCOOKIE_ticket_by_status").toggle();
+					});
+				});
+					
+				function exportToCSV() {
+					const tables = document.getElementById("summary-table").querySelectorAll("table:not(#times-table)");
+					const csvContent = [];
+
+					tables.forEach(table => {
+						const rows = table.querySelectorAll("tr");
+						rows.forEach(row => {
+						const csvRow = [];
+
+						// Include both th and td elements
+						const cells = row.querySelectorAll("th, td");
+						cells.forEach(cell => {
+							let cellValue = cell.textContent.trim();
+
+							if (cellValue !== "") {
+							let elm = [];
+							cell.querySelectorAll("input").forEach(inputElement => {
+								if (inputElement) {
+									switch (inputElement.type) {
+										case "number":
+											elm.push(inputElement.value);
+											break;
+											case "date":
+											case "datetime-local":
+											const dateObj = new Date(inputElement.value);
+											cellValue = dateObj.toLocaleString("de-DE", {
+												year: "numeric",
+												month: "numeric",
+												day: "numeric"
+											});
+										break;
+										case "time":
+											// Handle time input type (logic might need adjustment)
+											cellValue = "HH:MM"; // Placeholder for time format
+										break;
+										case "number":
+											cellValue = inputElement.value;
+										break;
+										case "checkbox":
+											cellValue = inputElement.checked ? "Ja" : "Nein";
+										break;
+										default:
+											cellValue = inputElement.value;
+										break;
+									}
+								}
+							});
+								if (elm.length > 0) {
+									cellValue = elm.join(":");
+								}
+							} else {
+								cell.querySelectorAll("input").forEach(inputElement => {
+									if (inputElement) {
+										// Handle input elements with empty text content
+										switch (inputElement.type) {
+											case "checkbox":
+											cellValue = ""; // Set empty string for unchecked checkboxes
+											break;
+											default:
+											// Handle other input types with empty content (optional)
+											break;
+										}
+									}
+								});
+							}
+
+							csvRow.push(cellValue);
+						});
+
+						csvContent.push(csvRow.join(","));
+						});
+						csvContent.push(""); // Add a blank line between tables
+					});
+
+					const csvData = csvContent.join("\n");
+					const blob = new Blob([csvData], { type: "text/csv" });
+					const url = URL.createObjectURL(blob);
+
+					const a = document.createElement("a");
+					a.href = url;
+					// Set a larger default cell width in Excel (adjust as needed)
+					a.download = "report.csv"; // Add ".csv" extension for proper file type
+					a.click();
+					URL.revokeObjectURL(url);
+				}
+			</script>';
+		$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/projet/ajax/contacts.php', 1), 'htmlname' => 'fk_user', 'params' => array('add-customer-contact' => 'disabled'));
+		$customer='fk_businesspartner';
+		print '<script type="text/javascript">
+				$(document).ready(function () {
+
+					jQuery("#'.$customer.'").change(function () {
+						var obj = '.json_encode($events).';
+						$.each(obj, function(key,values) {
+							if (values.method.length) {
+								runJsCodeForEvent'.$customer.'(values);
+							}
+						});
+					});
+					function runJsCodeForEvent'.$customer.'(obj) {
+						console.log("Run runJsCodeForEvent'.$customer.'");
+						var id = $("#'.$customer.'").val();
+						var method = obj.method;
+						var url = obj.url;
+						var htmlname = obj.htmlname;
+						var showempty = obj.showempty;
+						$.getJSON(url,
+								{
+									action: method,
+									id: id,
+									htmlname: htmlname,
+									showempty: showempty
+								},
+								function(response) {
+									$.each(obj.params, function(key,action) {
+										if (key.length) {
+											var num = response.num;
+											if (num > 0) {
+												$("#" + key).removeAttr(action);
+											} else {
+												$("#" + key).attr(action, action);
+											}
+										}
+									});
+									$("select#" + htmlname).html(response.value);
+									if (response.num) {
+										var selecthtml_str = response.value;
+										var selecthtml_dom=$.parseHTML(selecthtml_str);
+										if (typeof(selecthtml_dom[0][0]) !== \'undefined\') {
+											$("#inputautocomplete"+htmlname).val(selecthtml_dom[0][0].innerHTML);
+										}
+									} else {
+										$("#inputautocomplete"+htmlname).val("");
+									}
+									$("select#" + htmlname).change();	/* Trigger event change */
+								}
+						);
+					}
+				});
+			</script>';
+		$stringtoshow .= '<div class="center hideobject" id="idfilterDOLUSERCOOKIE_ticket_by_status">'; // hideobject is to start hidden
+			$stringtoshow .= '<form class="flat formboxfilter" method="POST" action="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&mode=init#formmailbeforetitle">';
+				$stringtoshow .= '<input type="hidden" name="token" value="'.newToken().'">';
+				$stringtoshow .= '<input type="hidden" name="action" value="refresh">';
+				$stringtoshow .= '<input type="hidden" name="DOL_AUTOSET_COOKIE" value="DOLUSERCOOKIE_ticket_by_status:year,shownb,showtot">';
+				$stringtoshow .= $langs->trans("Geschäftspartner").": ".$form->select_company('', 'fk_businesspartner', '', 1, 1, '', $events, 0, 'minwidth400');
+				$stringtoshow .= $langs->trans("Techniker").": ".$form->selectcontactsListing("", $_SESSION["techniciansList"], 'fk_user', 3, '', '', 0, 'minwidth200', '', '', '', '', '', '', true, 0);
+				$stringtoshow .= $langs->trans("von").' <input class="flat" size="4" type="date" name="date-from" value="'.$_SESSION["startDate"].'">';
+				$stringtoshow .= $langs->trans("bis").' <input class="flat" size="4" type="date" name="date-to" value="'.$_SESSION["endDate"].'">';
+				$stringtoshow .= '<input type="image" alt="'.$langs->trans("Refresh").'" src="'.img_picto($langs->trans("Refresh"), 'refresh.png', '', '', 1).'">';
+			$stringtoshow .= '</form>';
+		$stringtoshow .= '</div>';
+
+		$ticketObject = new Ticket($db);
+		$technicianObject = new User($db);
+		$storeObject = new Branch($db);
+		$sql = 'SELECT t.rowid, t.ref, t.fk_user_assign, t.fk_statut, f.parameters, te.dateofuse, te.fk_store, s.b_number, u.firstname
+				FROM llx_projet p
+					LEFT JOIN llx_ticket t on t.fk_project = p.rowid
+					LEFT JOIN llx_ticket_extrafields te on te.fk_object = t.rowid
+					LEFT JOIN llx_tec_forms f on f.fk_ticket = t.rowid
+					LEFT JOIN llx_stores_branch s on te.fk_store = s.rowid
+					LEFT JOIN llx_user u on t.fk_user_assign = u.rowid
+				WHERE p.rowid = '.$object->id;
+		$sql .= ' AND t.fk_user_assign != "" ';
+		$sql .= ' AND t.fk_statut = 8 ';
+		if(isset($_SESSION["businesspartnerId"]) && $_SESSION["businesspartnerId"] != -1){
+			$sql .= " AND u.fk_soc = ".$_SESSION["businesspartnerId"];
+		}
+		if(isset($_SESSION["startDate"]) && isset($_SESSION["endDate"])){
+			$sql .= " AND CAST(te.dateofuse AS DATE) BETWEEN CAST('".$_SESSION["startDate"]."' AS DATE) AND CAST('".$_SESSION["endDate"]."' AS DATE)";
+		}
+		if(isset($_SESSION["techniciansString"])){
+			$sql .= " AND t.fk_user_assign IN (".$_SESSION["techniciansString"].")";
+		}
+		if(isset($sort) && $sort == "store_asc"){
+			$sql .= " ORDER BY s.b_number ASC";
+		}
+		if(isset($sort) && $sort == "store_desc"){
+			$sql .= " ORDER BY s.b_number DESC";
+		}
+		if(isset($sort) && $sort == "installation_asc"){
+			$sql .= " ORDER BY te.dateofuse ASC";
+		}
+		if(isset($sort) && $sort == "installation_desc"){
+			$sql .= " ORDER BY te.dateofuse DESC";
+		}
+		if(isset($sort) && $sort == "technician_asc"){
+			$sql .= " ORDER BY u.firstname ASC";
+		}
+		if(isset($sort) && $sort == "technician_desc"){
+			$sql .= " ORDER BY u.firstname DESC";
+		}
+		// var_dump($sql);
+		$result = $db->query($sql);
+		print '<div class="datefilter">';
+			print '<div class="div-table-responsive-no-min">';
+				print '<table class="noborder nohover centpercent">'."\n";
+					print '<tr class="liste_titre"><th>'.$langs->trans("Datum Filter").'</th><th>Datum: '.$dateString.''.img_picto('', 'filter.png', 'id="idsubimgDOLUSERCOOKIE_ticket_by_status" class="linkobject"').'</th><th><input class="butAction" type="submit" value="Download" id="csv" onclick="exportToCSV()"></th></tr>';
+					print '<tr><td  colspan="4" class="center">';
+					print $stringtoshow;
+				print '</table>';
+			print '</div>';
+		print '</div>';
+		$storeSort = "store_asc";
+		$technicianSort = "technician_asc";
+		$installationSort = "installation_asc";
+		if($sort == "store_asc"){
+			$storeSort = "store_desc";
+		}
+		if($sort == "store_desc"){
+			$storeSort = "store_asc";
+		}
+		if($sort == "technician_asc"){
+			$technicianSort = "technician_desc";
+		}
+		if($sort == "technician_desc"){
+			$technicianSort = "technician_asc";
+		}
+		if($sort == "installation_asc"){
+			$installationSort = "installation_desc";
+		}
+		if($sort == "installation_desc"){
+			$installationSort = "installation_asc";
+		}
+		print '<div class="row summary-table" id="summary-table">';
+			print '<table class="noborder centpercent">';
+				print '<tbody>';
+					print '<tr class="liste_titre">';
+						print '<th>';
+							print 'Ticket-Nummer';
+						print '</th>';
+						print '<th>';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort='.$storeSort.'&mode=init#formmailbeforetitle">';
+								print 'Filialnummer';
+							print '</a>';
+						print '</th>';
+						print '<th>';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort='.$installationSort.'&mode=init#formmailbeforetitle">';
+								print 'Installationsdatum';
+							print '</a>';
+						print '</th>';
+						print '<th>';
+							print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=csv&token='.newToken().'&id='.$object->id.'&sort='.$technicianSort.'&mode=init#formmailbeforetitle">';
+								print 'Techniker Name';
+							print '</a>';
+						print '</th>';
+						print '<th>';
+							print 'Arbeitsbeginn';
+						print '</th>';
+						print '<th>';
+							print 'Arbeitsende';
+						print '</th>';
+					print '</tr>';
+					if ($result) {
+						$num = $db->num_rows($result);
+						if($num > 0){
+							for ($i = 0; $i < $num; $i++) {
+								$objp = $db->fetch_object($result);
+								$ticketObject->id = $objp->rowid;
+								$ticketObject->fetch($ticketObject->id);
+								$ticketObject->status = $objp->fk_statut;
+								$ticketObject->parameters = $objp->parameters;
+								$ticketObject->fk_store = $objp->fk_store;
+								$ticketObject->fk_user = $objp->fk_user_assign;
+								$ticketObject->dateofuse = $objp->dateofuse;
+								$storeObject->fetch($ticketObject->fk_store);
+								$technicianObject->fetch($ticketObject->fk_user);
+								$parameters = json_decode(base64_decode($ticketObject->parameters));
+								$installationDate = new DateTime($ticketObject->dateofuse);
+								$storeNumber = "";
+								$workStart = "";
+								$workEnd = "";
+								foreach ($parameters as $item) {
+									// if ($item->name === 'store-number') {
+									// 	$storeNumber = $item->value;
+									// }
+									if ($item->name === 'work-start') {
+										$workStart = $item->value;
+									}
+									if ($item->name === 'work-end') {
+										$workEnd = $item->value;
+										break;
+									}
+								}
+								print '<tr class="oddeven">';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $ticketObject->ref;
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $storeObject->b_number;
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $ticketObject->dateofuse ? $installationDate->format('d.m.y') : "";
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $ticketObject->fk_user ? $technicianObject->firstname." ".$technicianObject->lastname : "";
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $workStart;
+									print '</td>';
+									print '<td class="nowrap tdoverflowmax200">';
+										print $workEnd;
+									print '</td>';
+								print '</tr>';
+							}
+						} else {
+							print '<tr class="oddeven">';
+								print '<td class="nowrap tdoverflowmax200" colspan="6">';
+									print 'No results found.';
+								print '</td>';
+							print '</tr>';
+						}
+						$db->free($result);
+					} else {
+						dol_print_error($db);
+					}
+				print '</tbody>';
+			print '</table>';
+		print '</div>';
 	}
 	// Presend form
 	$modelmail = 'project';
