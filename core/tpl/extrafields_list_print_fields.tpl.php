@@ -20,7 +20,7 @@ if (!empty($extrafieldsobjectkey) && !empty($extrafields->attributes[$extrafield
 		foreach ($extrafields->attributes[$extrafieldsobjectkey]['label'] as $key => $val) {
 			if (!empty($arrayfields[$extrafieldsobjectprefix.$key]['checked'])) {
 				$cssclass = $extrafields->getAlignFlag($key, $extrafieldsobjectkey);
-
+				
 				$tmpkey = 'options_'.$key;
 
 				if (in_array($extrafields->attributes[$extrafieldsobjectkey]['type'][$key], array('date', 'datetime', 'timestamp')) && isset($obj->$tmpkey) && !is_numeric($obj->$tmpkey)) {
@@ -44,13 +44,32 @@ if (!empty($extrafieldsobjectkey) && !empty($extrafields->attributes[$extrafield
 
 				$valuetoshow = $extrafields->showOutputField($key, $value, '', $extrafieldsobjectkey);
 				$title = dol_string_nohtmltag($valuetoshow);
+				
+				// Karims code:
+				if($extrafieldsobjectkey == "ticket" && $key == "dateofuse"){
+					print '<td'.($cssclass ? ' class="'.$cssclass.'"' : '');	// TODO Add 'css' and 'cssview' and 'csslist' for extrafields and use here 'csslist'
+						print ' data-key="'.$extrafieldsobjectkey.'.'.$key.'"';
+						print($title ? ' title="'.dol_escape_htmltag($title).'"' : '');
+						print '>';
+						if($valuetoshow){
+							print $valuetoshow." , ".$obj->options_datehour.":".$obj->options_datemin;
+						}else{
+							print $valuetoshow;
+						}
+						
+					print '</td>';
+					// Karim end
+				}else{
+					print '<td'.($cssclass ? ' class="'.$cssclass.'"' : '');	// TODO Add 'css' and 'cssview' and 'csslist' for extrafields and use here 'csslist'
+						print ' data-key="'.$extrafieldsobjectkey.'.'.$key.'"';
+						print($title ? ' title="'.dol_escape_htmltag($title).'"' : '');
+						print '>';
+						print $valuetoshow;
+					print '</td>';
+				}
 
-				print '<td'.($cssclass ? ' class="'.$cssclass.'"' : '');	// TODO Add 'css' and 'cssview' and 'csslist' for extrafields and use here 'csslist'
-				print ' data-key="'.$extrafieldsobjectkey.'.'.$key.'"';
-				print($title ? ' title="'.dol_escape_htmltag($title).'"' : '');
-				print '>';
-				print $valuetoshow;
-				print '</td>';
+
+				
 
 				if (!$i) {
 					if (empty($totalarray)) {
