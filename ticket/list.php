@@ -854,6 +854,7 @@ print '<table class="tagtable nobottomiftotal liste'.($moreforfilter ? " listwit
 
 // Fields title search
 // --------------------------------------------------------------------
+
 print '<tr class="liste_titre_filter">';
 // Action column
 if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
@@ -863,6 +864,7 @@ if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
 	print '</td>';
 }
 foreach ($object->fields as $key => $val) {
+	//echo "<script> console.log(".$key.");</script>";
 	$searchkey = empty($search[$key]) ? '' : $search[$key];
 	$cssforfield = (empty($val['csslist']) ? (empty($val['css']) ? '' : $val['css']) : $val['csslist']);
 	if ($key == 'fk_statut') {
@@ -1022,7 +1024,6 @@ if (isset($extrafields->attributes[$object->table_element]['computed']) && is_ar
 	}
 }
 
-
 // Loop on record
 // --------------------------------------------------------------------
 $i = 0;
@@ -1064,6 +1065,7 @@ while ($i < $imaxinloop) {
 			print '</td></tr>';
 		}
 	} else {
+		
 		// Show here line of result
 		$j = 0;
 		print '<tr data-rowid="'.$object->id.'" class="oddeven">';
@@ -1162,7 +1164,7 @@ while ($i < $imaxinloop) {
 					print $object->showOutputField($val, $key, $db->jdate($obj->$key), '');
 				} elseif ($key == 'ref') {
 					print $object->showOutputField($val, $key, $obj->$key, '');
-
+					
 					// display a warning on untreated tickets
 					$is_open = ($object->status != Ticket::STATUS_CLOSED && $object->status != Ticket::STATUS_CANCELED);
 					$should_show_warning = (getDolGlobalString('TICKET_DELAY_SINCE_LAST_RESPONSE') || getDolGlobalString('TICKET_DELAY_BEFORE_FIRST_RESPONSE'));
@@ -1215,8 +1217,9 @@ while ($i < $imaxinloop) {
 				}
 			}
 		}
-		// Extra fields
+
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_print_fields.tpl.php';
+		
 		// Fields from hook
 		$parameters = array('arrayfields'=>$arrayfields, 'object'=>$object, 'obj'=>$obj, 'i'=>$i, 'totalarray'=>&$totalarray);
 		$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
@@ -1239,6 +1242,7 @@ while ($i < $imaxinloop) {
 
 		print '</tr>'."\n";
 	}
+
 
 	$i++;
 }

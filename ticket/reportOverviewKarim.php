@@ -78,6 +78,8 @@ dol_include_once('/stores/compress.php');
  $form = new Form($db);
  $formfile = new FormFile($db);
  $ticketId = GETPOST('id', 'int');
+
+ $permissiontoadd = $user->rights->ticket->write;
  
  $object = new Ticket($db);
  $object->fetch($ticketId);
@@ -91,9 +93,18 @@ dol_include_once('/stores/compress.php');
  $project->fetch($object->fk_project);
  $compress = new Compress();
  $userId = $user->id;
- llxHeader("", $langs->trans("Report"));
- 
- print load_fiche_titre($langs->trans("TicketReport").$project->title, '', '');
+ $action = GETPOST('action', 'alpha');
+if (empty($action)) {
+    $action = 'view';
+}
+
+$readonly = ($action == 'view');
+
+llxHeader("", $langs->trans("Report"));
+$head = ticket_prepare_head($object);
+print dol_get_fiche_head($head, 'tabTicketReport', $langs->trans("Ticket"), -1, 'ticket');
+
+print load_fiche_titre($langs->trans("TicketReportOverview")." - ".$project->title, '', '');
  //////////////////////////////////////////////////////////////////////////////////////////
 $existingReportSQL = "SELECT content, parameters, rowid FROM llx_tec_forms WHERE fk_ticket = ".$ticketId;
 $existingReportRes = $db->query($existingReportSQL)->fetch_all();
@@ -101,7 +112,15 @@ $existingReportRes = $db->query($existingReportSQL)->fetch_all();
 if($existingReportRes){
 $tecFormId = $existingReportRes[0][2];
 $form = base64_decode($existingReportRes[0][0]);
-//echo base64_decode($existingReportRes[0][1]);
+$newcardbutton = dolGetButtonTitle($langs->trans('Edit'), '', 'fa fa-edit', dol_buildpath('/ticket/reportOverviewKarim.php', 1).'?id='.$ticketId.'&action=edit', '', $permissiontoadd).' ';
+// if($action === "edit"){
+//     $newcardbutton .= dolGetButtonTitle($langs->trans('Exit'), '', 'fa fa-times', dol_buildpath('/ticket/reportOverviewKarim.php', 1).'?id='.$ticketId.'&action=view', '', $permissiontoadd).' ';
+// }else{
+//     $newcardbutton .= dolGetButtonTitle($langs->trans('Exit'), '', 'fa fa-times', dol_buildpath('/ticket/card.php', 1).'?id='.$ticketId, '', $permissiontoadd);
+// }
+$newcardbutton .= dolGetButtonTitle($langs->trans('CreateMail'), '', 'fa fa-envelope', dol_buildpath('/ticket/reportOverviewKarim.php', 1).'?id='.$ticketId.'&action=mail', '', $permissiontoadd);
+echo '<div id="buttonWrapper" style="display: flex; justify-content: flex-end;" class="mb-3 gap-1">'.$newcardbutton.'</div>';
+
 // Change later: Right now we have to manually create report-form and attach form to it when we open an already existing form
 echo "<form id='report-form'>".$form."</form>";
 echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
@@ -116,7 +135,7 @@ echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="ima
     </div>
   </div>
 </div>';
-}else{
+}else if(!$existingReportRes){
 //echo "In second case";
 $reportSQL = "SELECT * FROM llx_reports WHERE projectid = ".$object->fk_project;
 $reportRes = $db->query($reportSQL)->fetch_all();
@@ -137,354 +156,232 @@ echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="ima
   </div>
 </div>';
 }else{
-    echo "no report found";
-    echo "<script>
-        window.location.href = './tecreport.php?id=".$ticketId."';
-    </script>";
-    exit;
+    echo "<h3> Projekt ist keinem Design zugewiesen oder der Techniker hat noch nichts ausgefüllt. </h3>";
+    $basicSQL = "SELECT * FROM llx_reports WHERE rowid = 0";
+    $basicRes = $db->query($basicSQL)->fetch_all();
+    $basicData = $basicRes[0];
+    $form = base64_decode($basicData[2]);
+    
+    $newcardbutton = dolGetButtonTitle($langs->trans('Edit'), '', 'fa fa-edit', dol_buildpath('/ticket/reportOverviewKarim.php', 1).'?id='.$ticketId.'&action=edit', '', $permissiontoadd).' ';
+    echo '<div id="buttonWrapper" style="display: flex; justify-content: flex-end;" class="mb-3 gap-1">'.$newcardbutton.'</div>';
+
+    echo $form;
+
+    
+    echo '
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+            <div class="modal-body p-0">
+                <img src="" id="modalImage" class="img-fluid" alt="Full Size Image">
+            </div>
+            <div class="modal-footer p-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+            </div>
+        </div>
+    </div>';
+
+    // echo "<script>
+    //     window.location.href = './tecreport.php?id=".$ticketId."';
+    // </script>";
+    // exit;
 }
 }
 
 
-
+if($action !== "mail"){
 echo '<script>
-// Define global variables for identifiers
 var ticketId ='.$ticketId.';
 var userId ='.$user->id.';
 var storeId ='.$storeid.';
 var socId = '.$object->fk_soc.';
-
-document.addEventListener("DOMContentLoaded", function() {
-    
-    // draw signatures
- 
-    // Get all <canvas> elements with class .report-element
-    const canvases = document.querySelectorAll("canvas.report-element");
-
-    Array.from(canvases).forEach((canvas) => {
-        setupCanvas(canvas);
-        const context = canvas.getContext("2d");
-        let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-
-        function startDrawing(event) {
-            isDrawing = true;
-            [lastX, lastY] = getCoordinates(event);
-        }
-
-        function draw(event) {
-            if (!isDrawing) return;
-            let [x, y] = getCoordinates(event, canvas);
-
-            // Round to the nearest 0.5 pixel for sharper lines
-            x = Math.round(x * 2) / 2;
-            y = Math.round(y * 2) / 2;
-
-            context.beginPath();
-            context.moveTo(lastX, lastY);
-            context.lineTo(x, y);
-            context.stroke();
-            [lastX, lastY] = [x, y];
-        }
-
-        function stopDrawing() {
-            isDrawing = false;
-        }
-
-        function getCoordinates(event) {
-            const rect = canvas.getBoundingClientRect();
-            let x, y;
-            if (event.touches && event.touches.length > 0) {
-                x = event.touches[0].clientX - rect.left;
-                y = event.touches[0].clientY - rect.top;
-            } else {
-                x = event.clientX - rect.left;
-                y = event.clientY - rect.top;
+var action = "'.$action.'";
+//document.addEventListener("DOMContentLoaded", function() {
+console.log("Document loaded");
+    fetchUploadedImages();
+    if (action === "view") {
+        // View mode
+        disableInputs();
+        hideSaveButtons();
+    } else if(action === "edit") {
+        // Edit mode
+        // After switching to edit mode
+        enableInputs();
+        setupCanvasEvents();
+        // Re-apply the image from params (or a stored variable)
+        params.forEach(param => {
+            if (param.id === canvas.id && param.value.startsWith("data:image")) {
+                const img = new Image();
+                img.onload = function() {
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    context.drawImage(img, 0, 0);
+                };
+                img.src = param.value;
             }
+        });
 
-            // Adjust for device pixel ratio
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
+        setupFileInputs();
+        setupExtendableTables();
+        setupSaveButtons();
+    }
 
-            return [x * scaleX, y * scaleY];
+    // Fetch uploaded images for both modes
+    
+//});
+
+// Function definitions
+
+function hideSaveButtons() {
+    var saveButtons = document.querySelectorAll(\'button#save-form-button-wrapper, button#save-form-button\');
+    saveButtons.forEach(function(button) {
+        button.style.display = "none";
+    });
+}
+
+function removeDeleteButtons() {
+    var deleteButtons = document.querySelectorAll(\'button.btn-danger\');
+    deleteButtons.forEach(function(button) {
+        button.remove();
+    });
+}
+
+function disableInputs() {
+    var inputs = document.querySelectorAll(\'input, select, textarea, button\');
+    inputs.forEach(function(input) {
+        input.disabled = true;
+        if(input.innerHTML === "Close"){
+            input.disabled = false;
         }
-
-
-        canvas.addEventListener("mousedown", startDrawing);
-        canvas.addEventListener("mousemove", draw);
-        canvas.addEventListener("mouseup", stopDrawing);
-        canvas.addEventListener("mouseleave", stopDrawing);
-
-        // Add touch event listeners
-        canvas.addEventListener("touchstart", (event) => {
-            event.preventDefault();
-            startDrawing(event);
-        });
-        canvas.addEventListener("touchmove", (event) => {
-            event.preventDefault();
-            draw(event);
-        });
-        canvas.addEventListener("touchend", stopDrawing);
-        canvas.addEventListener("touchcancel", stopDrawing);
     });
 
-    // end draw signatures
-    // Clear canvas
-    // Only clear the canvas that was clicked
+    // Disable canvas drawing
+    var canvases = document.querySelectorAll(\'canvas.report-element\');
+    canvases.forEach(function(canvas) {
+        canvas.style.pointerEvents = \'none\';
+    });
+}
 
-    function clearCanvas(canvasId) {
-        const canvas = document.getElementById(canvasId);
-        if (canvas) {
-            const context = canvas.getContext("2d");
-            context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            setupCanvas(canvas); // Re-setup canvas after clearing
-        } else {
-            console.warn(`Canvas element with id "${canvasId}" not found`);
-        }
-    }
-
-    // Function to set up the canvas for high-DPI displays
-    function setupCanvas(canvas) {
-        const ctx = canvas.getContext(\'2d\');
-        const rect = canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-
-        // Set the canvas width and height to the CSS size multiplied by DPR
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-
-        // Scale the context to ensure correct drawing operations
-        ctx.scale(dpr, dpr);
-
-        // Optional: Set default styles
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 3; // This will remain consistent after scaling
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-    }
-
-    // Query to enable all input type text and checkbox
-    var inputs = document.querySelectorAll("input[type=text], input[type=checkbox], input[type=radio]");
+function enableInputs() {
+    var inputs = document.querySelectorAll(\'input[type=text], input[type=checkbox], input[type=radio], select, textarea\');
     inputs.forEach(function(input) {
         input.disabled = false;
     });
+}
 
+function setupCanvasEvents() {
+    var canvases = document.querySelectorAll(\'canvas.report-element\');
+    canvases.forEach(function(canvas) {
+        setupCanvasEventForCanvas(canvas);
+    });
+}
 
-    // Function to display a single uploaded image
-    function displayUploadedImage(image, container) {
-        console.log("Displaying image:", image);
-        const colDiv = document.createElement("div");
-        colDiv.classList.add("col-3", "col-md-3", "mt-2", "text-center");
+function setupCanvasEventForCanvas(canvas) {
+    setupCanvas(canvas);
+    const context = canvas.getContext("2d");
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
 
-        const img = document.createElement("img");
-        // Important because this was super annoying to figure out:  We need to add the timestamp to the image URL to prevent caching
-        // If we do not do this, then after overwriting an image, the browser will still show the old image from cache
-        img.src = "formsImages/" + encodeURIComponent(image.filename) + "?t=" + new Date().getTime();
-        console.log("Image URL:", img.src);
-        img.style.width = "100%";
-        img.style.height = "13rem";
-        img.onerror = function() {
-            console.error("Failed to load image:", img.src);
-        };
-        img.onload = function() {
-            console.log("Image loaded successfully:", img.src);
-        };
-        img.onclick = function() {
-            showImageFull(img.src);
-        };
+    canvas.addEventListener("mousedown", startDrawing);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("mouseup", stopDrawing);
+    canvas.addEventListener("mouseleave", stopDrawing);
 
-        const deleteButton = document.createElement("button");
-        deleteButton.classList.add("btn", "btn-danger", "mt-2");
-        deleteButton.style.fontSize = "10px";
-        deleteButton.style.padding = "5px";
-        deleteButton.textContent = "Delete";
-        deleteButton.type = "button";
-        deleteButton.onclick = function() {
-            deleteImage(image.filename, colDiv, image.inputId);
-        };
+    // Add touch event listeners
+    canvas.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        startDrawing(event);
+    });
+    canvas.addEventListener("touchmove", (event) => {
+        event.preventDefault();
+        draw(event);
+    });
+    canvas.addEventListener("touchend", stopDrawing);
+    canvas.addEventListener("touchcancel", stopDrawing);
 
-        colDiv.appendChild(img);
-        colDiv.appendChild(deleteButton);
-        container.appendChild(colDiv);
+    function startDrawing(event) {
+        isDrawing = true;
+        [lastX, lastY] = getCoordinates(event, canvas);
     }
 
-    // Function to show the image in full size
-    function showImageFull(src) {
-        const modalImage = document.getElementById("modalImage");
-        modalImage.src = src;
+    function draw(event) {
+        if (!isDrawing) return;
+        let [x, y] = getCoordinates(event, canvas);
 
-        // Initialize and show the modal using Bootstraps JavaScript API
-        const imageModal = new bootstrap.Modal(document.getElementById(\'imageModal\'), {
-            keyboard: true
-        });
-        imageModal.show();
+        // Round to the nearest 0.5 pixel for sharper lines
+        x = Math.round(x * 2) / 2;
+        y = Math.round(y * 2) / 2;
+
+        context.beginPath();
+        context.moveTo(lastX, lastY);
+        context.lineTo(x, y);
+        context.stroke();
+        [lastX, lastY] = [x, y];
     }
 
-    // Function to upload files via AJAX
-    function uploadFiles(files, fileInput, uploadedImagesContainer) {
-        const formData = new FormData();
-        // Grab the div with the attribute data-element-id = fileInput.id
-        const parentWrapper = fileInput.parentElement;
-        // Grab label which is child of parentWrapper
-        const label = parentWrapper.querySelector("label");
-        const inputId = label.innerHTML || "unknown";
-        const imageType = inputId;
+    function stopDrawing() {
+        isDrawing = false;
+    }
 
-        // Append files to formData
-        for (let i = 0; i < files.length; i++) {
-            formData.append("files[]", files[i]);
+    function getCoordinates(event, canvas) {
+        const rect = canvas.getBoundingClientRect();
+        let x, y;
+        if (event.touches && event.touches.length > 0) {
+            x = event.touches[0].clientX - rect.left;
+            y = event.touches[0].clientY - rect.top;
+        } else {
+            x = event.clientX - rect.left;
+            y = event.clientY - rect.top;
         }
 
-        // Add additional data
-        formData.append("imageType", imageType);
-        formData.append("action", "upload_images");
-        formData.append("mode", "image");
-        formData.append("ticketId", ticketId);
-        formData.append("userId", userId);
-        formData.append("storeId", storeId);
-        formData.append("socId", socId);
+        // Adjust for device pixel ratio
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
 
-        $.ajax({
-            url: "tecform.php",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                console.log(response);
-                if (response.status === \'success\') {
-                    // Update uploaded images data
-                    const imagesList = response.images;
-                    window.uploadedImagesData = imagesList;
-
-                    // Clear and update the UI
-                    uploadedImagesContainer.innerHTML = "";
-                    imagesList.forEach(imageNode => {
-                        if (imageNode.type === imageType) {
-                            imageNode.images.forEach(filename => {
-                                const image = { filename: filename, inputId: inputId };
-                                displayUploadedImage(image, uploadedImagesContainer);
-                            });
-                        }
-                    });
-
-                    //fileInput.value = "";
-                } else {
-                    alert("Upload failed: " + response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error("Request failed with status: " + xhr.status + ", Error: " + error);
-                alert("An error occurred during the upload.");
-            }
-        });
+        return [x * scaleX, y * scaleY];
     }
+}
 
-    // Function to delete an image via AJAX
-    function deleteImage(filename, imageElement, inputId) {
-        const formData = new FormData();
-        formData.append("action", "delete_image");
-        formData.append("mode", "image");
-        formData.append("filename", filename);
-        formData.append("imageType", inputId);
-        formData.append("ticketId", ticketId);
-        formData.append("userId", userId);
-        formData.append("storeId", storeId);
-        formData.append("socId", socId);
+    // Function to set up the canvas for high-DPI displays
+function setupCanvas(canvas) {
+    const ctx = canvas.getContext(\'2d\');
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
 
-        $.ajax({
-            url: "tecform.php",
-            type: "POST",
-            data: formData,
-            processData: false, // Prevent jQuery from processing the data
-            contentType: false, // Prevent jQuery from setting the content type
-            success: function(response) {
-                console.log("Delete Image Response:", response);
-                if (response.status === \'success\') {
-                    // Remove the image element from the UI
-                    imageElement.remove();
+    // Set the canvas width and height to the CSS size multiplied by DPR
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
 
-                    // Update the global uploadedImagesData array
-                    window.uploadedImagesData = window.uploadedImagesData.filter(node => {
-                        if (node.type === inputId) {
-                            node.images = node.images.filter(img => img !== filename);
-                            return node.images.length > 0;
-                        }
-                        return true;
-                    });
-                } else {
-                    // Display an error message if deletion failed
-                    alert("Deletion failed: " + response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error("AJAX Error - Status:", status, "Error:", error);
-                alert("An error occurred during deletion.");
-            }
-        });
+    // Scale the context to ensure correct drawing operations
+    ctx.scale(dpr, dpr);
+
+    // Optional: Set default styles
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3; // This will remain consistent after scaling
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+}
+
+function clearCanvas(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (canvas) {
+        const context = canvas.getContext("2d");
+        context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        setupCanvas(canvas); // Re-setup canvas after clearing
+        
+    } else {
+        console.warn(`Canvas element with id "${canvasId}" not found`);
     }
+}
 
-    // Function to fetch images via AJAX
-    function fetchUploadedImages() {
-        console.log("Fetching uploaded images...");
-        const formData = new FormData();
-        formData.append("action", "fetch_images");
-        formData.append("mode", "image");
-        formData.append("ticketId", ticketId);
-        formData.append("userId", userId);
-        formData.append("storeId", storeId);
-        formData.append("socId", socId);
-
-        $.ajax({
-            url: "tecform.php",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                console.log(response);
-                if (response.status === \'success\') {
-                    window.uploadedImagesData = response.images || [];
-                    window.uploadedImagesData.forEach(imageNode => {
-                        const inputId = imageNode.type;
-                        // Search for wrapper with label.innerHTML = inputId
-                        const labels = document.querySelectorAll(\'label\');
-                        const label = Array.from(labels).find(label => label.innerHTML === inputId);
-                        const wrapper = label.parentElement;
-                        const fileInput = wrapper.querySelector(\'input[type="file"]\');
-                        if (fileInput) {
-                            let uploadedImagesContainer = fileInput.parentElement.querySelector(\'.uploaded-images-container\');
-                            if (!uploadedImagesContainer) {
-                                uploadedImagesContainer = document.createElement(\'div\');
-                                uploadedImagesContainer.classList.add(\'uploaded-images-container\', \'row\');
-                                fileInput.parentElement.appendChild(uploadedImagesContainer);
-                            }
-                            imageNode.images.forEach(filename => {
-                                const image = { filename: filename, inputId: inputId };
-                                displayUploadedImage(image, uploadedImagesContainer);
-                            });
-                        }
-                    });
-                } else {
-                    console.error(\'Failed to fetch uploaded images:\', response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error("Request failed with status: " + xhr.status + ", Error: " + error);
-            }
-        });
-    }
-
-    // Call fetchUploadedImages when the page loads
-    fetchUploadedImages();
-
-    // Handle file inputs on initial load
+function setupFileInputs() {
     var fileInputs = document.querySelectorAll(\'input[type="file"]\');
     fileInputs.forEach(function(input) {
         input.accept = ".jpg, .png";
         input.disabled = false;
+
         let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
         if (!uploadedImagesContainer) {
             uploadedImagesContainer = document.createElement("div");
@@ -495,9 +392,6 @@ document.addEventListener("DOMContentLoaded", function() {
         // Attach change event listener to this file input
         input.addEventListener("change", function() {
             const files = input.files;
-            // if (files.length > 0 && files.length < 2) {
-            //     uploadFiles(files, input, uploadedImagesContainer);
-            // }
             if (files.length > 1) {
                 alert("Bitte nur eine Datei auswählen."); // "Please select only one file."
                 input.value = ""; // Reset the input
@@ -508,10 +402,9 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     });
+}
 
-    // Code to handle tables that should be extendable by the technician
-    // (Assuming this code is correct and required)
-
+function setupExtendableTables() {
     var extendableTables = document.querySelectorAll(\'table[data-extendable="true"]\');
     extendableTables.forEach(function(table) {
         var parentDiv = table.parentElement;
@@ -550,223 +443,376 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     });
+}
 
     // Function to update IDs and names in the new row
-    function updateRowAttributes(row, rowIndex) {
-        var inputs = row.querySelectorAll("input, select, textarea");
-        inputs.forEach(function(input) {
-            var name = input.getAttribute("name");
-            if (name) {
-                var newName = name.replace(/(\d+)/g, function(match) {
-                    return parseInt(match) + rowIndex;
-                });
-                input.setAttribute("name", newName);
-            }
+function updateRowAttributes(row, rowIndex) {
+    var inputs = row.querySelectorAll("input, select, textarea");
+    inputs.forEach(function(input) {
+        var name = input.getAttribute("name");
+        if (name) {
+            var newName = name.replace(/(\d+)/g, function(match) {
+                return parseInt(match) + rowIndex;
+            });
+            input.setAttribute("name", newName);
+        }
 
-            var id = input.getAttribute("id");
-            if (id) {
-                var newId = id.replace(/(\d+)/g, function(match) {
-                    return parseInt(match) + rowIndex;
-                });
-                input.setAttribute("id", newId);
-            }
+        var id = input.getAttribute("id");
+        if (id) {
+            var newId = id.replace(/(\d+)/g, function(match) {
+                return parseInt(match) + rowIndex;
+            });
+            input.setAttribute("id", newId);
+        }
 
-            if (input.type === "checkbox" || input.type === "radio") {
-                input.checked = false;
-            } else {
-                input.value = "";
-            }
-        });
-    }
+        if (input.type === "checkbox" || input.type === "radio") {
+            input.checked = false;
+        } else {
+            input.value = "";
+        }
+    });
+}
 
     // Function to reattach event listeners to inputs in the new row
-    function reattachEventListeners(row) {
-        var fileInputs = row.querySelectorAll(\'input[type="file"]\');
-        fileInputs.forEach(function(input) {
-            input.accept = ".jpg, .png";
-            input.disabled = false;
-            const uploadedImagesContainer = document.createElement("div");
-            uploadedImagesContainer.classList.add("uploaded-images-container", "row");
-            input.parentElement.appendChild(uploadedImagesContainer);
+function reattachEventListeners(row) {
+    var fileInputs = row.querySelectorAll(\'input[type="file"]\');
+    fileInputs.forEach(function(input) {
+        input.accept = ".jpg, .png";
+        input.disabled = false;
+        const uploadedImagesContainer = document.createElement("div");
+        uploadedImagesContainer.classList.add("uploaded-images-container", "row");
+        input.parentElement.appendChild(uploadedImagesContainer);
 
-            // Attach change event listener to this file input
-            input.addEventListener("change", function() {
-                const files = input.files;
-                if (files.length > 0) {
-                    uploadFiles(files, input, uploadedImagesContainer);
-                }
-            });
+        // Attach change event listener to this file input
+        input.addEventListener("change", function() {
+            const files = input.files;
+            if (files.length > 0) {
+                uploadFiles(files, input, uploadedImagesContainer);
+            }
         });
+    });
+}
+
+function setupSaveButtons() {
+    const form = document.getElementById("report-form");
+    const submitButton = form.querySelector("button#save-form-button-wrapper");
+    submitButton.type = "button";
+    const saveStayButton = form.querySelector("button#save-form-button");
+    saveStayButton.type = "button";
+    form.appendChild(saveStayButton);
+    form.appendChild(submitButton);
+
+    // Set up event listeners
+    submitButton.addEventListener("click", saveFormAndExit);
+
+    saveStayButton.addEventListener("click", function(event) {
+        event.preventDefault();
+        saveForm(function() {
+            // After saving, redirect to the same page with action=view
+            //window.location.href = window.location.pathname + \'?id=\' + ticketId + \'&action=edit\';
+        });
+    });
+}
+
+function saveFormAndExit(event) {
+    event.preventDefault();
+    saveForm(function() {
+        // Redirect after saving
+        window.location.href = "'.DOL_MAIN_URL_ROOT.'/ticket/reportOverviewKarim.php?id=" + ticketId + "&action=view";
+    });
+}
+
+function saveForm(callback) {
+    event.preventDefault(); // Prevent default form submission
+    
+    const form = document.getElementById("report-form");
+
+    // Clone the form to manipulate it without affecting the DOM
+    const formClone = form.cloneNode(true);
+
+    // Remove dynamically added image elements
+    const uploadedImagesContainers = formClone.querySelectorAll(\'.uploaded-images-container\');
+    uploadedImagesContainers.forEach(container => container.remove());
+
+    // Now get the HTML of the cloned form without images
+    //const formHtml = formClone.innerHTML;
+    const originalElements = form.querySelectorAll(\'.report-element\');
+
+    let parameters = [];
+    const uploadedImages = window.uploadedImagesData || [];
+
+    // Capture form data
+    const elements = formClone.querySelectorAll(\'.report-element\');
+    originalElements.forEach((element) => {
+        const id = element.id;
+        let value = "";
+        if (element.type === "checkbox" || element.type === "radio") {
+            value = element.checked;
+            parameters.push({ id: id, value: value });
+        } else if (element.type === "file") {
+            // No action needed for file inputs
+        } else if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
+            value = element.value;
+            parameters.push({ id: id, value: value });
+            console.log("Element:", element, "Value:", value);
+        } else if (element.tagName === "CANVAS") {
+            var dataURL = element.toDataURL();
+            parameters.push({ id: id, value: dataURL });
+        } else {
+            // For other elements, save their innerHTML if needed
+            value = element.innerHTML;
+            // parameters.push({ id: id, value: value }); // Uncomment if necessary
+        }
+    });
+
+     const formHtml = formClone.innerHTML;
+
+    // Prepare form data for AJAX
+    const formData = new FormData();
+    formData.append("form", formHtml); // Use the HTML without images
+    formData.append("parameters", JSON.stringify(parameters));
+    formData.append("uploadedImages", JSON.stringify(uploadedImages));
+
+    formData.append("storeId", storeId);
+    formData.append("userId", userId);
+    formData.append("ticketId", ticketId);
+    formData.append("socId", socId);
+    // AJAX request to save the form
+    $.ajax({
+        url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.status === \'success\') {
+                alert("Report saved successfully");
+                console.log("Save Response:", response);
+                if (typeof callback === \'function\') {
+                    callback();
+                }
+            } else {
+                console.error("Server Error:", response.message);
+                alert("Save failed: " + response.message);
+            }
+            
+        },
+        error: function(xhr, status, error) {
+            console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+        }
+    });
+}
+
+// Function to fetch images via AJAX
+function fetchUploadedImages() {
+    console.log("Fetching uploaded images...");
+    const formData = new FormData();
+    formData.append("action", "fetch_images");
+    formData.append("mode", "image");
+    formData.append("ticketId", ticketId);
+    formData.append("userId", userId);
+    formData.append("storeId", storeId);
+    formData.append("socId", socId);
+
+    $.ajax({
+        url: "'.DOL_URL_ROOT.'/tecform.php",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+                console.log(response);
+            if (response.status === \'success\') {
+                const imagesArray = Object.values(response.images);
+                window.uploadedImagesData = imagesArray;
+                window.uploadedImagesData.forEach(imageNode => {
+                    const inputId = imageNode.type;
+                    // Search for wrapper with label.innerHTML = inputId
+                    const labels = document.querySelectorAll(\'label\');
+                    const label = Array.from(labels).find(label => label.innerHTML === inputId);
+                    const wrapper = label.parentElement;
+                    const fileInput = wrapper.querySelector(\'input[type="file"]\');
+                    if (fileInput) {
+                        let uploadedImagesContainer = fileInput.parentElement.querySelector(\'.uploaded-images-container\');
+                        if (!uploadedImagesContainer) {
+                            uploadedImagesContainer = document.createElement(\'div\');
+                            uploadedImagesContainer.classList.add(\'uploaded-images-container\', \'row\');
+                            fileInput.parentElement.appendChild(uploadedImagesContainer);
+                        }
+                        imageNode.images.forEach(filename => {
+                            const image = { filename: filename, inputId: inputId };
+                            displayUploadedImage(image, uploadedImagesContainer);
+                        });
+                    }
+                });
+            } else {
+                console.error(\'Failed to fetch uploaded images:\', response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+        }
+    });
+}
+
+    // Function to display a single uploaded image
+function displayUploadedImage(image, container) {
+    console.log("Displaying image:", image);
+    const colDiv = document.createElement("div");
+    colDiv.classList.add("col-3", "col-md-3", "mt-2", "text-center");
+
+    const img = document.createElement("img");
+    img.src = "'.DOL_MAIN_URL_ROOT.'/formsImages/" + encodeURIComponent(image.filename) + "?t=" + new Date().getTime();
+    console.log("Image url:", img.src);
+    img.style.width = "100%";
+    img.style.height = "13rem";
+    img.onerror = function() {
+        console.error("Failed to load image:", img.src);
+    };
+    img.onload = function() {
+        console.log("Image loaded successfully:", img.src);
+    };
+    img.onclick = function() {
+        showImageFull(img.src);
+    };
+
+    const deleteButton = document.createElement("button");
+    deleteButton.classList.add("btn", "btn-danger", "mt-2");
+    deleteButton.style.fontSize = "10px";
+    deleteButton.style.padding = "5px";
+    deleteButton.textContent = "Delete";
+    deleteButton.type = "button";
+    deleteButton.onclick = function() {
+        deleteImage(image.filename, colDiv, image.inputId);
+    };
+
+    colDiv.appendChild(img);
+    if(action === "edit"){
+        colDiv.appendChild(deleteButton);
+    }else{
+        deleteButton.style.display = "none";
+    }
+    container.appendChild(colDiv);
+}
+
+function showImageFull(src) {
+    const modalImage = document.getElementById("modalImage");
+    modalImage.src = src;
+
+    const imageModal = new bootstrap.Modal(document.getElementById(\'imageModal\'), {
+        keyboard: true
+    });
+    imageModal.show();
+}
+
+function uploadFiles(files, fileInput, uploadedImagesContainer) {
+    const formData = new FormData();
+    const parentWrapper = fileInput.parentElement;
+    const label = parentWrapper.querySelector("label");
+    const inputId = label.innerHTML || "unknown";
+    const imageType = inputId;
+
+    for (let i = 0; i < files.length; i++) {
+        formData.append("files[]", files[i]);
     }
 
-    // Function to save the form
-const saveFormButtonWrapper = document.getElementById("save-form-button-wrapper");
-saveFormButtonWrapper.addEventListener("click", (event) => {
-    event.preventDefault(); // Prevent default form submission
-    
-    const form = document.getElementById("report-form");
-
-    // Clone the form to manipulate it without affecting the DOM
-    const formClone = form.cloneNode(true);
-
-    // Remove dynamically added image elements
-    const uploadedImagesContainers = formClone.querySelectorAll(\'.uploaded-images-container\');
-    uploadedImagesContainers.forEach(container => container.remove());
-
-    // Now get the HTML of the cloned form without images
-    const formHtml = formClone.innerHTML;
-
-    let parameters = [];
-    const uploadedImages = window.uploadedImagesData || [];
-
-    // Capture form data
-    const elements = formClone.querySelectorAll(\'.report-element\');
-    elements.forEach((element) => {
-        const id = element.id;
-        let value = "";
-        if (element.type === "checkbox" || element.type === "radio") {
-            value = element.checked;
-            parameters.push({ id: id, value: value });
-        } else if (element.type === "file") {
-            // No action needed for file inputs
-        } else if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
-            value = element.value;
-            parameters.push({ id: id, value: value });
-        }else if(element.tagName === "CANVAS"){
-            var dataURL = element.toDataURL();
-            parameters.push({ id: id, value: dataURL });
-
-        }else {
-            // For other elements, save their innerHTML if needed
-            value = element.innerHTML;
-            // parameters.push({ id: id, value: value }); // Uncomment if necessary
-        }
-    });
-
-    // Prepare form data for AJAX
-    const formData = new FormData();
-    formData.append("form", formHtml); // Use the HTML without images
-    formData.append("parameters", JSON.stringify(parameters));
-    formData.append("uploadedImages", JSON.stringify(uploadedImages));
-
-    formData.append("storeId", storeId);
-    formData.append("userId", userId);
+    formData.append("imageType", imageType);
+    formData.append("action", "upload_images");
+    formData.append("mode", "image");
     formData.append("ticketId", ticketId);
+    formData.append("userId", userId);
+    formData.append("storeId", storeId);
     formData.append("socId", socId);
 
-    // AJAX request to save the form
     $.ajax({
-        url: "tecform.php",
+        url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
         type: "POST",
         data: formData,
         processData: false,
         contentType: false,
         success: function(response) {
-            if(response.status === \'success\') {
-                alert("Report saved successfully");
-                window.location.href = "index.php";
+            console.log(response);
+            if (response.status === \'success\') {
+                    // Update uploaded images data
+                    const imagesList = Object.values(response.images);
+                    window.uploadedImagesData = imagesList;
+
+                    // Clear and update the UI
+                uploadedImagesContainer.innerHTML = "";
+                imagesList.forEach(imageNode => {
+                    if (imageNode.type === imageType) {
+                        imageNode.images.forEach(filename => {
+                            const image = { filename: filename, inputId: inputId };
+                            displayUploadedImage(image, uploadedImagesContainer);
+                        });
+                    }
+                });
             } else {
-                console.error("Server Error:", response.message);
-                alert("Save failed: " + response.message);
+                alert("Upload failed: " + response.message);
             }
         },
         error: function(xhr, status, error) {
             console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+            alert("An error occurred during the upload.");
         }
     });
-});
+}
 
-const saveStayButton = document.getElementById("save-form-button");
-saveStayButton.addEventListener("click", (event) => {
-    event.preventDefault(); // Prevent default form submission
-    
-    const form = document.getElementById("report-form");
-
-    // Clone the form to manipulate it without affecting the DOM
-    const formClone = form.cloneNode(true);
-
-    // Remove dynamically added image elements
-    const uploadedImagesContainers = formClone.querySelectorAll(\'.uploaded-images-container\');
-    uploadedImagesContainers.forEach(container => container.remove());
-
-    // Now get the HTML of the cloned form without images
-    const formHtml = formClone.innerHTML;
-
-    let parameters = [];
-    const uploadedImages = window.uploadedImagesData || [];
-
-    // Capture form data
-    const elements = formClone.querySelectorAll(\'.report-element\');
-    elements.forEach((element) => {
-        const id = element.id;
-        let value = "";
-        if (element.type === "checkbox" || element.type === "radio") {
-            value = element.checked;
-            parameters.push({ id: id, value: value });
-        } else if (element.type === "file") {
-            // No action needed for file inputs
-        } else if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
-            value = element.value;
-            parameters.push({ id: id, value: value });
-        }else if(element.tagName === "CANVAS"){
-            var dataURL = element.toDataURL();
-            parameters.push({ id: id, value: dataURL });
-
-        }else {
-            // For other elements, save their innerHTML if needed
-            value = element.innerHTML;
-            // parameters.push({ id: id, value: value }); // Uncomment if necessary
-        }
-    });
-
-    // Prepare form data for AJAX
+    // Function to delete an image via AJAX
+function deleteImage(filename, imageElement, inputId) {
     const formData = new FormData();
-    formData.append("form", formHtml); // Use the HTML without images
-    formData.append("parameters", JSON.stringify(parameters));
-    formData.append("uploadedImages", JSON.stringify(uploadedImages));
-
-    formData.append("storeId", storeId);
-    formData.append("userId", userId);
+    formData.append("action", "delete_image");
+    formData.append("mode", "image");
+    formData.append("filename", filename);
+    formData.append("imageType", inputId);
     formData.append("ticketId", ticketId);
+    formData.append("userId", userId);
+    formData.append("storeId", storeId);
     formData.append("socId", socId);
 
-    // AJAX request to save the form
     $.ajax({
-        url: "tecform.php",
+        url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
         type: "POST",
         data: formData,
-        processData: false,
-        contentType: false,
+            processData: false, // Prevent jQuery from processing the data
+            contentType: false, // Prevent jQuery from setting the content type
         success: function(response) {
-            if(response.status === \'success\') {
-                alert("Erfolgreich gespeichert");
+            console.log("Delete Image Response:", response);
+            if (response.status === \'success\') {
+                    // Remove the image element from the UI
+                imageElement.remove();
+
+                    // Update the global uploadedImagesData array
+                window.uploadedImagesData = window.uploadedImagesData.filter(node => {
+                    if (node.type === inputId) {
+                        node.images = node.images.filter(img => img !== filename);
+                        return node.images.length > 0;
+                    }
+                    return true;
+                });
             } else {
-                console.error("Server Error:", response.message);
-                alert("Save failed: " + response.message);
+                    // Display an error message if deletion failed
+                alert("Deletion failed: " + response.message);
             }
         },
         error: function(xhr, status, error) {
-            console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+            console.error("AJAX Error - Status:", status, "Error:", error);
+            alert("An error occurred during deletion.");
         }
     });
-});
-
-
-}); // End of DOMContentLoaded event listener
-</script>';
+}
+</script>
+';
 
 echo '<style>
-.signature-canvas {
-    border: 1px solid #ccc;
-};
 canvas {
-    border: 1px solid #ccc;
+    border: 1px solid black;
     width: 600px;   /* Desired display width */
     height: 200px;  /* Desired display height */
 }
 </style>';
-
-if(!$existingReportRes){
+}
+if(!$existingReportRes && $action !== "mail"){
 
 echo '<script>
     const form = document.getElementById("report-form");
@@ -780,9 +826,10 @@ echo '<script>
     saveStayButton.id = "save-form-button";
     form.appendChild(saveStayButton);
     form.appendChild(submitButton);
+    setupSaveButtons();
     
     // Switch to handle the dynamically generated content
-
+    
     let dynamicDisplays = document.querySelectorAll([\'[data-content-type]\']);
     dynamicDisplays.forEach((element) => {
         var text = element.innerHTML.toLowerCase();
@@ -794,6 +841,16 @@ echo '<script>
                 case "filiale":
                     element.innerHTML = "Filiale: '.$store->b_number.'";
                     break;
+                case "tickettyp":
+                case "ticketart":
+                    element.innerHTML = "Ticketart: '.$object->type_label.'";
+                    break;
+                case "termin":
+                    element.innerHTML = "Termindatum: '.date('d.m.y', $object->array_options["options_dateofuse"]).'";
+                    break;
+                case "Themengruppe":
+                    element.innerHTML = "Themengruppe: '.$object->category_code.'";
+                    break;
                 case "ticketnummer":
                     element.innerHTML = "Ticketnummer: '.$object->ref.'";
                     break;
@@ -803,8 +860,12 @@ echo '<script>
                 case "kundenname":
                     element.innerHTML = "Kundenname: '.$store->customer_name.'";
                     break;
-                case "projektname":
-                    element.innerHTML = "Projektname: '.$project->title.'";
+                case "name":
+                    element.innerHTML = "'.$project->title.'";
+                    break;
+                case "stop":
+                case "stopp":
+                    element.innerHTML = "Stopp: '.$object->array_options["options_stopnummer"].'";
                     break;
                 case "datum":
                     element.innerHTML = "Datum: '.date("d.m.y H:i", $object->datec).'";
@@ -813,7 +874,6 @@ echo '<script>
                     element.innerHTML = "Uhrzeit: '.dol_print_date($object->date_creation, 'hour').'";
                     break;
                 case "priorität":
-                    element.innerHTML = "Priorität: '.$object->priority.'";
                     break;
                 case "dringlichkeit":
                     element.innerHTML = "Dringlichkeit: '.$object->severity_code.'";
@@ -821,9 +881,10 @@ echo '<script>
                 case "kategorie":
                     element.innerHTML = "Kategorie: '.$object->category_label.'";
                     break;
-                case "beschreibung":
+                case "auftrag":
                     element.innerHTML = "Auftrag: '.$object->message.'";
                     break;
+                case "strasse":
                 case "straße":
                     element.innerHTML = "Straße: '.$store->street.', '.$store->house_number.'";
                     break;
@@ -831,6 +892,7 @@ echo '<script>
                     element.innerHTML = "Hnr: '.$store->house_number.'";
                     break;
                 case "stadt":
+                case "ort":
                     element.innerHTML = "Ort: '.$store->city.', '.$store->zip_code.'";
                     break;
                 case "plz":
@@ -840,6 +902,7 @@ echo '<script>
                     element.innerHTML = "Ext. Ticketnummer: '.$object->array_options["options_externalticketnumber"].'";
                     break;
                 case "telefonnummer":
+                case "tel":
                     element.innerHTML = "Tel.Nummer: '.$store->phone.'";
                     break;
                 default:
@@ -853,7 +916,7 @@ echo '<script>
 
     
     </script>';
-}else{
+}else if($existingReportRes){
 echo 
     '<script>
         const form = document.getElementById("report-form");
@@ -896,5 +959,15 @@ echo
                 }
             }
         });
+        //setupSaveButtons();
     </script>';
+    if($action === "mail"){
+       
+        echo "
+        <script>
+            document.getElementById('report-form').style.display = 'none';
+        </script>";
+        echo "<br>";
+        echo "Noch nicht implementiert";
+    }
 }
