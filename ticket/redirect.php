@@ -103,8 +103,16 @@ if($result){
         window.location.href = './reportOverviewKarim.php?id=".$object->id."&action=view';
     </script>";
 }else{
+    if($project->title == "ROS VKST4.0" || $project->thirdparty_name == "ZETA Display"){
     print "
-    <script>
-        window.location.href = './reportOverview.php?id=".$object->id."&action=view';
-    </script>";
+        <script>
+            window.location.href = './reportOverview.php?id=".$object->id."&action=view';
+        </script>";
+    }else{
+        print "
+        <script>
+            window.location.href = './reportOverviewKarim.php?id=".$object->id."&action=view';
+        </script>";
+    }
+    
 }
