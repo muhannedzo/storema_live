@@ -31,6 +31,7 @@ define('CSRFCHECK_WITH_TOKEN', 1); // We force need to use a token to login when
 require 'main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formother.class.php';
 dol_include_once('/ticket/class/ticket.class.php');
+dol_include_once('/projet/class/project.class.php');
 require_once DOL_DOCUMENT_ROOT.'/custom/stores/class/branch.class.php';
 
 // If not defined, we select menu "home"
@@ -92,6 +93,7 @@ $sql = "SELECT COUNT(*) FROM llx_ticket WHERE fk_user_assign = ".$user->id;
 $result = $db->query($sql)->fetch_all()[0];
 // var_dump($result);
 if($user->socid || $result[0] != "0") {
+	$sort = GETPOST('sort');
 	//Muhannad code
 	//show user tickets.
 	print load_fiche_titre('&nbsp;', $resultboxes['selectboxlist'], '', 0, '', 'titleforhome');
@@ -113,7 +115,7 @@ if($user->socid || $result[0] != "0") {
 
 	$object = new Ticket($db);
 
-	$sql = "SELECT t.rowid, t.ref, t.track_id, t.fk_soc, third.nom, t.datec, t.subject, t.type_code, t.category_code, t.severity_code, t.fk_statut, t.progress,";
+	$sql = "SELECT t.rowid, t.ref, t.track_id, t.fk_soc, third.nom, t.datec, t.subject, t.type_code, t.category_code, t.severity_code, t.fk_statut, t.progress,te.stopnummer,";
 	$sql .= " type.code as type_code, type.label as type_label, te.datehour, te.datemin,te.dateofuse,";
 	$sql .= " category.code as category_code, category.label as category_label,";
 	$sql .= " severity.code as severity_code, severity.label as severity_label,";
@@ -128,7 +130,18 @@ if($user->socid || $result[0] != "0") {
 	$sql .= ' WHERE t.entity IN ('.getEntity('ticket').')';
 	$sql .= ' AND fk_user_assign = '.$user->id;
 	$sql .= ' AND t.fk_statut != 8';
-	$sql .= $db->order("te.dateofuse", "ASC");
+	if(isset($sort) && $sort == "installation_asc"){
+		$sql .= $db->order("te.dateofuse", "ASC");
+	}
+	if(isset($sort) && $sort == "installation_desc"){
+		$sql .= $db->order("te.dateofuse", "DESC");
+	}
+	if(isset($sort) && $sort == "stop_asc"){
+		$sql .= $db->order("te.stopnummer", "ASC");
+	}
+	if(isset($sort) && $sort == "stop_desc"){
+		$sql .= $db->order("te.stopnummer", "DESC");
+	}
 
 	$result = $db->query($sql);
 
@@ -138,101 +151,130 @@ if($user->socid || $result[0] != "0") {
 		$i = 0;
 
 		// $transRecordedType = $langs->trans("LatestNewTickets", $max);
-
-		print '<div class="div-table-responsive-no-min">';
-		print '<table class="noborder centpercent">';
-		print '<tr class="liste_titre"><th colspan="6">'.$langs->trans("yourtickets").'</th>';
-		print '</tr>';
-		if ($num > 0) {
-			while ($i < $num) {
-				$objp = $db->fetch_object($result);
-				
-				$object->id = $objp->rowid;
-				$object->ref = $objp->ref;
-				$object->track_id = $objp->track_id;
-				$object->fk_statut = $objp->fk_statut;
-				$object->progress = $objp->progress;
-				$object->subject = $objp->subject;
-				$object->fk_soc = $objp->fk_soc;
-				$object->fk_store = $objp->fk_store;
-				$object->datehour = $objp->datehour;
-				$object->datemin = $objp->datemin;
-				$object->dateofuse = $objp->dateofuse;
-				$store = new Branch($db);
-				$store->fetch($objp->fk_store);
-				
-				// Karim's code: Query through the llx_reports to see if a design has been assigned to the proj of this ticket. If not, show muhannad tecreport
-				$newObj = new Ticket($db);
-				$newObj->fetch($objp->rowid);
-				$sql = "SELECT * FROM llx_reports WHERE projectid = ".$newObj->fk_project;
-				$result2 = $db->query($sql)->fetch_all()[0];
-				echo "<br>";
-				print '<tr class="oddeven" colspan="6">';
-
-				// Ref
-				print '<td class="nowraponall">';
-				print $object->getNomUrl(1);
-				print "</td>\n";
-
-				// Creation date
-				print '<td class="left">';
-				print dol_print_date($db->jdate($objp->dateofuse), 'day').' '.$object->datehour.':'.$object->datemin;
-				print "</td>";
-
-				// Severity
-				print '<td class="nowrap">';
-				$s = $langs->getLabelFromKey($db, 'TicketSeverityShort'.$objp->severity_code, 'c_ticket_severity', 'code', 'label', $objp->severity_code);
-				print '<span title="'.dol_escape_htmltag($s).'">'.$objp->severity_code.'</span>';
-				print "</td>";
-
-				// Creation date
-				print '<td class="left">';
-				print "</td>";
-				print '</tr>';
-
-				print '<tr class="oddeven" colspan="6">';
-
-				// Store
-				print '<td class="nowrap">';
-				print $objp->fk_store ? $store->getNomUrl(1) : "";
-				print "</td>\n";
-
-				// Category
-				print '<td class="nowrap">';
-				if (!empty($objp->category_code)) {
-					$s = $langs->getLabelFromKey($db, 'TicketCategoryShort'.$objp->category_code, 'c_ticket_category', 'code', 'label', $objp->category_code);
-					print '<span title="'.dol_escape_htmltag($s).'">'.$s.'</span>';
-				}
-				print "</td>";
-
-				print '<td class="nowraponall right">';
-				
-				// if((strpos($companyAlias, 'ZETA') !== false && strpos($companyAlias, 'ZETA') >= 0) || (strpos($companyAlias, 'ROS') >= 0 && strpos($companyAlias, 'ROS') !== false) || $companyNom == "ROSSMANN"){
-				if($result2 == NULL){	
-					print '<a class="btn" href="./tecreport.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
-				}else{
-					//print '<a class="btn" href="./tecreportKarim.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
-					print '<a class="btn" href="./tecreportKarim.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
-				}
-				print "</td>";
-				print '<td class="nowraponall">';
-				print "</td>";
-
-				print "</tr>\n";
-				print '<tr class="oddeven" colspan="6">';
-					print '<td class="nowraponall" colspan="6">';
-					print $store->street.' '.$store->house_number.', '. $store->zip_code.' '. $store->city;
-					print "</td>";
-				print '</tr>';
-				$i++;
-			}
-			
-			$db->free($result);
-		} else {
-			print '<tr><td colspan="6"><span class="opacitymedium">'.$langs->trans('noticketsforyou').'</span></td></tr>';
+		$installationDateSort = 'installation_asc';
+		$installationDateSortIcon = '';
+		$stopSort = 'stop_asc';
+		$stopSortIcon = '';
+		if($sort == "installation_asc"){
+			$installationDateSort = "installation_desc";
+			$installationDateSortIcon = '<i class="fas fa-sort-up"></i>';
+		}
+		if($sort == "installation_desc"){
+			$installationDateSort = "installation_asc";
+			$installationDateSortIcon = '<i class="fas fa-sort-down"></i>';
+		}
+		if($sort == "stop_asc"){
+			$stopSort = "stop_desc";
+			$stopSortIcon = '<i class="fas fa-sort-up"></i>';
+		}
+		if($sort == "stop_desc"){
+			$stopSort = "stop_asc";
+			$stopSortIcon = '<i class="fas fa-sort-down"></i>';
 		}
 
-		print "</table>";
+		print '<div class="div-table-responsive-no-min">';
+			print '<table class="noborder centpercent">';
+				print '<tr class="liste_titre">';
+					print '<th>'.$langs->trans("yourtickets").'</th>';
+					print '<th colspan="1">';
+						print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?token='.newToken().'&sort='.$installationDateSort.'">'.$installationDateSortIcon.'Installationsdatum</a>';
+					print '</th>';
+					print '<th colspan="3" class="left">';
+						print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?token='.newToken().'&sort='.$stopSort.'">'.$stopSortIcon.'Stop Nr</a>';
+					print '</th>';
+				print '</tr>';
+				if ($num > 0) {
+					while ($i < $num) {
+						$objp = $db->fetch_object($result);
+						
+						$object->id = $objp->rowid;
+						$object->ref = $objp->ref;
+						$object->track_id = $objp->track_id;
+						$object->fk_statut = $objp->fk_statut;
+						$object->progress = $objp->progress;
+						$object->subject = $objp->subject;
+						$object->fk_soc = $objp->fk_soc;
+						$object->fk_store = $objp->fk_store;
+						$object->datehour = $objp->datehour;
+						$object->datemin = $objp->datemin;
+						$object->dateofuse = $objp->dateofuse;
+						$object->stopnummer = $objp->stopnummer;
+
+						// Karim's code for redirect:
+						 
+						$projectCheck = new Project($db);
+						
+						$projectCheck->fetch($objp->fk_project);
+						
+						
+						$store = new Branch($db);
+						$store->fetch($objp->fk_store);
+
+						print '<tr class="oddeven" colspan="6">';
+
+							// Ref
+							print '<td class="nowraponall">';
+								print $object->getNomUrl(1);
+							print "</td>\n";
+
+							// Severity
+							print '<td class="nowrap">';
+								$s = $langs->getLabelFromKey($db, 'TicketSeverityShort'.$objp->severity_code, 'c_ticket_severity', 'code', 'label', $objp->severity_code);
+								print '<span title="'.dol_escape_htmltag($s).'">'.$objp->severity_code.'</span>';
+							print "</td>";
+
+							// Stop number
+							print '<td class="left">';
+								print $objp->stopnummer;
+							print "</td>";
+
+							// Creation date
+							print '<td class="center">';
+								print dol_print_date($db->jdate($objp->dateofuse), 'day').' '.$object->datehour.':'.$object->datemin;
+							print "</td>";
+						print '</tr>';
+
+						print '<tr class="oddeven" colspan="6">';
+
+						// Store
+						print '<td class="nowrap">';
+						print $objp->fk_store ? $store->getNomUrl(1) : "";
+						print "</td>\n";
+
+						// Category
+						print '<td class="nowrap">';
+						if (!empty($objp->category_code)) {
+							$s = $langs->getLabelFromKey($db, 'TicketCategoryShort'.$objp->category_code, 'c_ticket_category', 'code', 'label', $objp->category_code);
+							print '<span title="'.dol_escape_htmltag($s).'">'.$s.'</span>';
+						}
+						print "</td>";
+						print '<td class="nowraponall">';
+						print "</td>";
+
+						print '<td class="nowraponall center">';
+						if($projectCheck->title == "ROS VKST4.0" || $projectCheck->thirdparty_name == "ZETA Display"){
+							print '<a class="btn" href="./tecreport.php?id='.$object->id.'">'.$langs->trans("Report").'</a>';
+						}else{
+							print '<a class="btn" href="./tecreportKarim.php?id='.$object->id.'&action=view">'.$langs->trans("Report").'</a>';
+						}
+						
+						print "</td>";
+
+						print "</tr>\n";
+						print '<tr class="oddeven" colspan="6">';
+							print '<td class="nowraponall" colspan="6">';
+							print $store->street.' '.$store->house_number.', '. $store->zip_code.' '. $store->city;
+							print "</td>";
+						print '</tr>';
+						$i++;
+					}
+					
+					$db->free($result);
+				} else {
+					print '<tr><td colspan="6"><span class="opacitymedium">'.$langs->trans('noticketsforyou').'</span></td></tr>';
+				}
+
+			print "</table>";
 		print '</div>';
 		
 		print '<br>';
