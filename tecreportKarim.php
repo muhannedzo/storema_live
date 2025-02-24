@@ -92,7 +92,7 @@ dol_include_once('/stores/compress.php');
  $compress = new Compress();
  $userId = $user->id;
  llxHeader("", $langs->trans("Report"));
- 
+
  print load_fiche_titre($langs->trans("TicketReport").$project->title, '', '');
  //////////////////////////////////////////////////////////////////////////////////////////
 $existingReportSQL = "SELECT content, parameters, rowid FROM llx_tec_forms WHERE fk_ticket = ".$ticketId;
@@ -171,13 +171,47 @@ var storeId ='.$storeid.';
 var socId = '.$object->fk_soc.';
 
 fetchUploadedImages();
-    setupCanvasEvents();
+setupCanvasEvents();
+setupFileInputs();
+setupSaveButtons();
 
-    setupSaveButtons();
+// Just temporary solution:
+makeTableResponsive();
 
-    
+    function makeTableResponsive() {
+        var tables = document.querySelectorAll("table");
+            tables.forEach(function(table) {
+                var parentDiv = table.parentElement;
+                if ((parentDiv.scrollWidth > parentDiv.clientWidth) && parentDiv.classList.contains("report-element-wrapper")) {
+                    parentDiv.classList.add("table-responsive");
 
-    
+                    // Create gradient overlay element
+                    var gradientDiv = document.createElement(\'div\');
+                    gradientDiv.style.position = \'absolute\';
+                    gradientDiv.style.right = \'0\';
+                    gradientDiv.style.top = \'0\';
+                    gradientDiv.style.width = \'30px\'; 
+                    gradientDiv.style.height = table.offsetHeight + \'px\';
+                    gradientDiv.style.background = \'linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.3) 100%)\';
+                    gradientDiv.style.pointerEvents = \'none\';
+                    gradientDiv.style.zIndex = \'2\'; // Higher than table content
+                    gradientDiv.style.transition = \'opacity 0.2s ease\';
+                    parentDiv.appendChild(gradientDiv);
+
+                    // Update gradient visibility
+                    function updateGradient() {
+                        gradientDiv.style.opacity = parentDiv.scrollLeft === 0 ? \'1\' : \'0\';
+                    }
+
+                    // Initial check
+                    updateGradient();
+                    
+                    // Scroll listener
+                    parentDiv.addEventListener(\'scroll\', updateGradient);
+                }
+            });
+    }
+
 
 function setupFileInputs() {
     var fileInputs = document.querySelectorAll(\'input[type="file"]\');
@@ -607,7 +641,7 @@ function saveForm(callback) {
     function displayUploadedImage(image, container) {
         console.log("Displaying image:", image);
         const colDiv = document.createElement("div");
-        colDiv.classList.add("col-3", "col-md-3", "mt-2", "text-center");
+        colDiv.classList.add("col-6", "col-md-3", "mt-2", "text-center");
 
         const img = document.createElement("img");
         // Important because this was super annoying to figure out:  We need to add the timestamp to the image URL to prevent caching
@@ -753,7 +787,13 @@ function saveForm(callback) {
                 alert("An error occurred during deletion.");
             }
         });
+
+        
     }
+
+
+
+
 </script>
 ';
 
@@ -763,6 +803,33 @@ canvas {
     width: 600px;   /* Desired display width */
     height: 200px;  /* Desired display height */
 }
+
+@media (max-width: 768px) {
+  canvas {
+    width: 80vw !important;
+    height: auto !important;
+  }
+}
+
+.table-responsive {
+  position: relative !important;
+
+}
+
+
+/* Chrome, Safari, Edge, Opera */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+
 </style>';
 
 if(!$existingReportRes){
@@ -783,6 +850,45 @@ echo '<script>
     form.appendChild(saveStayButton);
     form.appendChild(submitButton);
     setupSaveButtons();
+    // Just temporary solution:
+    makeTableResponsive();
+
+    function makeTableResponsive() {
+        var tables = document.querySelectorAll("table");
+        tables.forEach(function(table) {
+            var parentDiv = table.parentElement;
+            if ((parentDiv.scrollWidth > parentDiv.clientWidth) && parentDiv.classList.contains("report-element-wrapper")) {
+                parentDiv.classList.add("table-responsive");
+                var labelHeight = parentDiv.querySelector("label").offsetHeight;
+                console.log("Label height:", labelHeight);
+                // Create gradient overlay element
+                var gradientDiv = document.createElement(\'div\');
+                // Add center arrow
+                gradientDiv.innerHTML = \'<div style="position: absolute; top: 50%; left: 0; transform: translateY(-50%); width: 20px; height: 20px; background: white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); text-align: center; line-height: 20px; cursor: pointer;">&gt;</div>\';
+                gradientDiv.style.position = \'absolute\';
+                gradientDiv.style.right = \'0\';
+                gradientDiv.style.top = (labelHeight+4) + \'px\';
+                gradientDiv.style.width = \'20px\'; 
+                gradientDiv.style.height = table.clientHeight + \'px\';
+                gradientDiv.style.background = \'linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.3) 100%)\';
+                gradientDiv.style.pointerEvents = \'none\';
+                gradientDiv.style.zIndex = \'2\'; // Higher than table content
+                gradientDiv.style.transition = \'opacity 0.2s ease\';
+                parentDiv.appendChild(gradientDiv);
+
+                // Update gradient visibility
+                function updateGradient() {
+                    gradientDiv.style.opacity = parentDiv.scrollLeft === 0 ? \'1\' : \'0\';
+                }
+
+                // Initial check
+                updateGradient();
+                
+                // Scroll listener
+                parentDiv.addEventListener(\'scroll\', updateGradient);
+            }
+        });
+    }
     
     // Switch to handle the dynamically generated content
 
@@ -847,7 +953,7 @@ echo '<script>
                     element.innerHTML = "Kategorie: '.$object->category_label.'";
                     break;
                 case "auftrag":
-                    element.innerHTML = "Auftrag: '.$object->message.'";
+                    element.innerHTML = \'Auftrag: '.json_encode($object->message).'\';
                     break;
                 case "strasse":
                 case "straße":
@@ -876,8 +982,12 @@ echo '<script>
             }
         }
 });
+// Search for all textareas with attr data-locked = true
+let lockedTextareas = document.querySelectorAll(\'textarea[data-locked="true"]\');
+lockedTextareas.forEach((textarea) => {
+    textarea.disabled = true;
+});
 
-    
 
     
     </script>';
