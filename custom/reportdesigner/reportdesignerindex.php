@@ -312,7 +312,7 @@ if ($action == "assign") {
         $reports = $db->query($sqlReports)->fetch_all(MYSQLI_ASSOC);
         $reportId = GETPOST("reportId");
         $projectId = GETPOST("projectId");
-        
+
         echo '<h1>Projekt zuweisen</h1>';
         echo '<div class="container mt-3 ">';
 
@@ -322,7 +322,7 @@ if ($action == "assign") {
         echo '<label for="projectSelect" class="form-label">Projekt auswählen:</label>';
         echo '<select id="projectSelect" class="form-select">';
         foreach ($projects as $project) {
-            
+
             $selected = (intval($project['rowid']) === intval($projectId)) ? 'selected' : '';
             echo '<option value="' . intval($project['rowid']) . '" data-description="' . htmlspecialchars($project['description']) . '" ' . $selected . '>'
                  . htmlspecialchars($project['title']) . '</option>';
@@ -336,25 +336,12 @@ if ($action == "assign") {
 
         // Select report design
             echo '<div class="col-md-6">';
-            // foreach ($reports as $report) {
-            //     var_dump($report);
-            //     echo intval($report['rowid']);
-            //     echo "<br>";
-            //     echo "Test";
-            //     echo htmlspecialchars($report['title']);
-            //     echo "<br>";
-            //     echo "Test";
-            //     echo htmlspecialchars($report['description']);
-            //     echo "<br>";
-            //     echo htmlspecialchars($report['content']);
-            //     echo "<br>";
-            // }
             echo '<label for="reportSelect" class="form-label">Report Design auswählen:</label>';
             echo '<select id="reportSelect" class="form-select">';
-            
-            
+
+
             foreach ($reports as $report) {
-                
+
                 $selected = (intval($report['rowid']) === intval($reportId)) ? 'selected' : '';
                 echo '<option value="' . intval($report['rowid']) . '" data-description="' . htmlspecialchars($report['description']) . '" data-content="' . $report['content'] . '" ' . $selected . '>'
                      . htmlspecialchars($report['title']) . '</option>';
@@ -472,7 +459,9 @@ if ($action == "assign") {
 
 
 
-}else{
+    }else if($action == "archive"){
+        
+    }else{
 
 
     if($action == "new") {
@@ -537,7 +526,7 @@ if ($action == "assign") {
     }else if($action == "edit") {
     $reportId = GETPOST("reportId");
     //echo $reportId;
-    $sql = "SELECT * FROM llx_reports WHERE rowid = ".$reportId;
+    $sql = "SELECT * FROM llx_design_versions WHERE rowid = ".$reportId;
     $res = $db->query($sql)->fetch_all();
     $userId = $res[0][1] ? $res[0][1] : $user->id;
     $description = $res[0][6];
@@ -582,92 +571,6 @@ if ($action == "assign") {
     </div>
     ';
 
-        // echo '
-        // <script>
-        // document.addEventListener("DOMContentLoaded", () => {
-        //     const reportContainer = document.getElementById("report-container");
-        //     const propertyPanelElement = document.getElementById("report-property-panel");
-
-        //     const designTitleInput = document.getElementById("designTitle");
-        //     const designDescriptionInput = document.getElementById("designDescription");
-        //     const autosaveSpinner = document.getElementById("autosave-spinner");
-
-        //     // Initialize ReportGenerator
-        //     const reportGenerator = new ReportGenerator(reportContainer, propertyPanelElement);
-        //     reportGenerator.loadBasicDesign();
-        //     reportGenerator.generateReport();
-
-        //     let designTitle = "";
-        //     let designDescription = "";
-
-        //     let typingTimeout = null;
-        //     const typingDelay = 1000; // 1 second delay after typing stops
-
-        //     // Show/Hide spinner
-        //     function showSpinner() {
-        //         autosaveSpinner.style.display = "inline-block";
-        //     }
-
-        //     function hideSpinner() {
-        //         autosaveSpinner.style.display = "none";
-        //     }
-
-        //     // Function to save title/description via AJAX
-        //     function autosaveTitleDescription() {
-        //         if (!designTitle && !designDescription) {
-        //             // If both are empty, maybe we do nothing or still save empty fields
-        //             // Here we choose to save anyway, to reflect the current state.
-        //         }
-
-        //         showSpinner();
-
-        //         const formData = new FormData();
-        //         formData.append("action", "saveTitleDescription");
-        //         formData.append("designTitle", designTitle);
-        //         formData.append("designDescription", designDescription);
-
-        //         $.ajax({
-        //             url: "reportDesignerUpload.php", // Adjust URL as needed
-        //             type: "POST",
-        //             data: formData,
-        //             processData: false,
-        //             contentType: false,
-        //             success: function(response) {
-        //                 console.log("Auto-save response: ", response);
-        //                 // Optionally parse JSON if needed and check success.
-        //                 hideSpinner();
-        //             },
-        //             error: function(xhr, status, error) {
-        //                 console.error("Auto-save error:", error);
-        //                 hideSpinner();
-        //             }
-        //         });
-        //     }
-
-        //     // Reset timer and schedule autosave
-        //     function scheduleAutosave() {
-        //         if (typingTimeout) clearTimeout(typingTimeout);
-        //         typingTimeout = setTimeout(() => {
-        //             autosaveTitleDescription();
-        //         }, typingDelay);
-        //     }
-
-        //     // Event listeners for inputs
-        //     designTitleInput.addEventListener("input", (e) => {
-        //         designTitle = e.target.value;
-        //         scheduleAutosave();
-        //     });
-
-        //     designDescriptionInput.addEventListener("input", (e) => {
-        //         designDescription = e.target.value;
-        //         scheduleAutosave();
-        //     });
-
-        //     // If you want, you could also manually trigger autosave at certain events
-        //     // For instance, if user tries to navigate away, etc.
-        // });
-        // </script>
-        // ';
     echo '<script>
     document.addEventListener("DOMContentLoaded", () => {
     const reportGenerator = new ReportGenerator(document.getElementById("report-container"), document.getElementById("report-property-panel"));
@@ -678,13 +581,25 @@ if ($action == "assign") {
 
 
 }else if($action == "basicDesign"){
-    $sql = "SELECT * FROM llx_reports WHERE rowid = 0";
+    $sql = "SELECT * FROM llx_design_versions WHERE version = (SELECT MAX(version) FROM llx_design_versions WHERE base_id = 0)";
     $res = $db->query($sql)->fetch_all();
     $parameters = base64_decode($res[0][3]);
+    $reportId = $res[0][0];
     echo '
         <h1> Basis-Design bearbeiten
         </h1>
         <a href="?action=overview&param=overwrite" class="btn btn-outline-primary">Mit bestehendem Design überschreiben</a>
+        <!-- Title Input -->
+            <div class="col-12 mt-3" style="visibility: hidden;">
+                <label for="designTitle" class="form-label" style="visibility: hidden;">Titel des Designs</label>
+                <input type="text" class="form-control" id="designTitle" placeholder="Design Titel eingeben" style="visibility: hidden;" value="Basic"/>
+            </div>
+
+            <!-- Description Input -->
+            <div class="col-12 mt-2" style="visibility: hidden;">
+                <label for="designDescription" class="form-label" style="visibility: hidden;">Beschreibung</label>
+                <textarea class="form-control" id="designDescription" rows="3" placeholder="Beschreibung des Designs eingeben" style="visibility: hidden;">Das ist das Basisdesign für alle Projekte</textarea>
+            </div>
     ';
     echo '<script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -696,73 +611,77 @@ if ($action == "assign") {
 }else {
 	// Use a LEFT JOIN to fetch user and project data in one query
     // Leave out template with id 0, because this is the basic template we alawys use for new projects. See projet/card.php line 292
-    
+
     $param = isset($_GET['param']) ? $_GET['param'] : '';
     $projectid = isset($_GET['projectid']) ? $_GET['projectid'] : '';
     // Determine if we are in overwrite mode
     $isOverwriteMode = ($param === 'overwrite');
     $isAssignMode = $projectid;
-    
-    if($isAssignMode){
-        $sql = "
+    //     $sql = "
+    //     SELECT
+    //         r.rowid AS design_id,
+    //         r.fk_user,
+    //         r.title,
+    //         r.description,
+    //         r.date,
+    //         r.projectid,
+    //         u.lastname,
+    //         u.firstname,
+    //         p.title AS project_title,
+    //         r.content
+    //     FROM llx_reports r
+    //     LEFT JOIN llx_user u ON r.fk_user = u.rowid
+    //     LEFT JOIN llx_projet p ON r.projectid = p.rowid
+    // ";
+
+    $sql = "
         SELECT
-            r.rowid AS report_id,
-            r.fk_user,
-            r.title,
-            r.description,
-            r.date,
-            r.projectid,
+            dv.rowid,
+            dv.base_id,
+            dv.fk_user,
+            dv.title,
+            dv.description,
+            dv.date,
+            dv.projectid,
             u.lastname,
             u.firstname,
             p.title AS project_title,
-            r.content
-        FROM llx_reports r
-        LEFT JOIN llx_user u ON r.fk_user = u.rowid
-        LEFT JOIN llx_projet p ON r.projectid = p.rowid
-        WHERE r.rowid != 0 AND r.projectid IS NULL
-    ";
-    }else{
-        $sql = "
-        SELECT
-            r.rowid AS report_id,
-            r.fk_user,
-            r.title,
-            r.description,
-            r.date,
-            r.projectid,
-            u.lastname,
-            u.firstname,
-            p.title AS project_title,
-            r.content
-        FROM llx_reports r
-        LEFT JOIN llx_user u ON r.fk_user = u.rowid
-        LEFT JOIN llx_projet p ON r.projectid = p.rowid
-        WHERE r.rowid != 0
+            dv.content
+        FROM llx_design_versions dv
+        LEFT JOIN llx_user u ON dv.fk_user = u.rowid
+        LEFT JOIN llx_projet p ON dv.projectid = p.rowid
+        LEFT JOIN llx_design d ON d.rowid = dv.base_id
+        WHERE d.archived = 0
+        AND dv.version = (
+            SELECT MAX(dv2.version)
+            FROM llx_design_versions dv2
+            WHERE dv2.base_id = dv.base_id
+        );
+
     ";
 
-    }
-    
+    //}
+
 
     $resql = $db->query($sql);
     if (!$resql) {
-        // Handle query error
         echo $db->lasterror();
         exit;
     }
 
     $reports = $db->query($sql)->fetch_all(MYSQLI_ASSOC);
+    echo $reports["rowid"];
 
-    
-    echo "<h1>Übersicht</h1>";
+
     echo "<div class='container'>";
-
+	echo "<h1>Übersicht</h1>";
     echo "<div class='optionRow mb-3 d-flex gap-2'>";
     if(!$isOverwriteMode && !$isAssignMode){
-        echo "<a href='?action=new' class='btn btn-outline-primary btn-sm'>Neues Design erstellen</a>";
+        echo "<a href='?action=new' class='btn btn-dark-gray btn-sm'>Neues Design erstellen</a>";
         // "Zuweisen" always shown, no projectid check
-        echo "<button id='deleteSelectedBtn' class='btn btn-sm btn-danger' disabled>Mehrere löschen</button>";
+        echo "<button id='deleteSelectedBtn' class='btn btn-sm btn-danger' disabled>Löschen</button>";
         //
-        echo "<a href='?action=basicDesign' class='btn btn-sm btn-outline-primary'>Basis-Design bearbeiten</a>";
+        //echo "<a href='?action=basicDesign' class='btn btn-sm btn-outline-primary'>Basis-Design bearbeiten</a>";
     }else if($isOverwriteMode && !$isAssignMode){
         echo "<a href='?action=overview' class='btn btn-outline-primary btn-sm'>Zurück zur Übersicht</a>";
         echo "<a href'?action=basicDesign' class='btn btn-sm btn-outline-primary'>Zurück zum Bearbeiten</a>";
@@ -772,6 +691,10 @@ if ($action == "assign") {
         echo "<button id='overwriteDesignBtn' class='btn btn-sm btn-success' disabled>Zuweisen</button>";
     }
     echo '</div>';
+	echo '<div class="mb-3">';
+	echo '  <input type="text" id="searchTitle" class="form-control" placeholder="Suche nach Titel...">';
+	echo '</div>';
+
 
     echo '<table class="table table-striped" id="reportTable">';
     echo '<thead>';
@@ -783,41 +706,47 @@ if ($action == "assign") {
         echo '<th scope="col"></th>';
     }
     //echo '<th scope="col">ID</th>';
-    echo '<th scope="col">Titel</th>';
-    echo '<th scope="col">Beschreibung</th>';
-    echo '<th scope="col">Zuletzt bearbeitet am</th>';
-    echo '<th scope="col">von</th>';
-    if(!$isOverwriteMode  && !$isAssignMode) {
-        echo '<th scope="col">Aktionen</th>';
-    }
-    //echo '<th scope="col">Aktionen</th>';
-    echo '<th scope="col">Projekt</th>';
+    echo '<th scope="col" data-sort="text">Titel</th>';
+	echo '<th scope="col" data-sort="text">Beschreibung</th>';
+	echo '<th scope="col" data-sort="date">Zuletzt bearbeitet am</th>';
+	echo '<th scope="col" data-sort="text">Zuletzt bearbeitet von</th>';
+	echo '<th scope="col" data-sort="text">Projekt</th>';
     echo '<th scope="col"></th>';
+	if(!$isOverwriteMode  && !$isAssignMode) {
+		echo '<th scope="col"></th>';
+	}
     echo '</tr>';
     echo '</thead>';
     echo '<tbody>';
 
     if ($reports) {
         foreach ($reports as $report) {
-            $reportId = $report['report_id'];
+            $reportId = $report['rowid'];
+            $baseId = $report['base_id'];
             $projectId = $report['projectid'] ? $report['projectid'] : $projectid;
             $title = $report['title'];
             $description = $report['description'];
             $lastModified = $report['date'];
             $userFullName = trim($report['firstname'] . ' ' . $report['lastname']);
             $projectTitle = $report['project_title'] ? $report['project_title'] : 'Nicht zugewiesen';
+			if($baseId == 0){
+				$projectTitle = 'Basis-Design ist nicht zuweisbar';
+			}
             $contentEncoded = $report['content']; // Base64 encoded HTML content
 
             // Convert date to "d.m.Y | H:i:s"
             $formattedDate = date("d.m.Y | H:i:s", strtotime($lastModified));
 
-            echo '<tr class="report-row" data-report-id="'.intval($reportId).'" data-content="'.$contentEncoded.'">';
-            if(!$isOverwriteMode  && !$isAssignMode){
+            echo '<tr class="report-row" data-design-id="'.intval($baseId).'" data-content="'.$contentEncoded.'">';
+
+            if($baseId == 0){
+				echo '<td></td>';
+			}else if(!$isOverwriteMode  && !$isAssignMode){
                 echo '<td><input type="checkbox" class="report-checkbox" value="'.intval($reportId).'"></td>';
             }else{
                 echo '<td><input type="radio" name="selectRow" class="report-radio" value="'.intval($reportId).'"></td>';
             }
-            //echo '<td>' . intval($reportId) . '</td>';
+            
             echo '<td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' . htmlspecialchars($title) . '</td>';
             $maxLength = 50; // Max length before truncating the text
             $shortDescription = strlen($description) > $maxLength ? substr($description, 0, $maxLength) . '...' : $description;
@@ -828,42 +757,53 @@ if ($action == "assign") {
             echo '<td>' . $formattedDate . '</td>';
             echo '<td>' . htmlspecialchars($userFullName) . '</td>';
 
-            if(!$isOverwriteMode && !$isAssignMode){   
-                // Build actions
-                $actions = '
-                <div class="custom-dropdown">
-                    <button class="custom-dropdown-toggle">Aktionen <span>&#9662;</span></button>
-                    <div class="custom-dropdown-menu">
-                        <a href="?action=assign_project&reportId=' . intval($reportId) .
-                            (isset($projectId) && !empty($projectId) ? '&projectId=' . intval($projectId) : '') . '">
-                            Zuweisen
-                        </a>
-                        <a href="?action=edit&reportId=' . intval($reportId) . '">Bearbeiten</a>
-                        <a href="?action=delete&reportId=' . intval($reportId) . '">Löschen</a>
-                        <a href="#" class="duplicate-report" data-report-id="' . intval($reportId) . '">Duplizieren</a>
-                        <a href="?action=deassign&reportId=' . intval($reportId) . '">Zuweisung entfernen</a>
-                    </div>
-                </div>';
-                
-                echo '<td>'.$actions.'</td>';
-            }
 			$projectForUrl = new Project($db);
 			$projectForUrl->fetch($projectId);
 			$projectURL = $projectForUrl->getNomUrl(1);
 			$link = $projectForUrl->getNomUrl(0);
 			// Replace projectID in getNomUrl output with the title
-            
-			
-            
-            if($projectTitle !="Nicht zugewiesen"){
+
+            if($projectTitle !="Nicht zugewiesen" && $projectTitle != "Basis-Design ist nicht zuweisbar"){
                 $link = preg_replace('/>([^<]+)</', '>'.$projectTitle.'<', $link);
                 $projectTitle = $link;
             }
-            
+
             echo '<td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' .$projectTitle. '</td>';
             echo '<td>';
             echo '<button class="btn btn-sm btn-secondary preview-btn p-2" type="button">Vorschau</button>';
             echo '</td>';
+
+            if(!$isOverwriteMode && !$isAssignMode){
+                // Build actions
+				if($baseId != 0){
+					$actions = '
+						<div class="custom-dropdown">
+							<button class="custom-dropdown-toggle">Aktionen <span>&#9662;</span></button>
+							<div class="custom-dropdown-menu">
+								<a href="?action=assign_project&reportId=' . intval($reportId) .
+									(isset($projectId) && !empty($projectId) ? '&projectId=' . intval($projectId) : '') . '">
+									Zuweisen
+								</a>
+								<a href="?action=edit&reportId=' . intval($reportId) . '">Bearbeiten</a>
+								<a href="?action=archive&reportId=' . intval($reportId) . '">Archivieren</a>
+								<a href="#" class="duplicate-report" data-design-id="' . intval($baseId) . '">Duplizieren</a>
+								<a href="?action=deassign&reportId=' . intval($reportId) . '">Zuweisung entfernen</a>
+                                <a href="?action=history&reportId=' . intval($baseId) . '">Versionen</a>
+							</div>
+						</div>';
+				}else{
+					// If we are using the basic report then we must not allow the deletion or assignment
+					$actions ='
+						<div class="custom-dropdown">
+						<button class="custom-dropdown-toggle">Aktionen <span>&#9662;</span></button>
+						<div class="custom-dropdown-menu">
+							<a href=\'?action=basicDesign\'>Bearbeiten</a>
+							<a href="#" class="duplicate-report" data-design-id="' . intval($base) . '">Duplizieren</a>
+						</div>
+					</div>';
+				}
+                echo '<td>'.$actions.'</td>';
+            }
             echo '</tr>';
 
             // Hidden preview row
@@ -879,6 +819,128 @@ if ($action == "assign") {
 
     echo '</tbody>';
     echo '</table>';
+
+	// Seachbar js
+	echo '
+		<script>
+			document.addEventListener("DOMContentLoaded", () => {
+			// Search functionality for title
+			const searchInput = document.getElementById("searchTitle");
+			searchInput.addEventListener("keyup", function() {
+				const searchTerm = this.value.toLowerCase();
+				// Select all report rows in the table body
+				const rows = document.querySelectorAll("#reportTable tbody tr.report-row");
+
+				rows.forEach(row => {
+				// The title is in the second cell (index 1)
+				const titleCell = row.cells[1];
+				if (titleCell) {
+					const titleText = titleCell.textContent.toLowerCase();
+					// If the title contains the search term, show the row; otherwise hide it.
+					if (titleText.indexOf(searchTerm) > -1) {
+					row.style.display = "";
+					} else {
+					row.style.display = "none";
+					}
+				}
+
+				// Also hide the preview row (which is assumed to be the immediate next sibling)
+				const previewRow = row.nextElementSibling;
+				if (previewRow && previewRow.classList.contains("preview-row")) {
+					previewRow.style.display = "none";
+				}
+				});
+			});
+
+			});
+
+			// Code for sorting
+			const table = document.getElementById("reportTable");
+			const headers = table.querySelectorAll("thead th");
+
+			// To track sort direction for each column (default ascending)
+			let sortDirections = {};
+
+			headers.forEach((header, index) => {
+				// Only attach click event if the header has a data-sort attribute
+				if (header.dataset.sort !== undefined) {
+				header.style.cursor = "pointer";
+				header.addEventListener("click", () => {
+					sortTableByColumn(index, header.dataset.sort);
+				});
+				}
+			});
+
+			function sortTableByColumn(columnIndex, sortType) {
+				const tbody = table.querySelector("tbody");
+				// Get all main rows (assume they have class \'report-row\')
+				const rows = Array.from(tbody.querySelectorAll("tr.report-row"));
+
+				// Build an array of row pairs: each main row plus its preview row (if present)
+				const rowPairs = rows.map(row => {
+				const nextRow = row.nextElementSibling;
+				const previewRow = (nextRow && nextRow.classList.contains("preview-row")) ? nextRow : null;
+				return { main: row, preview: previewRow };
+				});
+
+				// Toggle the sort direction for this column (default is ascending)
+				sortDirections[columnIndex] = sortDirections[columnIndex] === "asc" ? "desc" : "asc";
+				const direction = sortDirections[columnIndex] === "asc" ? 1 : -1;
+
+				rowPairs.sort((a, b) => {
+				const cellA = a.main.cells[columnIndex];
+				const cellB = b.main.cells[columnIndex];
+				let valA = cellA ? cellA.textContent.trim() : "";
+				let valB = cellB ? cellB.textContent.trim() : "";
+
+				if (sortType === "date") {
+					// Parse the date string (format: "d.m.Y | H:i:s")
+					const parseDate = (str) => {
+					const parts = str.split(" | ");
+					if (parts.length === 2) {
+						const dateParts = parts[0].split(".");
+						if (dateParts.length === 3) {
+						const day = parseInt(dateParts[0], 10);
+						const month = parseInt(dateParts[1], 10) - 1; // month is zero-based
+						const year = parseInt(dateParts[2], 10);
+						const timeParts = parts[1].split(":");
+						const hours = parseInt(timeParts[0], 10);
+						const minutes = parseInt(timeParts[1], 10);
+						const seconds = parseInt(timeParts[2], 10);
+						return new Date(year, month, day, hours, minutes, seconds);
+						}
+					}
+					return new Date(str);
+					};
+
+					const dateA = parseDate(valA);
+					const dateB = parseDate(valB);
+					return (dateA - dateB) * direction;
+				} else if (sortType === "number") {
+					// Convert to numbers and compare
+					return (parseFloat(valA) - parseFloat(valB)) * direction;
+				} else {
+					// Default: text sorting (case-insensitive)
+					return valA.localeCompare(valB) * direction;
+				}
+				});
+
+				// Remove all existing rows from tbody
+				while (tbody.firstChild) {
+				tbody.removeChild(tbody.firstChild);
+				}
+
+				// Append each main row (and its preview row, if any) in the new order
+				rowPairs.forEach(pair => {
+				tbody.appendChild(pair.main);
+				if (pair.preview) {
+					tbody.appendChild(pair.preview);
+				}
+				});
+			}
+		</script>
+	';
+
     echo '</div>';
     echo '
     <div class="modal fade" id="fullTextModal" tabindex="-1" aria-labelledby="fullTextModalLabel" aria-hidden="true">
@@ -910,17 +972,16 @@ if ($action == "assign") {
     const previewButtons = document.querySelectorAll(".preview-btn");
     const deleteButtons = document.querySelectorAll(".delete-report");
     const duplicateButtons = document.querySelectorAll(".duplicate-report");
+	var csrfToken = "'.$_SESSION['dolibarr_csrf_token'].'";
 
-   
-
-
-    // Delete selected reports logic remains unchanged
     if(!isOverwriteMode && !isAssignMode){
 
       // Function to check if any checkbox is selected
         function updateDeleteButtonState() {
             const anyChecked = [...checkboxes].some(cb => cb.checked);
             deleteSelectedBtn.disabled = !anyChecked; // Enable or disable button
+            // Display number of selected inside button
+            deleteSelectedBtn.textContent = anyChecked ? `Löschen (${[...checkboxes].filter(cb => cb.checked).length})` : "Löschen";
         }
 
         // Select all functionality
@@ -961,13 +1022,13 @@ if ($action == "assign") {
                     if (data.success) {
                         alert("Ausgewählte Reports wurden erfolgreich gelöscht.");
                         selectedReportIds.forEach(id => {
-                            const row = document.querySelector(`.report-row[data-report-id=\'${id}\']`);
+                            const row = document.querySelector(`.report-row[data-design-id=\'${id}\']`);
                             if (row) {
                                 row.nextElementSibling?.remove(); // Remove preview row
                                 row.remove(); // Remove main row
                             }
                         });
-                        updateDeleteButtonState();
+                        supdateDeleteButtonState();
                     } else {
                         alert("Fehler beim Löschen: " + data.error);
                     }
@@ -981,7 +1042,7 @@ if ($action == "assign") {
         // Initialize button state on page load
         updateDeleteButtonState();
 
-        
+
         // Confirm delete for individual report
         deleteButtons.forEach(button => {
             button.addEventListener("click", (e) => {
@@ -1023,46 +1084,6 @@ if ($action == "assign") {
                     });
                 }
             });
-        });
-
-        // Delete selected reports with confirmation
-        deleteSelectedBtn.addEventListener("click", () => {
-            const selectedReportIds = [...checkboxes].filter(cb => cb.checked).map(cb => cb.value);
-            if (selectedReportIds.length === 0) {
-                alert("Bitte wählen Sie mindestens einen Report zum Löschen aus.");
-                return;
-            }
-
-            if (confirm("Sind Sie sicher, dass Sie die ausgewählten Reports löschen möchten?")) {
-                const formData = new FormData();
-                formData.append("action", "deleteMultiple");
-                formData.append("reportIds", JSON.stringify(selectedReportIds));
-
-                fetch("reportDesignerUpload.php", {
-                    method: "POST",
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Ausgewählte Reports wurden erfolgreich gelöscht.");
-                        // Remove deleted rows from the table
-                        selectedReportIds.forEach(id => {
-                            const row = document.querySelector(`.report-row[data-report-id=\'${id}\']`);
-                            if (row) {
-                                row.nextElementSibling?.remove(); // Remove the preview row
-                                row.remove(); // Remove the main row
-                            }
-                        });
-                    } else {
-                        alert("Fehler beim Löschen: " + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    alert("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
-                });
-            }
         });
     }if (isOverwriteMode) {
         // ------------------
@@ -1161,7 +1182,7 @@ if ($action == "assign") {
         });
         updateAssignButtonState();
     }
-    
+
 
     // Base64 decode for UTF-8
     function b64DecodeUnicode(str) {
@@ -1213,10 +1234,26 @@ if ($action == "assign") {
     </script>';
     echo '
         <style>
-        table.table td, table.table th {
+        #reportTable td{
             padding: 12px 8px;
             vertical-align: middle;
         }
+
+		#reportTable th {
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+
+		#reportTable thead th {
+			background-color:rgb(36, 36, 36); /* Light Steel Blue */
+			color: #fff;              /* White text for contrast */
+			padding: 12px 8px;        /* Optional: match your cell padding */
+		}
+
+
+		#reportTable .report-row[data-design-id=\'0\'] td{
+  			background-color: #d1ecf1;
+		}
 
 
         /* Custom dropdown styles */
@@ -1269,6 +1306,71 @@ if ($action == "assign") {
         .custom-dropdown:hover .custom-dropdown-menu {
             display: block; /* Show menu on hover */
         }
+
+		/* Custom styling for buttons at the top of the table */
+		.optionRow .btn {
+		padding: 10px 20px;
+		font-size: 0.9rem;
+		border-radius: 5px;
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		text-transform: none;
+		}
+
+		.optionRow .btn-dark-gray {
+			background-color: #343a40;  /* Modern dark gray */
+			border: 1px solid #343a40;
+			color: #fff; /* White text */
+			padding: 10px 20px;
+			font-size: 0.9rem;
+			border-radius: 5px;
+			transition: background-color 0.3s ease, border-color 0.3s ease;
+			text-decoration: none;
+		}
+
+		/* Primary (filled) button styles */
+		.optionRow .btn-primary,
+		.optionRow .btn-success,
+		.optionRow .btn-danger {
+		border: none;
+		}
+
+
+
+
+		/* Hover effects for filled buttons */
+		.optionRow .btn-danger:hover {
+		background-color: #c82333;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		}
+
+		.optionRow .btn-success:hover {
+		background-color: #218838;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		}
+
+		.optionRow .btn-primary:hover {
+		background-color: #0056b3;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		}
+
+		/* Disabled state */
+		.optionRow .btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		box-shadow: none;
+		}
+
+		.preview-row table thead th {
+			background-color:rgb(255, 255, 255) !important;
+			color: #000 !important;
+			padding: 12px 8px;
+		}
+
+		.preview-row canvas{
+			border: 1px solid #ddd;
+		}
+
         </style>
         ';
 }
@@ -1482,7 +1584,7 @@ class ReportGenerator {
         } else {
             this.reportContainer = reportContainer;
         }
-        this.elementCreator = new ReportElementCreator(this ,document.getElementById("elementModal"), document.getElementById("modalConfigBox") , document.getElementById("addElementBtn"), document.getElementById("closeElementBtn"));
+        this.elementCreator = new ReportElementCreator(this, document.getElementById("elementModal"), document.getElementById("modalConfigBox") , document.getElementById("addElementBtn"), document.getElementById("closeElementBtn"));
 
         this.init();
     }
@@ -1565,6 +1667,7 @@ class ReportGenerator {
                     break;
                 case "textarea":
                     const textareaElement = new ReportElementTextarea(param.content, param.style, param.label);
+                    textareaElement.locked = param.locked ? param.locked : false;
                     this.addElement(textareaElement);
                     break;
                 case "table":
@@ -1634,14 +1737,13 @@ class ReportGenerator {
             tableElement.changeCellChildElement(3, 2, new ReportElementDisplay("Tel Filiale", "", "", "dynamic"));
 
 
-            const descriptionElement = new ReportElementDisplay("Auftrag / Störungsbeschreibung", "", "", "static" );
+           
             const descriptionElementDynamic = new ReportElementDisplay("Auftrag / Störungsbeschreibung (dynamisch)", "", "", "dynamic" );
 
             this.addElement(displayElement);
             this.addElement(tableElement);
-            this.addElement(descriptionElement);
             this.addElement(descriptionElementDynamic);
-            this.addElement(new ReportElementDisplay("Lösungsvorschlag", "", "", "static"));
+            
             this.addElement(new ReportElementDisplay("Lösungsvorschlag (dynamisch)", "", "", "dynamic"));
             // #TODO: Should be loaded from template, since HH:mm should be calculated from the time range and we can only do this inside a template class
             const arrivalTable = new ReportElementTable("", "", 2, 3 );
@@ -1667,7 +1769,7 @@ class ReportGenerator {
             extendableTable.label = "Ersatzteile/Material";
             extendableTable.extendable = false;
             this.addElement(extendableTable);
-            this.addElement(new ReportElementDisplay("Techniker Notizen", "", "", "static"));
+            
             const technikerText = new ReportElementTextarea("", "", "");
             technikerText.label = "Techniker Notizen";
             this.addElement(technikerText);
@@ -2121,7 +2223,9 @@ class ReportElementCreator {
             { value: "textarea", label: "Textfeld", factory: this.createTextareaElementUI.bind(this) },
             { value: "table", label: "Tabelle", factory: this.createTableElementUI.bind(this) },
             { value: "upload", label: "Upload", factory: this.createUploadElementUI.bind(this) },
-            { value: "Signature", label: "Unterschrift", factory: this.createSignatureElementUI.bind(this) },
+            { value: "signature", label: "Unterschrift", factory: this.createSignatureElementUI.bind(this) },
+            { value: "timerange", label: "Zeitbereich", factory: this.createTimeRangeElementUI.bind(this) },
+            { value: "time", label: "Zeit", factory: this.createTimeElementUI.bind(this) },
             // { value: "clock", label: "Uhrzeit", factory: this.createClockElementUI.bind(this) },
             // { value: "div", label: "Box", factory: this.createDivElementUI.bind(this) }
         ];
@@ -2177,6 +2281,7 @@ class ReportElementCreator {
             if(this.mode === "edit") {
                 this.mode = "create";
                 this.preview.clicked = false;
+                this.preview = null;
                 this.reportGenerator.selectedElement = null;
             }
         });
@@ -2204,7 +2309,7 @@ class ReportElementCreator {
     }
 
     editElement(element) {
-        // Do not mound the selection list since we are editing an element
+        // Do not mount the selection list since we are editing an element
         this.mode = "edit";
         this.preview = element;
         this.handleSelection(element.type);
@@ -2240,6 +2345,7 @@ class ReportElementCreator {
             });
             listContainer.appendChild(item);
         });
+        
     }
 
     // Show modal on button click
@@ -2253,6 +2359,10 @@ class ReportElementCreator {
     hideModal() {
         const bootstrapModal = bootstrap.Modal.getInstance(this.modal);
         bootstrapModal.hide();
+        this.preview = null;
+        this.selection = null;
+        this.configBox.innerHTML = "";
+        
     }
 
 
@@ -2351,18 +2461,35 @@ class ReportElementCreator {
             <div class="mb-3">
                 <input type="text" id="textareaLabel" class="form-control" placeholder="Überschrift angeben">
             </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" id="textareaLocked" class="form-check-input" style="border: 1px solid" 
+                    title="Sperrt das Textfeld für Techniker, ermöglicht aber weiterhin Bearbeitung durch Administratoren">
+                <label for="textareaLocked" class="form-check-label" 
+                    title="Sperrt das Textfeld für Techniker, ermöglicht aber weiterhin Bearbeitung durch Administratoren">Schreibgeschützt</label>
+            </div>
         `;
         if(this.mode === "create") {
-        this.preview = new ReportElementTextarea("", "", "Enter textarea label");
+            this.preview = new ReportElementTextarea("", "", "Geben Sie eine Textfeldüberschrift ein");
         }else if(this.mode === "edit") {
             document.getElementById("textareaLabel").value = this.preview.label;
         }
 
+
+        // Initialize the preview element
         this.mountPreview(container);
 
         // Event listener for input changes
         container.querySelector("#textareaLabel").addEventListener("input", (e) => {
             this.preview.label = e.target.value;
+            // Rerender
+            this.mountPreview(container);
+        });
+
+        // Event listener for checkbox to toggle locked state
+        container.querySelector("#textareaLocked").addEventListener("change", (e) => {
+            // Set locked to true if checked, false otherwise
+            this.preview.locked = e.target.checked;
+            // Rerender
             this.mountPreview(container);
         });
     }
@@ -2441,8 +2568,14 @@ class ReportElementCreator {
                             <option value="upload">Upload</option>
                             <option value="checkbox">Checkbox</option>
                             <option value="radio">Radio</option>
+                            <option value="time">Time</option>
+                            <option value="timerange">Time Range</option>
                         </select>
                     </div>
+                </div>
+                <div class="mb-3" id="lockTextareaSection" style="display: none;">
+                    <input type="checkbox" id="cellTextareaLocked" class="form-check-input">
+                    <label for="cellTextareaLocked" class="form-check-label">Schreibgeschützt</label>
                 </div>
                 <div class="mb-3" id="radioGroup" style="display: none;">
                     <label for="radioGroup">Radio Gruppe</label>
@@ -2474,7 +2607,7 @@ class ReportElementCreator {
     </div>
 
         `;
-        
+
         // Create or reuse the preview table
         if (this.mode === "create") {
             this.preview = new ReportElementTable();
@@ -2549,11 +2682,10 @@ class ReportElementCreator {
         // Cell element type
         container.querySelector("#cellType").addEventListener("change", (e) => {
             if (this.preview._activeCell) {
-                // CHANGED: Instead of changeContentType(...), we create a new sub-element.
                 const newType = e.target.value;
                 let newEl;
 
-                // Create the appropriate element
+                // Create the appropriate sub-element based on the selected type
                 switch (newType) {
                     case "display":
                         newEl = new ReportElementDisplay("", "", "", "static");
@@ -2563,6 +2695,7 @@ class ReportElementCreator {
                         break;
                     case "textarea":
                         newEl = new ReportElementTextarea("", "", "Textarea Label");
+                        newEl.locked = false;
                         break;
                     case "upload":
                         newEl = new ReportElementUpload("", "", "Upload Label");
@@ -2573,6 +2706,12 @@ class ReportElementCreator {
                     case "radio":
                         newEl = new ReportElementRadio("", "", "Radio Label", "Gruppe1");
                         break;
+                    case "time":
+                        newEl = new ReportElementTime("", "", "Time Label");
+                        break;
+                    case "timerange":
+                        newEl = new ReportElementTimeRange("", "", "Time Range Label");
+                        break;
                     default:
                         console.error("Unknown cellType:", newType);
                         return;
@@ -2580,28 +2719,53 @@ class ReportElementCreator {
 
                 // Replace the sub-element in the active cell
                 this.preview._activeCell.contentElement = newEl;
-                // Optionally clear text input
+                // Clear the cell content input
                 container.querySelector("#cellContent").value = "";
-                // Show/hide the dynamic or radio UI
+
+                // Adjust UI based on the new type
                 if (newType === "display") {
                     container.querySelector("#displayType").style.display = "block";
                     container.querySelector("#radioGroup").style.display = "none";
                     container.querySelector("#cellContent").disabled = false;
+                    container.querySelector("#lockTextareaSection").style.display = "none";
                 } else if (newType === "radio") {
                     container.querySelector("#radioGroup").style.display = "block";
                     container.querySelector("#displayType").style.display = "none";
                     container.querySelector("#cellContent").disabled = true;
-                } else {
+                    container.querySelector("#lockTextareaSection").style.display = "none";
+                } else if (newType === "textarea") {
+                    // For textarea, disable the generic cell content and show the lock option
+                    container.querySelector("#cellContent").disabled = true;
+                    container.querySelector("#lockTextareaSection").style.display = "block";
+                    container.querySelector("#cellTextareaLocked").checked = false;
                     container.querySelector("#displayType").style.display = "none";
                     container.querySelector("#radioGroup").style.display = "none";
-                    container.querySelector("#cellContent").disabled = false;
+                } else {
+                    // For input, upload, checkbox, etc., disable the generic cell content field
+                    container.querySelector("#cellContent").disabled = true;
+                    container.querySelector("#lockTextareaSection").style.display = "none";
+                    container.querySelector("#displayType").style.display = "none";
+                    container.querySelector("#radioGroup").style.display = "none";
                 }
 
-                // Re-sync data
+                // If the cell is a textarea, add an event listener for the lock checkbox
+                const lockCheckbox = container.querySelector("#cellTextareaLocked");
+                if (lockCheckbox) {
+                    // Remove any previous listener to avoid duplicates if needed.
+                    lockCheckbox.onchange = (ev) => {
+                        // Update the locked property on the sub-element.
+                        this.preview._activeCell.contentElement.locked = ev.target.checked;
+                        this.preview.initializeContent(); // keep internal data updated
+                        this.mountPreview(container);
+                    };
+                }
+
+                // Re-sync data and update the preview
                 this.preview.initializeContent();
                 this.mountPreview(container);
             }
         });
+
 
         // Predefined text selection for display
         container.querySelector("#predefinedText").addEventListener("change", (e) => {
@@ -2647,32 +2811,81 @@ class ReportElementCreator {
 
         const cellContentType = this.configBox.querySelector("#cellType");
         const cellContentInput = this.configBox.querySelector("#cellContent");
+        const lockSection = this.configBox.querySelector("#lockTextareaSection");
+        const lockCheckbox = this.configBox.querySelector("#cellTextareaLocked");
 
         if (cellContentType && cellContentInput) {
-            // Update dropdown to match the sub-elements "type"
+            // Update the type dropdown and content field
             cellContentType.value = activeCell.contentElement.type;
-            // Update text input
             cellContentInput.value = activeCell.contentElement.content || "";
 
-            // Show/hide dynamic or radio
+            // Adjust the UI based on cell type
             if (activeCell.contentElement.type === "display") {
                 this.configBox.querySelector("#displayType").style.display = "block";
                 this.configBox.querySelector("#radioGroup").style.display = "none";
                 cellContentInput.disabled = false;
+                if (lockSection) lockSection.style.display = "none";
             } else if (activeCell.contentElement.type === "radio") {
                 this.configBox.querySelector("#radioGroup").style.display = "block";
                 this.configBox.querySelector("#displayType").style.display = "none";
                 cellContentInput.disabled = true;
+                if (lockSection) lockSection.style.display = "none";
+            } else if (activeCell.contentElement.type === "textarea") {
+                // Disable generic cell input and show the lock option for textarea.
+                cellContentInput.disabled = true;
+                if (lockSection) {
+                    lockSection.style.display = "block";
+                    // If the cell was previously locked, keep it checked.
+                    if (lockCheckbox) {
+                        lockCheckbox.checked = !!activeCell.contentElement.locked;
+                    }
+                }
             } else {
-                this.configBox.querySelector("#displayType").style.display = "none";
-                this.configBox.querySelector("#radioGroup").style.display = "none";
-                cellContentInput.disabled = false;
+                // For any other type, disable the cell content input and hide the lock section.
+                cellContentInput.disabled = true;
+                if (lockSection) lockSection.style.display = "none";
             }
         } else {
             console.error("UI elements not found for cell editing.");
         }
     }
 
+    
+    // Create UI for time element
+    createTimeElementUI(container) {
+        container.innerHTML = `
+            <div class="mb-3">
+                <input type="text" id="timeLabel" class="form-control" placeholder="Überschrift angeben">
+            </div>
+        `;
+
+        timeLabel.addEventListener("input", (e) => {
+            this.preview.label = e.target.value;
+            this.mountPreview(container);
+        });
+
+        this.preview = new ReportElementTime("", "");
+        this.mountPreview(container);
+
+    }
+
+    // Create UI for timerange element
+    createTimeRangeElementUI(container) {
+        container.innerHTML = `
+            <div class="mb-3">
+                <input type="text" id="timeRangeLabel" class="form-control" placeholder="Überschrift angeben">
+            </div>
+        `;
+
+        timeRangeLabel.addEventListener("input", (e) => {
+            this.preview.label = e.target.value;
+            this.mountPreview(container);
+        });
+
+        this.preview = new ReportElementTimeRange("", "");
+        this.mountPreview(container);
+
+    }
 
 
     // Create UI for Upload element
@@ -2738,7 +2951,7 @@ class ReportElementCreator {
     this.mountPreview(container);
 
 
-}
+    }
 
 
     // Create UI for Clock element
@@ -3133,6 +3346,16 @@ class ReportElementDiv extends ReportGeneratorElement {
 class ReportElementTextarea extends ReportGeneratorElement {
     constructor(content = "", style = "", label = "") {
         super(content, style, "textarea", label);
+        // If locked = true then only office can edit textarea but technician cant
+        this._locked = false;
+    }
+
+    set locked(value) {
+        this._locked = value;
+    }
+
+    get locked() {
+        return this._locked;
     }
 
     appendContent(wrapperDiv) {
@@ -3145,8 +3368,15 @@ class ReportElementTextarea extends ReportGeneratorElement {
         textarea.addEventListener("input", (e) => {
             this._content = e.target.value;
         });
+        textarea.setAttribute("data-locked", this.locked ? "true" : "false");
         // Append the textarea to the wrapperDiv
         wrapperDiv.appendChild(textarea);
+    }
+
+    get params(){
+        const baseParams = super.params;
+        baseParams.locked = this._locked;
+        return baseParams;
     }
 }
 
@@ -3409,6 +3639,8 @@ class ReportElementTable extends ReportGeneratorElement {
 
         table.appendChild(thead);
         table.appendChild(tbody);
+        // Make table responsive 
+        wrapperDiv.classList.add("table-responsive");
         wrapperDiv.appendChild(table);
     }
 
@@ -3555,7 +3787,7 @@ class ReportElementCell {
 
     changeContentType(newType, contentData = {}) {
         const newElement = this.createElementFromParams({
-            type: newType, 
+            type: newType,
             // plus any relevant fields from contentData
             ...contentData
         });
@@ -3618,23 +3850,39 @@ class ReportElementSignature extends ReportGeneratorElement {
     }
 
     appendContent(wrapperDiv) {
-        // Use drawImage and getRect
+        // Main container with responsive width
+        const container = document.createElement("div");
+        container.classList.add("col-12", "col-md-2", "my-2"); // 100% on mobile, ~20% on desktop
+        
+        // Aspect ratio wrapper (4:3 ratio, adjust ratio class as needed)
+        const ratioWrapper = document.createElement("div");
+        ratioWrapper.classList.add("ratio", "ratio-4x3");
+        
+        // Canvas element
         const canvas = document.createElement("canvas");
         canvas.id = this._id;
-        canvas.classList.add("report-element");
-        canvas.width = 100;
-        canvas.height = 100;
-        canvas.style.width = "15%";
-        canvas.style.height = "15%";
+        canvas.classList.add("report-element", "border", "rounded");
+        
+        // Set canvas dimensions to match wrapper
+        const setCanvasSize = () => {
+            const rect = ratioWrapper.getBoundingClientRect();
+            canvas.width = rect.width * 2; // High DPI
+            canvas.height = rect.height * 2;
+        };
+
+        // Initial setup
+        setCanvasSize();
+        
+        // Canvas context setup
         const ctx = canvas.getContext("2d");
+        ctx.scale(2, 2); // Match high DPI scaling
         ctx.fillStyle = "#f9f9f9";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 2;
-        let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-        wrapperDiv.appendChild(canvas);
+        ctx.fillRect(0, 0, canvas.width/2, canvas.height/2);
+
+        // Assemble elements
+        ratioWrapper.appendChild(canvas);
+        container.appendChild(ratioWrapper);
+        wrapperDiv.appendChild(container);
     }
 }
 
@@ -3686,57 +3934,34 @@ class ReportElementTime extends ReportGeneratorElement {
     }
 
     appendContent(wrapperDiv) {
-        const container = document.createElement("div");
-        container.classList.add("report-element", "d-flex", "align-items-center", "gap-1");
-        container.style.cssText = this._style;
-
-        // Create Hours Input
-        const hoursInput = document.createElement("input");
-        hoursInput.type = "number";
-        hoursInput.id = `${this._id}-hours`;
-        hoursInput.classList.add("form-control", "report-element-time-hours");
-        hoursInput.value = this._hours.toString().padStart(2, "0");
-        hoursInput.min = 0;
-        hoursInput.max = 23;
-        hoursInput.style.width = "4rem";
-        hoursInput.addEventListener("input", () => {
-            let val = parseInt(hoursInput.value, 10);
-            if (isNaN(val) || val < 0) val = 0;
-            if (val > 23) val = 23;
-            this._hours = val;
-            hoursInput.value = val.toString().padStart(2, "0");
+    const container = document.createElement("div");
+    container.classList.add("report-element", "d-flex", "align-items-center");
+    container.style.cssText = this._style;
+    
+    // Create single time input
+    const timeInput = document.createElement("input");
+    timeInput.type = "number";
+    timeInput.id = `${this._id}-time`;
+    timeInput.classList.add("form-control", "report-element-time");
+    
+    // Format current hours and minutes as HH:MM
+    const timeValue = `${this._hours.toString().padStart(2, "0")}:${this._minutes.toString().padStart(2, "0")}`;
+    timeInput.value = timeValue;
+    
+    // Handle input changes
+    timeInput.addEventListener("input", () => {
+        // Parse the time value (format: HH:MM)
+        const timeParts = timeInput.value.split(\':\');
+        if (timeParts.length === 2) {
+            this._hours = parseInt(timeParts[0], 10);
+            this._minutes = parseInt(timeParts[1], 10);
             this.updateContent();
-        });
-
-        // Create a separator (":")
-        const separator = document.createElement("span");
-        separator.textContent = ":";
-        separator.style.fontWeight = "bold";
-
-        // Create Minutes Input
-        const minutesInput = document.createElement("input");
-        minutesInput.type = "number";
-        minutesInput.id = `${this._id}-minutes`;
-        minutesInput.classList.add("form-control", "report-element-time-minutes");
-        minutesInput.value = this._minutes.toString().padStart(2, "0");
-        minutesInput.min = 0;
-        minutesInput.max = 59;
-        minutesInput.style.width = "4rem";
-        minutesInput.addEventListener("input", () => {
-            let val = parseInt(minutesInput.value, 10);
-            if (isNaN(val) || val < 0) val = 0;
-            if (val > 59) val = 59;
-            this._minutes = val;
-            minutesInput.value = val.toString().padStart(2, "0");
-            this.updateContent();
-        });
-
-        container.appendChild(hoursInput);
-        container.appendChild(separator);
-        container.appendChild(minutesInput);
-
-        wrapperDiv.appendChild(container);
-    }
+        }
+    });
+    
+    container.appendChild(timeInput);
+    wrapperDiv.appendChild(container);
+}
 
     // Update _content whenever hours or minutes change
     updateContent() {
@@ -3800,92 +4025,70 @@ class ReportElementTimeRange extends ReportGeneratorElement {
 
     appendContent(wrapperDiv) {
         const container = document.createElement("div");
-        container.classList.add("report-element", "d-flex", "align-items-center", "gap-1");
+        container.classList.add("report-element", "d-flex", "flex-wrap", "align-items-center", "gap-2");
         container.style.cssText = this._style;
 
-        // Start Hours Input
-        const startHoursInput = document.createElement("input");
-        startHoursInput.type = "number";
-        startHoursInput.id = `${this._id}-start-hours`;
-        startHoursInput.classList.add("form-control", "report-element-time-hours");
-        startHoursInput.value = this._startHours.toString().padStart(2, "0");
-        startHoursInput.min = 0;
-        startHoursInput.max = 23;
-        startHoursInput.style.width = "4rem";
-        startHoursInput.addEventListener("input", () => {
-            let val = parseInt(startHoursInput.value, 10);
-            if (isNaN(val) || val < 0) val = 0;
-            if (val > 23) val = 23;
-            this._startHours = val;
-            startHoursInput.value = val.toString().padStart(2, "0");
-            this.updateContent();
+        // Create a time input group for start time
+        const startTimeGroup = document.createElement("div");
+        startTimeGroup.classList.add("d-flex", "align-items-center", "mb-2", "mb-sm-0");
+        
+        // Start Time Input
+        const startTimeInput = document.createElement("input");
+        startTimeInput.type = "time";
+        startTimeInput.id = `${this._id}-start-time`;
+        startTimeInput.classList.add("form-control", "report-element-time");
+        
+        // Format hours and minutes as HH:MM
+        const startTime = `${this._startHours.toString().padStart(2, "0")}:${this._startMinutes.toString().padStart(2, "0")}`;
+        startTimeInput.value = startTime;
+        
+        startTimeInput.addEventListener("input", () => {
+            // Parse the time value (format: HH:MM)
+            const timeParts = startTimeInput.value.split(\':\');
+            if (timeParts.length === 2) {
+                this._startHours = parseInt(timeParts[0], 10);
+                this._startMinutes = parseInt(timeParts[1], 10);
+                this.updateContent();
+            }
         });
-
-        // Start Minutes Input
-        const startMinutesInput = document.createElement("input");
-        startMinutesInput.type = "number";
-        startMinutesInput.id = `${this._id}-start-minutes`;
-        startMinutesInput.classList.add("form-control", "report-element-time-minutes");
-        startMinutesInput.value = this._startMinutes.toString().padStart(2, "0");
-        startMinutesInput.min = 0;
-        startMinutesInput.max = 59;
-        startMinutesInput.style.width = "4rem";
-        startMinutesInput.addEventListener("input", () => {
-            let val = parseInt(startMinutesInput.value, 10);
-            if (isNaN(val) || val < 0) val = 0;
-            if (val > 59) val = 59;
-            this._startMinutes = val;
-            startMinutesInput.value = val.toString().padStart(2, "0");
-            this.updateContent();
-        });
+        
+        startTimeGroup.appendChild(startTimeInput);
 
         // Separator "bis"
         const separator = document.createElement("span");
         separator.textContent = "bis";
-        separator.style.fontWeight = "bold";
-        separator.style.margin = "0 0.5rem";
+        separator.classList.add("fw-bold", "mx-2", "mx-sm-3", "my-2", "my-sm-0");
+        
+        // Create a time input group for end time
+        const endTimeGroup = document.createElement("div");
+        endTimeGroup.classList.add("d-flex", "align-items-center");
 
-        // End Hours Input
-        const endHoursInput = document.createElement("input");
-        endHoursInput.type = "number";
-        endHoursInput.id = `${this._id}-end-hours`;
-        endHoursInput.classList.add("form-control", "report-element-time-hours");
-        endHoursInput.value = this._endHours.toString().padStart(2, "0");
-        endHoursInput.min = 0;
-        endHoursInput.max = 23;
-        endHoursInput.style.width = "4rem";
-        endHoursInput.addEventListener("input", () => {
-            let val = parseInt(endHoursInput.value, 10);
-            if (isNaN(val) || val < 0) val = 0;
-            if (val > 23) val = 23;
-            this._endHours = val;
-            endHoursInput.value = val.toString().padStart(2, "0");
-            this.updateContent();
+        // End Time Input
+        const endTimeInput = document.createElement("input");
+        endTimeInput.type = "time";
+        endTimeInput.id = `${this._id}-end-time`;
+        endTimeInput.classList.add("form-control", "report-element-time");
+        
+        // Format hours and minutes as HH:MM
+        const endTime = `${this._endHours.toString().padStart(2, "0")}:${this._endMinutes.toString().padStart(2, "0")}`;
+        endTimeInput.value = endTime;
+        
+        endTimeInput.addEventListener("input", () => {
+            // Parse the time value (format: HH:MM)
+            const timeParts = endTimeInput.value.split(\':\');
+            if (timeParts.length === 2) {
+                this._endHours = parseInt(timeParts[0], 10);
+                this._endMinutes = parseInt(timeParts[1], 10);
+                this.updateContent();
+            }
         });
+        
+        endTimeGroup.appendChild(endTimeInput);
 
-        // End Minutes Input
-        const endMinutesInput = document.createElement("input");
-        endMinutesInput.type = "number";
-        endMinutesInput.id = `${this._id}-end-minutes`;
-        endMinutesInput.classList.add("form-control", "report-element-time-minutes");
-        endMinutesInput.value = this._endMinutes.toString().padStart(2, "0");
-        endMinutesInput.min = 0;
-        endMinutesInput.max = 59;
-        endMinutesInput.style.width = "4rem";
-        endMinutesInput.addEventListener("input", () => {
-            let val = parseInt(endMinutesInput.value, 10);
-            if (isNaN(val) || val < 0) val = 0;
-            if (val > 59) val = 59;
-            this._endMinutes = val;
-            endMinutesInput.value = val.toString().padStart(2, "0");
-            this.updateContent();
-        });
-
-        container.appendChild(startHoursInput);
-        container.appendChild(startMinutesInput);
+        // Add all elements to container
+        container.appendChild(startTimeGroup);
         container.appendChild(separator);
-        container.appendChild(endHoursInput);
-        container.appendChild(endMinutesInput);
+        container.appendChild(endTimeGroup);
 
         wrapperDiv.appendChild(container);
     }
@@ -3969,7 +4172,8 @@ class ReportElementUpload extends ReportGeneratorElement {
         input.type = "file";
         input.id = this._id;
         input.multiple = this._multiple;
-        input.accept = this._accept;
+        input.accept = "image/*";
+        input.setAttribute("capture", "capture");
         input.classList.add("form-control", "report-element");
         input.addEventListener("change", (e) => {
             this._content = e.target.files;
