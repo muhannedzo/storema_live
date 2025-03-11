@@ -42,24 +42,36 @@ require_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
 $action = GETPOST('action', 'alpha');
 
 // Util function to return most current version of a design based on family id
-function fetchMaxDesignVersion($baseId, $db) {
-    $designId = intval($baseId);
+function fetchMaxVersionByBase($baseId, $db) {
+    $baseId = intval($baseId);
+    if ($baseId < 0) {
+        return false;
+    }
+    // Use a prepared statement to avoid SQL injection.
+    $sql = "SELECT * FROM llx_design_version WHERE base_id = $baseId ORDER BY version DESC LIMIT 1";
+    $result = $db->query($sql);
+    if (!$result || $result->num_rows === 0) {
+        return false;
+    }
+    $assoc = $result->fetch_assoc();
+    return $assoc;
+}
+
+function fetchMaxVersionOfDesign($designId, $db) {
+    $designId = intval($designId);
     if ($designId <= 0) {
         return false;
     }
-    $sqlMaxVersion = "
-        SELECT *
-        FROM llx_design_versions
-        WHERE base_id = $baseId
-        ORDER BY version DESC
-        LIMIT 1
-    ";
-    $resMax = $db->query($sqlMaxVersion);
-    if (!$resMax || $resMax->num_rows === 0) {
+    $sql = "SELECT * FROM llx_design_version WHERE base_id = (SELECT base_id FROM llx_design_version WHERE rowid = $designId) ORDER BY version DESC LIMIT 1";
+    $result = $db->query($sql);
+    if (!$result || $result->num_rows === 0) {
         return false;
     }
-    return $resMax->fetch_assoc();
+    $assoc = $result->fetch_assoc();
+    return $assoc;
 }
+
+
 
 // Util function to return whether a design is archived
 function fetchIsArchived($baseID, $db) {
@@ -78,7 +90,7 @@ function fetchIsArchived($baseID, $db) {
 //     if(!$res){
 //         return false;
 //     }
-//     $sqlVersion = "INSERT INTO llx_design_versions(rowid, fk_user, title, description, content, parameters, date, version, design_id) VALUES (0, 1, 'Neues Design', 'Neues Design', '', '', NOW(), 1, $designId)";
+//     $sqlVersion = "INSERT INTO llx_design_version(rowid, fk_user, title, description, content, parameters, date, version, design_id) VALUES (0, 1, 'Neues Design', 'Neues Design', '', '', NOW(), 1, $designId)";
 //     $res = $db->query($sqlVersion);
 //     if(!$res){
 //         return false;
@@ -100,7 +112,7 @@ if (isset($_POST['form'])) {
     if ($designId !== NULL && $userId) {
         echo json_encode(['message' => 'we entered the if statement']);
         // Fetch specific version
-        $fetchDesign = "SELECT * FROM llx_design_versions WHERE rowid = $designId";
+        $fetchDesign = "SELECT * FROM llx_design_version WHERE rowid = $designId";
         $res = $db->query($fetchDesign);
         
         $design = $res->fetch_assoc();
@@ -108,7 +120,7 @@ if (isset($_POST['form'])) {
         if(fetchIsArchived($design["base_id"], $db)){
             echo json_encode(['error' => 'Design ist archiviert und kann nicht bearbeitet werden.']);
             exit;
-        }else if(fetchMaxDesignVersion($design["base_id"], $db)['version'] > $design['version']){
+        }else if(fetchMaxVersionByBase($design["base_id"], $db)['version'] > $design['version']){
             echo json_encode(['error' => 'Es existiert bereits eine neuere Version dieses Designs.']);
             exit;
         }
@@ -116,7 +128,7 @@ if (isset($_POST['form'])) {
         // Check if the content is the same as the existing version
         if ($parameters === base64_decode($design['parameters']) ) {
             // Only update description, title and date if the content is the same
-            $sql = "UPDATE llx_design_versions
+            $sql = "UPDATE llx_design_version
                     SET title = '" . $db->escape($title) . "',
                         description = '" . $db->escape($description) . "',
                         date = NOW()
@@ -125,14 +137,13 @@ if (isset($_POST['form'])) {
             echo json_encode(['message' => 'Title and description updated successfully']);
         }else{
             //echo json_encode(['message' => 'These are the two contents: ' . $form . ' ' . base64_decode($design['content'])]);
-            echo json_encode(['message' => 'These are the two parameters: ' . $parameters . ' ' . base64_decode($design['parameters'])]);
             // Existing design family ID
             $designId = $design['base_id'];
             // Current version + 1
             $newVersion = $design['version'] + 1;
 
             // Insert a new row to represent the updated (new) version
-            $sql = "INSERT INTO llx_design_versions
+            $sql = "INSERT INTO llx_design_version
                     (fk_user, content, parameters, title, description, base_id, version, date)
                     VALUES
                     (
@@ -164,7 +175,7 @@ if (isset($_POST['form'])) {
         $newDesignId = $db->last_insert_id('llx_design');
 
         // 2) Create the first version in llx_design_version
-        $sql = "INSERT INTO llx_design_versions
+        $sql = "INSERT INTO llx_design_version
                    (fk_user, content, parameters, title, description, version, date, base_id)
                 VALUES
                    (
@@ -200,7 +211,7 @@ if ($_POST['action'] === 'archiveMultiple') {
         $idsString = implode(",", $designIds);
 
         // Set archived flag for all selected designs
-        $sql = "UPDATE llx_design SET archived = 1 WHERE rowid IN (SELECT base_id FROM llx_design_versions WHERE rowid IN ($idsString))";
+        $sql = "UPDATE llx_design SET archived = 1, fk_project = NULL WHERE rowid IN (SELECT base_id FROM llx_design_version WHERE rowid IN ($idsString))";
         if ($db->query($sql)) {
             echo json_encode(['success' => true]);
         } else {
@@ -214,7 +225,7 @@ if ($_POST['action'] === 'archiveMultiple') {
 
 if($_POST['action'] === 'unassign'){
     $projectId = intval($_POST['projectId']);
-    $sql = "UPDATE llx_design_versions SET projectid = NULL WHERE projectid = $projectId";
+    $sql = "UPDATE llx_design SET fk_project = NULL WHERE fk_project = $projectId";
     if ($db->query($sql)) {
         echo json_encode(['success' => true]);
     } else {
@@ -248,7 +259,7 @@ if ($_POST['action'] === 'overwriteBasicDesign') {
         $sql = "INSERT INTO llx_design (rowid, archived) VALUES (0, 0)";
         $db->query($sql);
         // Then fetch the latest version of the report we want to overwrite with
-		$maxDesignVersion = fetchMaxDesignVersion($designId, $db);
+		$maxDesignVersion = fetchMaxVersionOfDesign($designId, $db);
         if (!$maxDesignVersion) {
             echo json_encode(['success' => false, 'error' => 'Keine Version gefunden.']);
             exit;
@@ -260,26 +271,14 @@ if ($_POST['action'] === 'overwriteBasicDesign') {
 		$parameters = $db->escape($maxDesignVersion['parameters']);
 
         // Insert the latest version of the design we want to overwrite the base design with as a new version of the base design
-		$sql = "INSERT INTO llx_design_versions(rowid, fk_user, title, description, content, parameters, date, version, base_id) VALUES (0, $userId, '$title', '$description', '$content', '$parameters', NOW(), 1, $designId)";
+		$sql = "INSERT INTO llx_design_version(rowid, fk_user, title, description, content, parameters, date, version, base_id) VALUES (0, $userId, '$title', '$description', '$content', '$parameters', NOW(), 1, $designId)";
         $db->query($sql);
         
 
     }else{
-		// If the base design exists, update it with the latest version of the report we want to overwrite with
-		// Fetch max version of design
+        $maxBaseVersion = fetchMaxVersionByBase(0, $db);
+        $maxDesignVersion = fetchMaxVersionOfDesign($designId, $db);
         
-        // $maxDesignVersion  = fetchMaxDesignVersion($designId, $db);
-        // if (!$maxVerRow) {
-        //     echo json_encode(['success' => false, 'error' => 'Keine Version gefunden.']);
-        //     exit;
-        // }
-        // $title      = $db->escape($maxDesignVersion['title']);
-        // $description= $db->escape($maxDesignVersion['description']);
-        // $content    = $db->escape($maxDesignVersion['content']);
-        // $parameters = $db->escape($maxDesignVersion['parameters']);
-
-        $maxBaseVersion = fetchMaxDesignVersion(0, $db)['version'];
-        $maxDesignVersion = fetchMaxDesignVersion($designId, $db);
         if (!$maxBaseVersion) {
             echo json_encode(['success' => false, 'error' => 'Keine Version des Basisdesigns gefunden.']);
             exit;
@@ -289,10 +288,17 @@ if ($_POST['action'] === 'overwriteBasicDesign') {
         }
 
         // Insert a new version of the base design by creating a new version which is a copy of the latest version of the report we want to overwrite with
-        $sqlInsert = "INSERT INTO llx_design_versions(rowid, fk_user, title, description, content, parameters, date, version, base_id) VALUES (0, $userId, '" . $maxDesignVersion['title'] . "', '" . $maxDesignVersion['description'] . "', '" . $maxDesignVersion['content'] . "', '" . $maxDesignVersion['parameters'] . "', NOW(), " . ($maxBaseVersion['version'] + 1) . ", 0)";
-        $res = $db->query($sqlUpdate);
+        $newVersion = $maxBaseVersion['version'] + 1;
+        $maxVersionId = $maxDesignVersion['rowid'];
+        $sqlInsert = "INSERT INTO llx_design_version (fk_user, title, description, content, parameters, date, version, base_id)
+        SELECT fk_user, title, description, content, parameters, NOW(), $newVersion, 0
+        FROM llx_design_version
+        WHERE rowid = $maxVersionId
+        ";
+
+        $res = $db->query($sqlInsert);
         if (!$res) {
-            echo json_encode(['success' => false, 'error' => $db->error]);
+           echo json_encode(['success' => false, 'error' => var_dump($sqlInsert)]);
             exit;
         }
         echo json_encode(['success' => true, 'message' => 'Basiskonzept (rowid=0) erfolgreich überschrieben!']);
@@ -310,7 +316,7 @@ if ($_POST['action'] === 'duplicateReport') {
     }
 
     // Fetch the original report
-    $design = fetchMaxDesignVersion($designId, $db);
+    $design = fetchMaxVersionOfDesign($designId, $db);
     if (!$design) {
         echo json_encode(['success' => false, 'error' => 'Originalreport nicht gefunden.']);
         exit;
@@ -333,7 +339,7 @@ if ($_POST['action'] === 'duplicateReport') {
     
     // Insert the duplicated report as a new row
     $sqlInsert = "
-        INSERT INTO llx_reports (fk_user, title, description, content, parameters, date, version, base_id)
+        INSERT INTO llx_design_version (fk_user, title, description, content, parameters, date, version, base_id)
         VALUES ($userId, '$newTitle', '$description', '$content', '$parameters', NOW(), 1, $resId)
     ";
 
@@ -354,8 +360,10 @@ if($_POST['action'] === "save_project_assignment"){
     if ($projectId > 0 && $designId > 0) {
         // Update the project ID for the latest version of the design
         // We assume that the designId var corresponds to the most current version of the design
-        $sqlBase = "UPDATE llx_design_versions SET projectid = $projectId WHERE rowid = $designId";
-
+        $sql = "UPDATE llx_design d
+        JOIN llx_design_version dv ON d.rowid = dv.base_id
+        SET d.fk_project = $projectId
+        WHERE dv.rowid = $designId";
         if ($db->query($sql)) {
             echo json_encode([
                 'success' => true,
@@ -364,7 +372,7 @@ if($_POST['action'] === "save_project_assignment"){
         } else {
             echo json_encode([
                 'success' => false,
-                'error' => 'Fehler beim Aktualisieren des Reports: ' . $db->lasterror()
+                'error' => 'Fehler beim Aktualisieren des Reports: ' . var_dump($sql)
             ]);
         }
     } else {

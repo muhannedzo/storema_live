@@ -289,12 +289,12 @@ llxFooter();
 if ($action == "assign") {
     $reportId = GETPOST("reportId", 'int');
     $projectid = GETPOST("projectid", 'int');
-    $sqlUpdate = "UPDATE llx_reports SET projectid = " . $projectid . " WHERE rowid = " . $reportId;
+    $sqlUpdate = "UPDATE llx_design SET fk_project = $projectId WHERE rowid = (SELECT rowid FROM llx_design_version WHERE rowid = " . $reportId . ")";
     $db->query($sqlUpdate);
     echo '<script>window.location.href = "' . DOL_URL_ROOT . '/projet/card.php?id=' . $projectid . '&projectid=' . $projectid . '";</script>';
 } else if ($action == "delete") {
     $reportId = GETPOST("reportId", 'int');
-    $sql = "DELETE FROM llx_reports WHERE rowid = " . $reportId;
+    $sql = "UPDATE llx_design SET archived = 1 WHERE rowid = (SELECT base_id FROM llx_design_version WHERE rowid = " . $reportId . ")";
     $db->query($sql);
     echo '<script>window.location.href = "?action=overview";</script>';
 } else if($action == "deassign"){
@@ -308,7 +308,22 @@ if ($action == "assign") {
         $projects = $db->query($sqlProjects)->fetch_all(MYSQLI_ASSOC);
         //var_dump($sqlProjects);
         // Fetch all reports
-        $sqlReports = "SELECT rowid, title, description, content, projectid FROM llx_reports";
+        $sqlVersion = 
+        "SELECT 
+        d.rowid,
+        d.fk_project,
+        dv.rowid AS version_id,
+        dv.title,
+        dv.description,
+        dv.content
+        FROM llx_design d
+        LEFT JOIN llx_design_version dv ON d.rowid = dv.base_id
+        WHERE d.archived = 0
+        AND dv.version = (
+            SELECT MAX(dv2.version)
+            FROM llx_design_version dv2
+            WHERE dv2.base_id = dv.base_id
+        )";
         $reports = $db->query($sqlReports)->fetch_all(MYSQLI_ASSOC);
         $reportId = GETPOST("reportId");
         $projectId = GETPOST("projectId");
@@ -460,7 +475,120 @@ if ($action == "assign") {
 
 
     }else if($action == "archive"){
+        $sql = "SELECT 
+        d.rowid AS design_id,
+        u.firstname,
+        u.lastname,
+        v.rowid AS version_id,
+        v.content,
+        v.parameters,
+        v.date AS version_date,
+        v.title,
+        v.description,
+        v.fk_user
+        FROM llx_design d
+        LEFT JOIN llx_design_version v ON d.rowid = v.base_id
+        LEFT JOIN llx_user u ON v.fk_user = u.rowid
+        WHERE d.archived = 1
+        ORDER BY d.rowid, v.date DESC";
+        var_dump($sql);
+        $res = $db->query($sql);
         
+        $designs = [];
+        
+        while ($row = $res->fetch_assoc()) {
+            $designId = $row['design_id'];
+            if (!isset($designs[$designId])) {
+                // Store main design data
+                $designs[$designId] = [
+                    'main' => $row,
+                    'versions' => []
+                ];
+            }
+            // Add version if exists
+            if ($row['version_id']) {
+                $designs[$designId]['versions'][] = $row;
+            }
+        }
+        echo '<h1>Archivierte Designs</h1>';
+        echo '<table class="table table-striped table-hover" id="reportTable">';
+        echo '<thead>';
+        echo '<tr>';
+        echo '<th scope="col">Titel</th>';
+        echo '<th scope="col">Beschreibung</th>';
+        echo '<th scope="col">Zuletzt bearbeitet am</th>';
+        echo '<th scope="col">Zuletzt bearbeitet von</th>';
+        echo '<th scope="col"></th>';  // Expand button column
+        echo '<th scope="col"></th>';  // Restore button column
+        echo '</tr>';
+        echo '</thead>';
+        echo '<tbody>';
+
+        if (!empty($designs)) {
+            foreach ($designs as $designId => $data) {
+                $main = $data['main'];
+                // Main row with expand button
+                echo '<tr class="design-row">
+                    <td>'.htmlspecialchars($main['title']).'</td>
+                    <td>'.htmlspecialchars($main['description']).'</td>
+                    <td>'.htmlspecialchars($main['date']).'</td>
+                    <td>'.htmlspecialchars(trim($main['firstname'].' '.$main['lastname'])).'</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary toggle-versions" 
+                                data-design="'.$designId.'">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <a href="?action=restore&reportId='.$designId.'" 
+                        class="btn btn-sm btn-success">Wiederherstellen</a>
+                    </td>
+                </tr>';
+                
+                // Version details row (hidden initially)
+                echo '<tr class="version-details" id="versions-'.$designId.'" style="display: none;">
+                    <td colspan="6">  <!-- Reduced colspan from 7 to 6 -->
+                        <div class="version-history">
+                            <h6>Versionen:</h6>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Version</th>
+                                        <th>Datum</th>
+                                        <th>Änderungen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>';
+                                foreach ($data['versions'] as $version) {
+                                    echo '<tr>
+                                        <td>#'.htmlspecialchars($version['version_id']).'</td>
+                                        <td>'.htmlspecialchars($version['version_date']).'</td>
+                                        <td>'.htmlspecialchars($version['version_data']).'</td>
+                                    </tr>';
+                                }
+                                echo '</tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>';
+            }
+        } else {
+            echo '<tr><td colspan="6">Keine archivierten Designs vorhanden.</td></tr>';  // Reduced colspan
+        }
+echo '</tbody></table>';
+    echo "
+    <script>
+    document.querySelectorAll('.toggle-versions').forEach(button => {
+        button.addEventListener('click', () => {
+            const target = document.getElementById('versions-' + button.dataset.design);
+            const isHidden = target.style.display === 'none';
+            
+            target.style.display = isHidden ? 'table-row' : 'none';
+            button.querySelector('i').classList.toggle('fa-chevron-down', !isHidden);
+            button.querySelector('i').classList.toggle('fa-chevron-up', isHidden);
+        });
+    });
+    </script>";
     }else{
 
 
@@ -526,7 +654,7 @@ if ($action == "assign") {
     }else if($action == "edit") {
     $reportId = GETPOST("reportId");
     //echo $reportId;
-    $sql = "SELECT * FROM llx_design_versions WHERE rowid = ".$reportId;
+    $sql = "SELECT * FROM llx_design_version WHERE rowid = ".$reportId;
     $res = $db->query($sql)->fetch_all();
     $userId = $res[0][1] ? $res[0][1] : $user->id;
     $description = $res[0][6];
@@ -581,7 +709,7 @@ if ($action == "assign") {
 
 
 }else if($action == "basicDesign"){
-    $sql = "SELECT * FROM llx_design_versions WHERE version = (SELECT MAX(version) FROM llx_design_versions WHERE base_id = 0)";
+    $sql = "SELECT * FROM llx_design_version WHERE version = (SELECT MAX(version) FROM llx_design_version WHERE base_id = 0)";
     $res = $db->query($sql)->fetch_all();
     $parameters = base64_decode($res[0][3]);
     $reportId = $res[0][0];
@@ -617,22 +745,6 @@ if ($action == "assign") {
     // Determine if we are in overwrite mode
     $isOverwriteMode = ($param === 'overwrite');
     $isAssignMode = $projectid;
-    //     $sql = "
-    //     SELECT
-    //         r.rowid AS design_id,
-    //         r.fk_user,
-    //         r.title,
-    //         r.description,
-    //         r.date,
-    //         r.projectid,
-    //         u.lastname,
-    //         u.firstname,
-    //         p.title AS project_title,
-    //         r.content
-    //     FROM llx_reports r
-    //     LEFT JOIN llx_user u ON r.fk_user = u.rowid
-    //     LEFT JOIN llx_projet p ON r.projectid = p.rowid
-    // ";
 
     $sql = "
         SELECT
@@ -642,22 +754,22 @@ if ($action == "assign") {
             dv.title,
             dv.description,
             dv.date,
-            dv.projectid,
             u.lastname,
             u.firstname,
             p.title AS project_title,
+            d.fk_project,
             dv.content
-        FROM llx_design_versions dv
+        FROM llx_design_version dv
         LEFT JOIN llx_user u ON dv.fk_user = u.rowid
-        LEFT JOIN llx_projet p ON dv.projectid = p.rowid
         LEFT JOIN llx_design d ON d.rowid = dv.base_id
+        LEFT JOIN llx_projet p ON d.fk_project = p.rowid
         WHERE d.archived = 0
         AND dv.version = (
             SELECT MAX(dv2.version)
-            FROM llx_design_versions dv2
+            FROM llx_design_version dv2
             WHERE dv2.base_id = dv.base_id
-        );
-
+        )
+        ORDER BY d.rowid ASC;
     ";
 
     //}
@@ -680,7 +792,8 @@ if ($action == "assign") {
         echo "<a href='?action=new' class='btn btn-dark-gray btn-sm'>Neues Design erstellen</a>";
         // "Zuweisen" always shown, no projectid check
         echo "<button id='deleteSelectedBtn' class='btn btn-sm btn-danger' disabled>Löschen</button>";
-        //
+        // Archived button
+        echo "<a href='?action=archive' class='btn btn-sm btn-info'>Archiviert</a>";
         //echo "<a href='?action=basicDesign' class='btn btn-sm btn-outline-primary'>Basis-Design bearbeiten</a>";
     }else if($isOverwriteMode && !$isAssignMode){
         echo "<a href='?action=overview' class='btn btn-outline-primary btn-sm'>Zurück zur Übersicht</a>";
@@ -723,7 +836,7 @@ if ($action == "assign") {
         foreach ($reports as $report) {
             $reportId = $report['rowid'];
             $baseId = $report['base_id'];
-            $projectId = $report['projectid'] ? $report['projectid'] : $projectid;
+            $projectId = $report['fk_project'] ? $report['fk_project'] : $projectid;
             $title = $report['title'];
             $description = $report['description'];
             $lastModified = $report['date'];
@@ -820,7 +933,7 @@ if ($action == "assign") {
     echo '</tbody>';
     echo '</table>';
 
-	// Seachbar js
+	// Searchbar js
 	echo '
 		<script>
 			document.addEventListener("DOMContentLoaded", () => {
@@ -1010,7 +1123,7 @@ if ($action == "assign") {
 
             if (confirm("Sind Sie sicher, dass Sie die ausgewählten Reports löschen möchten?")) {
                 const formData = new FormData();
-                formData.append("action", "deleteMultiple");
+                formData.append("action", "archiveMultiple");
                 formData.append("reportIds", JSON.stringify(selectedReportIds));
 
                 fetch("reportDesignerUpload.php", {
@@ -1028,7 +1141,9 @@ if ($action == "assign") {
                                 row.remove(); // Remove main row
                             }
                         });
-                        supdateDeleteButtonState();
+                        updateDeleteButtonState();
+                        // Find the row where the attribute data-design-id matches the id in selectedReportIds and delete it
+                        window.location.reload();
                     } else {
                         alert("Fehler beim Löschen: " + data.error);
                     }
