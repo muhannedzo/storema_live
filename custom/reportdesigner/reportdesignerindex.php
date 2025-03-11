@@ -491,7 +491,6 @@ if ($action == "assign") {
         LEFT JOIN llx_user u ON v.fk_user = u.rowid
         WHERE d.archived = 1
         ORDER BY d.rowid, v.date DESC";
-        var_dump($sql);
         $res = $db->query($sql);
         
         $designs = [];
@@ -510,16 +509,24 @@ if ($action == "assign") {
                 $designs[$designId]['versions'][] = $row;
             }
         }
-        echo '<h1>Archivierte Designs</h1>';
-        echo '<table class="table table-striped table-hover" id="reportTable">';
+        echo "<div class='container'>";
+        echo "<h1>Archivierte Designs</h1>";
+        echo "<div class='optionRow mb-3 d-flex gap-2'>";
+        echo "<a href='?action=overview' class='btn btn-outline-primary btn-sm'>Zurück zur Übersicht</a>";
+        echo "</div>";
+        // echo '<div class="mb-3">';
+        // echo '  <input type="text" id="searchArchive" class="form-control" placeholder="Suche nach Titel...">';
+        // echo '</div>';
+
+        echo '<table class="table table-striped" id="archiveTable">';
         echo '<thead>';
         echo '<tr>';
-        echo '<th scope="col">Titel</th>';
-        echo '<th scope="col">Beschreibung</th>';
-        echo '<th scope="col">Zuletzt bearbeitet am</th>';
-        echo '<th scope="col">Zuletzt bearbeitet von</th>';
-        echo '<th scope="col"></th>';  // Expand button column
-        echo '<th scope="col"></th>';  // Restore button column
+        echo '<th scope="col"></th>';  // For expand button
+        echo '<th scope="col" data-sort="text">Titel</th>';
+        echo '<th scope="col" data-sort="text">Beschreibung</th>';
+        echo '<th scope="col" data-sort="date">Zuletzt bearbeitet am</th>';
+        echo '<th scope="col" data-sort="text">Zuletzt bearbeitet von</th>';
+        echo '<th scope="col"></th>';  // Actions
         echo '</tr>';
         echo '</thead>';
         echo '<tbody>';
@@ -527,68 +534,313 @@ if ($action == "assign") {
         if (!empty($designs)) {
             foreach ($designs as $designId => $data) {
                 $main = $data['main'];
-                // Main row with expand button
-                echo '<tr class="design-row">
-                    <td>'.htmlspecialchars($main['title']).'</td>
-                    <td>'.htmlspecialchars($main['description']).'</td>
-                    <td>'.htmlspecialchars($main['date']).'</td>
-                    <td>'.htmlspecialchars(trim($main['firstname'].' '.$main['lastname'])).'</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary toggle-versions" 
-                                data-design="'.$designId.'">
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                    </td>
-                    <td>
-                        <a href="?action=restore&reportId='.$designId.'" 
-                        class="btn btn-sm btn-success">Wiederherstellen</a>
-                    </td>
-                </tr>';
+                $formattedDate = date("d.m.Y H:i:s", strtotime($main['version_date']));
                 
-                // Version details row (hidden initially)
-                echo '<tr class="version-details" id="versions-'.$designId.'" style="display: none;">
-                    <td colspan="6">  <!-- Reduced colspan from 7 to 6 -->
-                        <div class="version-history">
-                            <h6>Versionen:</h6>
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Version</th>
-                                        <th>Datum</th>
-                                        <th>Änderungen</th>
-                                    </tr>
-                                </thead>
-                                <tbody>';
-                                foreach ($data['versions'] as $version) {
-                                    echo '<tr>
-                                        <td>#'.htmlspecialchars($version['version_id']).'</td>
-                                        <td>'.htmlspecialchars($version['version_date']).'</td>
-                                        <td>'.htmlspecialchars($version['version_data']).'</td>
-                                    </tr>';
-                                }
-                                echo '</tbody>
-                            </table>
-                        </div>
-                    </td>
-                </tr>';
+                // Main Row
+                echo '<tr class="design-row" data-design-id="'.intval($designId).'">';
+                echo '<td>';
+                echo '  <button class="btn btn-sm btn-outline-secondary toggle-versions" 
+                            data-design="'.$designId.'">
+                            <i class="bi bi-arrows-angle-expand"></i>
+                        </button>';
+                echo '</td>';
+                
+                echo '<td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'
+                    . htmlspecialchars($main['title']) . '</td>';
+                
+                // Description with truncation
+                $maxLength = 50;
+                $shortDescription = strlen($main['description']) > $maxLength 
+                    ? substr($main['description'], 0, $maxLength) . '...' 
+                    : $main['description'];
+                echo '<td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">';
+                echo '  <span class="truncated-text" style="cursor: pointer; color: blue;" 
+                            title="Klicken, um mehr zu sehen" 
+                            data-full-text="' . htmlspecialchars($main['description']) . '">'
+                    . htmlspecialchars($shortDescription) . '</span>';
+                echo '</td>';
+                
+                echo '<td>' . $formattedDate . '</td>';
+                echo '<td>' . htmlspecialchars(trim($main['firstname'] . ' ' . $main['lastname'])) . '</td>';
+                
+                // Actions Dropdown
+                echo '<td>';
+                echo '  <div class="custom-dropdown">';
+                echo '      <button class="custom-dropdown-toggle">Aktionen <span>&#9662;</span></button>';
+                echo '      <div class="custom-dropdown-menu">';
+                echo '          <a href="?action=restore&reportId='.$designId.'">Wiederherstellen</a>';
+                echo '          <a href="#" class="delete-archive" data-design-id="'.intval($designId).'">Endgültig löschen</a>';
+                echo '      </div>';
+                echo '  </div>';
+                echo '</td>';
+                
+                echo '</tr>';  // End main row
+
+                // Version Details Row
+                echo '<tr class="version-details" id="versions-'.$designId.'" style="display: none;">';
+                echo '<td colspan="6">';
+                echo '  <div class="version-history p-3">';
+                echo '      <h6>Versionen:</h6>';
+                echo '      <table class="table table-sm">';
+                echo '          <thead>';
+                echo '              <tr>';
+                echo '                  <th>Version</th>';
+                echo '                  <th>Datum</th>';
+                echo '                  <th>Vorschau</th>';
+                echo '              </tr>';
+                echo '          </thead>';
+                echo '          <tbody>';
+                
+                
+                foreach ($data['versions'] as $version) {
+                    $versionDate = $version['version_date'];
+                    echo '<tr class="version-preview-row" data-content="'.htmlspecialchars($version['content']).'">';
+                    echo '  <td>#'.htmlspecialchars($version['version_id']).'</td>';
+                    echo '  <td>'.htmlspecialchars($versionDate).'</td>';
+                    echo '  <td>';
+                    echo '    <button class="btn btn-sm btn-secondary version-preview-btn">Vorschau</button>';
+                    echo '  </td>';
+                    echo '</tr>';
+                }
+                
+                echo '          </tbody>';
+                echo '      </table>';
+                echo '  </div>';
+                echo '</td>';
+                echo '</tr>';  // End version row
             }
+            echo '
+                <div class="modal fade" id="fullTextModal" tabindex="-1" aria-labelledby="fullTextModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered" style="max-height: 90vh;">
+                    <div class="modal-content" style="height: 80vh;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="fullTextModalLabel">Vollständige Beschreibung</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                    </div>
+                    <div class="modal-body" id="modalBodyContent" style="overflow-y: auto;">
+                        <!-- Full text will be inserted here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                    </div>
+                    </div>
+                </div>
+                </div>
+
+                ';
         } else {
-            echo '<tr><td colspan="6">Keine archivierten Designs vorhanden.</td></tr>';  // Reduced colspan
+            echo '<tr><td colspan="6">Keine archivierten Designs vorhanden.</td></tr>';
         }
-echo '</tbody></table>';
+
+        echo '</tbody>';
+        echo '</table>';
+        echo '</div>';  // Close container
     echo "
     <script>
-    document.querySelectorAll('.toggle-versions').forEach(button => {
-        button.addEventListener('click', () => {
-            const target = document.getElementById('versions-' + button.dataset.design);
-            const isHidden = target.style.display === 'none';
-            
-            target.style.display = isHidden ? 'table-row' : 'none';
-            button.querySelector('i').classList.toggle('fa-chevron-down', !isHidden);
-            button.querySelector('i').classList.toggle('fa-chevron-up', isHidden);
+        // Expand/collapse versions
+        document.querySelectorAll('.toggle-versions').forEach(button => {
+            button.addEventListener('click', () => {
+                const target = document.getElementById('versions-' + button.dataset.design);
+                const isHidden = target.style.display === 'none';
+                
+                target.style.display = isHidden ? 'table-row' : 'none';
+                button.querySelector('i').classList.toggle('bi-arrows-angle-expand', !isHidden);
+                button.querySelector('i').classList.toggle('bi-arrows-angle-contract', isHidden);
+            });
         });
-    });
+
+        // Version preview functionality
+        document.querySelectorAll('.version-preview-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const row = btn.closest(\".version-preview-row\");
+                const contentEncoded = row.getAttribute(\"data-content\");
+                if (contentEncoded) {
+                    const decodedContent = b64DecodeUnicode(contentEncoded);
+                    const modalBody = document.getElementById('modalBodyContent');
+                    if (modalBody) {
+                        modalBody.innerHTML = decodedContent;
+                        new bootstrap.Modal(document.getElementById('fullTextModal')).show();
+                    }
+                } else {
+                    console.error(\"No content available for preview.\");
+                }
+            });
+        });
+
+
+
+
+        // Base64 decode helper (reuse from existing code)
+        function b64DecodeUnicode(str) {
+            return decodeURIComponent(atob(str).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        }
     </script>";
+    echo '
+        <style>
+        .btn-restore {
+            background-color:rgb(69, 223, 133);
+            border: 1px solid #13aa52;
+            border-radius: 4px;
+            box-shadow: rgba(0, 0, 0, .1) 0 2px 4px 0;
+            box-sizing: border-box;
+            color: #fff;
+            cursor: pointer;
+            font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            outline: none;
+            outline: 0;
+            padding: 10px 25px;
+            text-align: center;
+        }
+
+        .btn-restore:hover{
+            background-color:rgb(13, 171, 82);
+            border: 1px solid #13aa52;
+            box-shadow: rgba(0, 0, 0, .1) 0 4px 8px 0;
+        }
+
+        #archiveTable td{
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+
+		#archiveTable th {
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+
+		#archiveTable thead th {
+			background-color:rgb(36, 36, 36); /* Light Steel Blue */
+			color: #fff;              /* White text for contrast */
+			padding: 12px 8px;        /* Optional: match your cell padding */
+		}
+
+
+		#archiveTable .report-row[data-design-id=\'0\'] td{
+  			background-color: #d1ecf1;
+		}
+
+
+        /* Custom dropdown styles */
+        .custom-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .custom-dropdown-toggle {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .custom-dropdown-toggle span {
+            font-size: 1rem; /* Arrow size */
+        }
+
+        .custom-dropdown-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            min-width: 160px;
+            border-radius: 4px;
+        }
+
+        .custom-dropdown-menu a {
+            color: #333;
+            padding: 8px 12px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+        }
+
+        .custom-dropdown-menu a:hover {
+            background-color: #f1f1f1;
+            color: #000;
+        }
+
+        .custom-dropdown:hover .custom-dropdown-menu {
+            display: block; /* Show menu on hover */
+        }
+
+		/* Custom styling for buttons at the top of the table */
+		.optionRow .btn-dark-gray {
+		padding: 10px 20px;
+		font-size: 0.9rem;
+		border-radius: 5px;
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		text-transform: none;
+		}
+
+		.optionRow .btn-dark-gray {
+			background-color: #343a40;  /* Modern dark gray */
+			border: 1px solid #343a40;
+			color: #fff; /* White text */
+			padding: 10px 20px;
+			font-size: 0.9rem;
+			border-radius: 5px;
+			transition: background-color 0.3s ease, border-color 0.3s ease;
+			text-decoration: none;
+		}
+
+		/* Primary (filled) button styles */
+		.optionRow .btn-primary,
+		.optionRow .btn-success,
+		.optionRow .btn-danger {
+		    border: none;
+		}
+
+
+
+
+		/* Hover effects for filled buttons */
+		.optionRow .btn-danger:hover {
+		background-color: #c82333;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		}
+
+		.optionRow .btn-success:hover {
+		background-color: #218838;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		}
+
+		.optionRow .btn-primary:hover {
+		background-color: #0056b3;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		}
+
+		/* Disabled state */
+		.optionRow .btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		box-shadow: none;
+		}
+
+		.preview-row table thead th {
+			background-color:rgb(255, 255, 255) !important;
+			color: #000 !important;
+			padding: 12px 8px;
+		}
+
+		.preview-row canvas{
+			border: 1px solid #ddd;
+		}
+
+        </style>
+        ';
     }else{
 
 
@@ -793,7 +1045,7 @@ echo '</tbody></table>';
         // "Zuweisen" always shown, no projectid check
         echo "<button id='deleteSelectedBtn' class='btn btn-sm btn-danger' disabled>Löschen</button>";
         // Archived button
-        echo "<a href='?action=archive' class='btn btn-sm btn-info'>Archiviert</a>";
+        echo "<a href='?action=archive' class='btn btn-sm btn-info'>Archiv</a>";
         //echo "<a href='?action=basicDesign' class='btn btn-sm btn-outline-primary'>Basis-Design bearbeiten</a>";
     }else if($isOverwriteMode && !$isAssignMode){
         echo "<a href='?action=overview' class='btn btn-outline-primary btn-sm'>Zurück zur Übersicht</a>";
