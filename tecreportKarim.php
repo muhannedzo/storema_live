@@ -92,37 +92,66 @@ dol_include_once('/stores/compress.php');
  $compress = new Compress();
  $userId = $user->id;
  llxHeader("", $langs->trans("Report"));
-
  print load_fiche_titre($langs->trans("TicketReport").$project->title, '', '');
  //////////////////////////////////////////////////////////////////////////////////////////
 $existingReportSQL = "SELECT content, parameters, rowid FROM llx_tec_forms WHERE fk_ticket = ".$ticketId;
 $existingReportRes = $db->query($existingReportSQL)->fetch_all();
-
+$dateofuse = $object->array_options["options_dateofuse"];
+if($dateofuse == ""){
+    $dateofuse = 0;
+}
+// If this ticket used an older design, then it will have a design_id stored in param
+// Use that to fetch the correct older version of that ticket
 if($existingReportRes){
-$tecFormId = $existingReportRes[0][2];
-$form = base64_decode($existingReportRes[0][0]);
-//echo base64_decode($existingReportRes[0][1]);
-// Change later: Right now we have to manually create report-form and attach form to it when we open an already existing form
-echo "<form id='report-form'>".$form."</form>";
-echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-body p-0">
-        <img src="" id="modalImage" class="img-fluid" alt="Full Size Image">
-      </div>
-      <div class="modal-footer p-2">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>';
+    
+    $params = base64_decode($existingReportRes[0][1]);
+    // If params got id design_id then store that value in new var
+    $designId = 0;
+    if($params){
+        $params = json_decode($params, true);
+        // Iterate through params
+        foreach($params as $param){
+            if($param["id"] === "design_id"){
+                $designId = $param["value"];
+                break;
+            }
+        }
+    }
+    
+    if($designId !== 0 && $designId !== "" && $designId !== null){
+        //var_dump($designId);
+        $reportSQL = "SELECT * FROM llx_design_version WHERE rowid = $designId";
+        $reportRes = $db->query($reportSQL)->fetch_all();
+        //var_dump($reportRes);
+        if($reportRes){
+            $data = $reportRes[0];
+        }
+    }
 }else{
-//echo "In second case";
-$reportSQL = "SELECT * FROM llx_reports WHERE projectid = ".$object->fk_project;
-$reportRes = $db->query($reportSQL)->fetch_all();
-if($reportRes){
-$reportData = $reportRes[0];
-$form = base64_decode($reportData[2]);
+
+    // Attempt to get report for the project
+    $reportSQL = "SELECT dv.* 
+    FROM llx_design_version dv 
+    JOIN llx_design d ON d.rowid = dv.base_id
+    WHERE d.fk_project = ".$project->id."
+    ORDER BY dv.version DESC LIMIT 1";
+    $reportRes = $db->query($reportSQL)->fetch_all();
+
+    if ($reportRes) {
+        $data = $reportRes[0];
+    } else {
+        // Fallback to basic report if no project-specific report exists
+        $basicSQL = "SELECT dv.* 
+        FROM llx_design_version dv
+        JOIN llx_design d ON d.rowid = dv.base_id
+        WHERE d.rowid = 0 
+        ORDER BY dv.version DESC LIMIT 1";
+        $basicRes = $db->query($basicSQL)->fetch_all();
+        $data = $basicRes[0];
+    }
+}
+
+$form = base64_decode($data[2]);
 echo $form;
 echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -136,30 +165,6 @@ echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="ima
     </div>
   </div>
 </div>';
-}else{
-    $basicSQL = "SELECT * FROM llx_reports WHERE rowid = 0";
-    $basicRes = $db->query($basicSQL)->fetch_all();
-    $basicData = $basicRes[0];
-    $form = base64_decode($basicData[2]);
-    echo $form;
-
-    
-    echo '
-    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-            <div class="modal-body p-0">
-                <img src="" id="modalImage" class="img-fluid" alt="Full Size Image">
-            </div>
-            <div class="modal-footer p-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-            </div>
-            </div>
-        </div>
-    </div>';
-    
-}
-}
 
 
 
@@ -170,183 +175,314 @@ var userId ='.$user->id.';
 var storeId ='.$storeid.';
 var socId = '.$object->fk_soc.';
 
-fetchUploadedImages();
-setupCanvasEvents();
-setupFileInputs();
-setupSaveButtons();
+    fetchUploadedImages();
+    setupCanvasEvents();
+    setupSaveButtons();
+    fillDynamicContent();
 
-// Just temporary solution:
-makeTableResponsive();
 
-    function makeTableResponsive() {
-        var tables = document.querySelectorAll("table");
-            tables.forEach(function(table) {
-                var parentDiv = table.parentElement;
-                if ((parentDiv.scrollWidth > parentDiv.clientWidth) && parentDiv.classList.contains("report-element-wrapper")) {
-                    parentDiv.classList.add("table-responsive");
+    function fillDynamicContent() {
+        // Fill dynamic content here
+        
+        // Switch to handle the dynamically generated content
 
-                    // Create gradient overlay element
-                    var gradientDiv = document.createElement(\'div\');
-                    gradientDiv.style.position = \'absolute\';
-                    gradientDiv.style.right = \'0\';
-                    gradientDiv.style.top = \'0\';
-                    gradientDiv.style.width = \'30px\'; 
-                    gradientDiv.style.height = table.offsetHeight + \'px\';
-                    gradientDiv.style.background = \'linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.3) 100%)\';
-                    gradientDiv.style.pointerEvents = \'none\';
-                    gradientDiv.style.zIndex = \'2\'; // Higher than table content
-                    gradientDiv.style.transition = \'opacity 0.2s ease\';
-                    parentDiv.appendChild(gradientDiv);
-
-                    // Update gradient visibility
-                    function updateGradient() {
-                        gradientDiv.style.opacity = parentDiv.scrollLeft === 0 ? \'1\' : \'0\';
-                    }
-
-                    // Initial check
-                    updateGradient();
-                    
-                    // Scroll listener
-                    parentDiv.addEventListener(\'scroll\', updateGradient);
+        let dynamicDisplays = document.querySelectorAll([\'[data-content-type]\']);
+        dynamicDisplays.forEach((element) => {
+            var text = element.innerHTML.toLowerCase();
+            var index = text.indexOf(" ") !== -1 ? text.indexOf(" ") : text.length;
+            var result = text.substring(0, index);
+            if(element.dataset.contentType === "dynamic"){
+                //console.log(result);
+                switch(result){
+                    case "filiale":
+                        element.innerHTML = "Filiale: " + '.json_encode($store->b_number).' ;
+                        break;
+                    case "tickettyp":
+                    case "ticketart":
+                        element.innerHTML = "Ticketart: " + '.json_encode($object->type_label).' ;
+                        break;
+                    case "termin":
+                        let dateofuse = '.$dateofuse.';
+                        // Format dateofuse to dd.mm.yyyy hh:ii
+                        let date = 0;
+                        if(dateofuse !== 0){
+                            date = new Date(dateofuse * 1000);
+                            date = date.toLocaleString("de-DE");
+                        }else{
+                            date = "Kein Termin festgelegt";
+                        }
+                        element.innerHTML = "Termindatum: " + date;
+                        break;
+                    case "Themengruppe":
+                        element.innerHTML = "Themengruppe: " + '.json_encode($object->category_code).' ;
+                        break;
+                    case "ticketnummer":
+                        element.innerHTML = "Ticketnummer: " + '.json_encode($object->ref).' ;
+                        break;
+                    case "kundennummer":
+                        element.innerHTML = "Kundennummer: " + '.json_encode($company->id).' ;
+                        break;
+                    case "kundenname":
+                        element.innerHTML = "Kundenname: " + '.json_encode($store->customer_name).' ;
+                        break;
+                    case "name":
+                        element.innerHTML = '.json_encode($project->title).' ;
+                        break;
+                    case "stop":
+                    case "stopp":
+                        element.innerHTML = "Stopp: " + '.json_encode($object->array_options["options_stopnummer"]).' ;
+                        break;
+                    case "datum":
+                        break;
+                    case "uhrzeit":
+                        break;
+                    case "priorität":
+                        break;
+                    case "dringlichkeit":
+                        element.innerHTML = "Dringlichkeit: " + '.json_encode($object->severity_code).' ;
+                        break;
+                    case "kategorie":
+                        element.innerHTML = "Kategorie: " + '.json_encode($object->category_label).' ;
+                        break;
+                    case "auftrag":
+                        element.innerHTML = "Auftrag: " + '.json_encode($object->message).' ;
+                        break;
+                    case "lösungsvorschlag":
+                        element.innerHTML = "Lösung: " + '.json_encode($object->array_options["options_losung"]).' ;
+                        break;
+                    case "strasse":
+                    case "straße":
+                        element.innerHTML = "Straße: " + '.json_encode($store->street).' + ", " + '.json_encode($store->house_number).' ;
+                        break;
+                    case "hausnummer":
+                        element.innerHTML = "Hnr: " + '.json_encode($store->house_number).' ;
+                        break;
+                    case "stadt":
+                    case "ort":
+                        element.innerHTML = "Ort: " + '.json_encode($store->city).' + ", " + '.json_encode($store->zip_code).' ;
+                        break;
+                    case "plz":
+                        element.innerHTML = "Plz: " + '.json_encode($store->zip_code).' ;
+                        break;
+                    case "ext.ticketnummer":
+                        element.innerHTML = "Ext. Ticketnummer: " + '.json_encode($object->array_options["options_externalticketnumber"]).' ;
+                        break;
+                    case "telefonnummer":
+                    case "tel":
+                        element.innerHTML = "Tel.Nummer: " + '.json_encode($store->phone).' ;
+                        break;
+                    default:
+                        element.innerHTML = "nothing";
+                        break;
                 }
-            });
-    }
 
-
-function setupFileInputs() {
-    var fileInputs = document.querySelectorAll(\'input[type="file"]\');
-    fileInputs.forEach(function(input) {
-        input.accept = ".jpg, .png";
-        input.disabled = false;
-
-        let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
-        if (!uploadedImagesContainer) {
-            uploadedImagesContainer = document.createElement("div");
-            uploadedImagesContainer.classList.add("uploaded-images-container", "row");
-            input.parentElement.appendChild(uploadedImagesContainer);
-        }
-
-        // Attach change event listener to this file input
-        input.addEventListener("change", function() {
-            const files = input.files;
-            if (files.length > 1) {
-                alert("Bitte nur eine Datei auswählen."); // "Please select only one file."
-                input.value = ""; // Reset the input
-                return;
-            }
-            if (files.length === 1) {
-                uploadFiles(files, input, uploadedImagesContainer);
             }
         });
-    });
-}
+        // Search for all textareas with attr data-locked = true
+        let lockedTextareas = document.querySelectorAll(\'textarea[data-locked="true"]\');
+        lockedTextareas.forEach((textarea) => {
+            textarea.disabled = true;
+        });
 
-function setupCanvasEvents() {
-    var canvases = document.querySelectorAll(\'canvas.report-element\');
-    canvases.forEach(function(canvas) {
-        setupCanvasEventForCanvas(canvas);
-    });
-}
-
-function setupCanvasEventForCanvas(canvas) {
-    setupCanvas(canvas);
-    const context = canvas.getContext("2d");
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-
-    canvas.addEventListener("mousedown", startDrawing);
-    canvas.addEventListener("mousemove", draw);
-    canvas.addEventListener("mouseup", stopDrawing);
-    canvas.addEventListener("mouseleave", stopDrawing);
-
-    // Add touch event listeners
-    canvas.addEventListener("touchstart", (event) => {
-        event.preventDefault();
-        startDrawing(event);
-    });
-    canvas.addEventListener("touchmove", (event) => {
-        event.preventDefault();
-        draw(event);
-    });
-    canvas.addEventListener("touchend", stopDrawing);
-    canvas.addEventListener("touchcancel", stopDrawing);
-
-    function startDrawing(event) {
-        isDrawing = true;
-        [lastX, lastY] = getCoordinates(event, canvas);
     }
 
-    function draw(event) {
-        if (!isDrawing) return;
-        let [x, y] = getCoordinates(event, canvas);
+    
 
-        // Round to the nearest 0.5 pixel for sharper lines
-        x = Math.round(x * 2) / 2;
-        y = Math.round(y * 2) / 2;
+    
 
-        context.beginPath();
-        context.moveTo(lastX, lastY);
-        context.lineTo(x, y);
-        context.stroke();
-        [lastX, lastY] = [x, y];
+    function setupFileInputs() {
+        var fileInputs = document.querySelectorAll(\'input[type="file"]\');
+        fileInputs.forEach(function(input) {
+            input.accept = ".jpg, .png";
+            input.disabled = false;
+
+            let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
+            if (!uploadedImagesContainer) {
+                uploadedImagesContainer = document.createElement("div");
+                uploadedImagesContainer.classList.add("uploaded-images-container", "row");
+                input.parentElement.appendChild(uploadedImagesContainer);
+            }
+
+            // Attach change event listener to this file input
+            input.addEventListener("change", function() {
+                const files = input.files;
+                if (files.length > 1) {
+                    alert("Bitte nur eine Datei auswählen."); // "Please select only one file."
+                    input.value = ""; // Reset the input
+                    return;
+                }
+                if (files.length === 1) {
+                    uploadFiles(files, input, uploadedImagesContainer);
+                }
+            });
+        });
     }
 
-    function stopDrawing() {
-        isDrawing = false;
+    // Called once on page load
+    function setupCanvasEvents() {
+        const canvases = document.querySelectorAll(\'canvas.report-element\');
+        canvases.forEach((canvas, index) => {
+            // 1) Assign a unique id if not already set
+            if (!canvas.id) {
+                // e.g. "canvas-0", "canvas-1", etc.
+                canvas.id = \'canvas-\' + index;
+            }
+            // 2) Setup the canvas and drawing events
+            setupCanvasEventForCanvas(canvas);
+            // 3) Create a clear button
+            addClearButton(canvas);
+        });
     }
 
-    function getCoordinates(event, canvas) {
-        const rect = canvas.getBoundingClientRect();
-        let x, y;
-        if (event.touches && event.touches.length > 0) {
-            x = event.touches[0].clientX - rect.left;
-            y = event.touches[0].clientY - rect.top;
-        } else {
-            x = event.clientX - rect.left;
-            y = event.clientY - rect.top;
+    // Setup the canvas (matching displayed size) + add draw listeners
+    function setupCanvasEventForCanvas(canvas) {
+        // 1) Initialize it to match actual rendered size
+        setupCanvas(canvas);
+
+        // 2) Get drawing context
+        const ctx = canvas.getContext(\'2d\');
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // === MOUSE EVENTS ===
+        canvas.addEventListener(\'mousedown\', e => {
+            e.preventDefault();
+            const [x, y] = getMouseCoords(e, canvas);
+            startDrawing(x, y);
+        });
+        canvas.addEventListener(\'mousemove\', e => {
+            e.preventDefault();
+            const [x, y] = getMouseCoords(e, canvas);
+            draw(x, y);
+        });
+        canvas.addEventListener(\'mouseup\', e => {
+            e.preventDefault();
+            stopDrawing();
+        });
+        canvas.addEventListener(\'mouseleave\', e => {
+            e.preventDefault();
+            stopDrawing();
+        });
+
+        // === TOUCH EVENTS ===
+        canvas.addEventListener(\'touchstart\', e => {
+            e.preventDefault();
+            const coords = getTouchCoords(e, canvas);
+            startDrawing(coords.x, coords.y);
+        });
+        canvas.addEventListener(\'touchmove\', e => {
+            e.preventDefault();
+            const coords = getTouchCoords(e, canvas);
+            draw(coords.x, coords.y);
+        });
+        canvas.addEventListener(\'touchend\', e => {
+            e.preventDefault();
+            stopDrawing();
+        });
+        canvas.addEventListener(\'touchcancel\', e => {
+            e.preventDefault();
+            stopDrawing();
+        });
+
+        function startDrawing(x, y) {
+            isDrawing = true;
+            lastX = x;
+            lastY = y;
         }
 
-        // Adjust for device pixel ratio
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
+        function draw(x, y) {
+            if (!isDrawing) return;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            lastX = x;
+            lastY = y;
+        }
 
-        return [x * scaleX, y * scaleY];
+        function stopDrawing() {
+            isDrawing = false;
+        }
     }
-}
 
-    // Function to set up the canvas for high-DPI displays
-    function setupCanvas(canvas) {
-        const ctx = canvas.getContext(\'2d\');
+    // Simple function: exact (x,y) = client - rect
+    function getMouseCoords(event, canvas) {
         const rect = canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-
-        // Set the canvas width and height to the CSS size multiplied by DPR
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-
-        // Scale the context to ensure correct drawing operations
-        ctx.scale(dpr, dpr);
-
-        // Optional: Set default styles
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 3; // This will remain consistent after scaling
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        return [x, y];
     }
 
+    function getTouchCoords(event, canvas) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+
+        if (event.touches && event.touches.length > 0) {
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+        } else {
+            // Fallback for pointer events or single touch
+            clientX = event.clientX;
+            clientY = event.clientY;
+        }
+
+        const rawX = clientX - rect.left;
+        const rawY = clientY - rect.top;
+        return { x: rawX, y: rawY };
+    }
+
+    // Make the canvas\' internal size match the displayed size
+    function setupCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+
+        const ctx = canvas.getContext(\'2d\');
+        ctx.fillStyle = \'#f9f9f9\';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = \'#000\';
+        ctx.lineWidth = 3;
+        ctx.lineCap = \'round\';
+    }
+
+    // Create a button that clears the canvas
+    function addClearButton(canvas) {
+        const clearBtn = document.createElement(\'button\');
+        clearBtn.type = \'button\';
+        clearBtn.dataset.action = \'clear-canvas\';
+        clearBtn.textContent = \'Clear Canvas\';
+
+        // OPTIONAL: prevent it from spanning the whole width
+        // (in case your CSS has button { width: 100% })
+        clearBtn.style.width = \'auto\';
+        clearBtn.style.display = \'inline-block\';
+        clearBtn.style.marginTop = \'0.5em\';
+
+        // Insert the button immediately after the canvas
+        const canvasParent = canvas.parentElement.parentElement;
+        canvasParent.insertBefore(clearBtn, canvas.nextSibling);
+
+        clearBtn.addEventListener(\'click\', function() {
+            clearCanvas(canvas.id);
+        });
+    }
+
+    // Clear the chosen canvas
     function clearCanvas(canvasId) {
         const canvas = document.getElementById(canvasId);
-        if (canvas) {
-            const context = canvas.getContext("2d");
-            context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            setupCanvas(canvas); // Re-setup canvas after clearing
-
-        } else {
-            console.warn(`Canvas element with id "${canvasId}" not found`);
+        if (!canvas) {
+            console.warn(\'Canvas with ID\', canvasId, \'not found\');
+            return;
         }
+        const ctx = canvas.getContext(\'2d\');
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset any transforms
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Re-run setup so it\'s blank but with correct style
+        setupCanvas(canvas);
     }
+
 
     // Query to enable all input type text and checkbox
     var inputs = document.querySelectorAll("input[type=text], input[type=checkbox], input[type=radio]");
@@ -476,118 +612,146 @@ function setupCanvasEventForCanvas(canvas) {
     }
 
     function setupSaveButtons() {
-    const form = document.getElementById("report-form");
-    const submitButton = form.querySelector("button#save-form-button-wrapper");
-    submitButton.type = "button";
-    const saveStayButton = form.querySelector("button#save-form-button");
-    saveStayButton.type = "button";
-    form.appendChild(saveStayButton);
-    form.appendChild(submitButton);
+        const form = document.getElementById("report-form");
+        const submitButton = document.createElement("button");
+        submitButton.innerHTML = "Speichern und verlassen";
+        submitButton.id = "save-form-button-wrapper";
+        submitButton.classList.add("btn", "btn-primary");
+        const saveStayButton = document.createElement("button");
+        saveStayButton.innerHTML = "Speichern";
+        saveStayButton.classList.add("btn", "btn-primary");
+        saveStayButton.id = "save-form-button";
+        form.appendChild(saveStayButton);
+        form.appendChild(submitButton);
+        // const submitButton = form.querySelector("button#save-form-button-wrapper");
+        // submitButton.type = "button";
+        // const saveStayButton = form.querySelector("button#save-form-button");
+        // saveStayButton.type = "button";
+        // form.appendChild(saveStayButton);
+        // form.appendChild(submitButton);
 
-    // Set up event listeners
-    submitButton.addEventListener("click", saveFormAndExit);
+        // Set up event listeners
+        submitButton.addEventListener("click", saveFormAndExit);
 
-    saveStayButton.addEventListener("click", function(event) {
+        saveStayButton.addEventListener("click", function(event) {
+            event.preventDefault();
+            saveForm(function() {
+                // After saving, redirect to the same page with action=view
+                //window.location.href = window.location.pathname + \'?id=\' + ticketId + \'&action=edit\';
+            });
+        });
+    }
+
+    function saveFormAndExit(event) {
         event.preventDefault();
         saveForm(function() {
-            // After saving, redirect to the same page with action=view
-            //window.location.href = window.location.pathname + \'?id=\' + ticketId + \'&action=edit\';
+            // Redirect after saving
+            window.location.href = "index.php";
         });
-    });
-}
+    }
 
-function saveFormAndExit(event) {
-    event.preventDefault();
-    saveForm(function() {
-        // Redirect after saving
-        window.location.href = "index.php";
-    });
-}
+    function saveForm(callback) {
+        event.preventDefault(); // Prevent default form submission
+        
+        const form = document.getElementById("report-form");
 
-function saveForm(callback) {
-    event.preventDefault(); // Prevent default form submission
-    
-    const form = document.getElementById("report-form");
+        // Clone the form to manipulate it without affecting the DOM
+        const formClone = form.cloneNode(true);
 
-    // Clone the form to manipulate it without affecting the DOM
-    const formClone = form.cloneNode(true);
+        // Remove dynamically added image elements
+        const uploadedImagesContainers = formClone.querySelectorAll(\'.uploaded-images-container\');
+        uploadedImagesContainers.forEach(container => container.remove());
 
-    // Remove dynamically added image elements
-    const uploadedImagesContainers = formClone.querySelectorAll(\'.uploaded-images-container\');
-    uploadedImagesContainers.forEach(container => container.remove());
-
-    // Now get the HTML of the cloned form without images
-    //const formHtml = formClone.innerHTML;
-    const originalElements = form.querySelectorAll(\'.report-element\');
-
-    let parameters = [];
-    const uploadedImages = window.uploadedImagesData || [];
-
-    // Capture form data
-    const elements = formClone.querySelectorAll(\'.report-element\');
-    originalElements.forEach((element) => {
-        const id = element.id;
-        let value = "";
-        if (element.type === "checkbox" || element.type === "radio") {
-            value = element.checked;
-            parameters.push({ id: id, value: value });
-        } else if (element.type === "file") {
-            // No action needed for file inputs
-        } else if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
-            value = element.value;
-            parameters.push({ id: id, value: value });
-            console.log("Element:", element, "Value:", value);
-        } else if (element.tagName === "CANVAS") {
-            var dataURL = element.toDataURL();
-            parameters.push({ id: id, value: dataURL });
-        } else {
-            // For other elements, save their innerHTML if needed
-            value = element.innerHTML;
-            // parameters.push({ id: id, value: value }); // Uncomment if necessary
-        }
-    });
-
-     const formHtml = formClone.innerHTML;
-
-    // Prepare form data for AJAX
-    const formData = new FormData();
-    formData.append("form", formHtml); // Use the HTML without images
-    formData.append("parameters", JSON.stringify(parameters));
-    formData.append("uploadedImages", JSON.stringify(uploadedImages));
-
-    formData.append("storeId", storeId);
-    formData.append("userId", userId);
-    formData.append("ticketId", ticketId);
-    formData.append("socId", socId);
-    // AJAX request to save the form
-    $.ajax({
-        url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
-        type: "POST",
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            if (response.status === \'success\') {
-                alert("Report saved successfully");
-                console.log("Save Response:", response);
-                if (typeof callback === \'function\') {
-                    callback();
-                }
-            } else {
-                console.error("Server Error:", response.message);
-                alert("Save failed: " + response.message);
+        // Remove all clearCanvas buttons
+        const clearButtons = formClone.querySelectorAll(\'button[type="button"][data-action="clear-canvas"]\');
+        clearButtons.forEach(button => button.remove());
+        // check for buttons with innerHTML clear canvas
+        const clearCanvasButtons = formClone.querySelectorAll(\'button\');
+        clearCanvasButtons.forEach(button => {
+            if (button.innerHTML === "Clear Canvas") {
+                button.remove();
             }
-            
-        },
-        error: function(xhr, status, error) {
-            console.error("Request failed with status: " + xhr.status + ", Error: " + error);
-        }
-    });
-}
+        });
 
-// Function to fetch images via AJAX
+        // Clear save buttons with class save-form-button and save-form-button-wrapper
+        const saveButtons = formClone.querySelectorAll(\'.save-form-button, .save-form-button-wrapper\');
+        saveButtons.forEach(button => button.remove());
+
+        
+
+        // Now get the HTML of the cloned form without images
+        //const formHtml = formClone.innerHTML;
+        const originalElements = form.querySelectorAll(\'.report-element\');
+
+        let parameters = [];
+        parameters.push({ id: "design_id", value: '.$data[0].' });
+        const uploadedImages = window.uploadedImagesData || [];
+
+        // Capture form data
+        const elements = formClone.querySelectorAll(\'.report-element\');
+        originalElements.forEach((element) => {
+            const id = element.id;
+            let value = "";
+            if (element.type === "checkbox" || element.type === "radio") {
+                value = element.checked;
+                parameters.push({ id: id, value: value });
+            } else if (element.type === "file") {
+                // No action needed for file inputs
+            } else if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
+                value = element.value;
+                parameters.push({ id: id, value: value });
+                //console.log("Element:", element, "Value:", value);
+            } else if (element.tagName === "CANVAS") {
+                var dataURL = element.toDataURL();
+                parameters.push({ id: id, value: dataURL });
+            } else {
+                // For other elements, save their innerHTML if needed
+                value = element.innerHTML;
+                // parameters.push({ id: id, value: value }); // Uncomment if necessary
+            }
+        });
+
+        const formHtml = formClone.innerHTML;
+
+        // Prepare form data for AJAX
+        const formData = new FormData();
+        formData.append("form", formHtml); // Use the HTML without images
+        formData.append("parameters", JSON.stringify(parameters));
+        formData.append("uploadedImages", JSON.stringify(uploadedImages));
+
+        formData.append("storeId", storeId);
+        formData.append("userId", userId);
+        formData.append("ticketId", ticketId);
+        formData.append("socId", socId);
+        // AJAX request to save the form
+        $.ajax({
+            url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.status === \'success\') {
+                    alert("Report saved successfully");
+                    //console.log("Save Response:", response);
+                    if (typeof callback === \'function\') {
+                        callback();
+                    }
+                } else {
+                    console.error("Server Error:", response.message);
+                    alert("Save failed: " + response.message);
+                }
+                
+            },
+            error: function(xhr, status, error) {
+                console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+            }
+        });
+    }
+
+    // Function to fetch images via AJAX
     function fetchUploadedImages() {
-        console.log("Fetching uploaded images...");
+        //console.log("Fetching uploaded images...");
         const formData = new FormData();
         formData.append("action", "fetch_images");
         formData.append("mode", "image");
@@ -603,7 +767,7 @@ function saveForm(callback) {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log(response);
+                //console.log(response);
                 if (response.status === \'success\') {
                     const imagesArray = Object.values(response.images);
                     window.uploadedImagesData = imagesArray;
@@ -639,22 +803,22 @@ function saveForm(callback) {
 
     // Function to display a single uploaded image
     function displayUploadedImage(image, container) {
-        console.log("Displaying image:", image);
+        //console.log("Displaying image:", image);
         const colDiv = document.createElement("div");
-        colDiv.classList.add("col-6", "col-md-3", "mt-2", "text-center");
+        colDiv.classList.add("col-12", "col-sm-6", "col-md-3", "mt-2", "text-center");
 
         const img = document.createElement("img");
         // Important because this was super annoying to figure out:  We need to add the timestamp to the image URL to prevent caching
         // If we do not do this, then after overwriting an image, the browser will still show the old image from cache
         img.src = "formsImages/" + encodeURIComponent(image.filename) + "?t=" + new Date().getTime();
-        console.log("Image url:", img.src);
+        //console.log("Image url:", img.src);
         img.style.width = "100%";
         img.style.height = "13rem";
         img.onerror = function() {
             console.error("Failed to load image:", img.src);
         };
         img.onload = function() {
-            console.log("Image loaded successfully:", img.src);
+            //console.log("Image loaded successfully:", img.src);
         };
         img.onclick = function() {
             showImageFull(img.src);
@@ -718,7 +882,7 @@ function saveForm(callback) {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log(response);
+                //console.log(response);
                 if (response.status === \'success\') {
                     // Update uploaded images data
                     const imagesList = Object.values(response.images);
@@ -764,7 +928,7 @@ function saveForm(callback) {
             processData: false, // Prevent jQuery from processing the data
             contentType: false, // Prevent jQuery from setting the content type
             success: function(response) {
-                console.log("Delete Image Response:", response);
+                //console.log("Delete Image Response:", response);
                 if (response.status === \'success\') {
                     // Remove the image element from the UI
                     imageElement.remove();
@@ -787,211 +951,24 @@ function saveForm(callback) {
                 alert("An error occurred during deletion.");
             }
         });
-
-        
     }
-
-
-
-
 </script>
 ';
 
 echo '<style>
 canvas {
-    border: 1px solid black;
-    width: 600px;   /* Desired display width */
-    height: 200px;  /* Desired display height */
-}
-
-@media (max-width: 768px) {
-  canvas {
-    width: 80vw !important;
-    height: auto !important;
-  }
-}
-
-.table-responsive {
-  position: relative !important;
-
-}
-
-
-/* Chrome, Safari, Edge, Opera */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: none;     /* or border: 0; */
+    outline: none;
+    box-sizing: content-box; /* ensures width=rect.width = drawing area */
 }
 
 
 </style>';
 
-if(!$existingReportRes){
-$dateofuse = $object->array_options["options_dateofuse"];
-if($dateofuse == ""){
-    $dateofuse = 0;
-}
-echo '<script>
-    const form = document.getElementById("report-form");
-    const submitButton = document.createElement("button");
-    submitButton.innerHTML = "Speichern und verlassen";
-    submitButton.id = "save-form-button-wrapper";
-    submitButton.classList.add("btn", "btn-primary");
-    const saveStayButton = document.createElement("button");
-    saveStayButton.innerHTML = "Speichern";
-    saveStayButton.classList.add("btn", "btn-primary");
-    saveStayButton.id = "save-form-button";
-    form.appendChild(saveStayButton);
-    form.appendChild(submitButton);
-    setupSaveButtons();
-    // Just temporary solution:
-    makeTableResponsive();
-
-    function makeTableResponsive() {
-        var tables = document.querySelectorAll("table");
-        tables.forEach(function(table) {
-            var parentDiv = table.parentElement;
-            if ((parentDiv.scrollWidth > parentDiv.clientWidth) && parentDiv.classList.contains("report-element-wrapper")) {
-                parentDiv.classList.add("table-responsive");
-                var labelHeight = parentDiv.querySelector("label").offsetHeight;
-                console.log("Label height:", labelHeight);
-                // Create gradient overlay element
-                var gradientDiv = document.createElement(\'div\');
-                // Add center arrow
-                gradientDiv.innerHTML = \'<div style="position: absolute; top: 50%; left: 0; transform: translateY(-50%); width: 20px; height: 20px; background: white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); text-align: center; line-height: 20px; cursor: pointer;">&gt;</div>\';
-                gradientDiv.style.position = \'absolute\';
-                gradientDiv.style.right = \'0\';
-                gradientDiv.style.top = (labelHeight+4) + \'px\';
-                gradientDiv.style.width = \'20px\'; 
-                gradientDiv.style.height = table.clientHeight + \'px\';
-                gradientDiv.style.background = \'linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.3) 100%)\';
-                gradientDiv.style.pointerEvents = \'none\';
-                gradientDiv.style.zIndex = \'2\'; // Higher than table content
-                gradientDiv.style.transition = \'opacity 0.2s ease\';
-                parentDiv.appendChild(gradientDiv);
-
-                // Update gradient visibility
-                function updateGradient() {
-                    gradientDiv.style.opacity = parentDiv.scrollLeft === 0 ? \'1\' : \'0\';
-                }
-
-                // Initial check
-                updateGradient();
-                
-                // Scroll listener
-                parentDiv.addEventListener(\'scroll\', updateGradient);
-            }
-        });
-    }
-    
-    // Switch to handle the dynamically generated content
-
-    let dynamicDisplays = document.querySelectorAll([\'[data-content-type]\']);
-    dynamicDisplays.forEach((element) => {
-        var text = element.innerHTML.toLowerCase();
-        var index = text.indexOf(" ") !== -1 ? text.indexOf(" ") : text.length;
-        var result = text.substring(0, index);
-        if(element.dataset.contentType === "dynamic"){
-            console.log(result);
-            switch(result){
-                case "filiale":
-                    element.innerHTML = "Filiale: '.$store->b_number.'";
-                    break;
-                case "tickettyp":
-                case "ticketart":
-                    element.innerHTML = "Ticketart: '.$object->type_label.'";
-                    break;
-                case "termin":
-                    let dateofuse = '.$dateofuse.';
-                    // Format dateofuse to dd.mm.yyyy hh:ii
-                    let date = 0;
-                    if(dateofuse !== 0){
-                        date = new Date(dateofuse * 1000);
-                        date = date.toLocaleString("de-DE");
-                    }else{
-                        date = "Kein Termin festgelegt";
-                    }
-                    element.innerHTML = "Termindatum: " + date;
-                    break;
-                case "Themengruppe":
-                    element.innerHTML = "Themengruppe: '.$object->category_code.'";
-                    break;
-                case "ticketnummer":
-                    element.innerHTML = "Ticketnummer: '.$object->ref.'";
-                    break;
-                case "kundennummer":
-                    element.innerHTML = "Kundennummer: '.$company->id.'";
-                    break;
-                case "kundenname":
-                    element.innerHTML = "Kundenname: '.$store->customer_name.'";
-                    break;
-                case "name":
-                    element.innerHTML = "'.$project->title.'";
-                    break;
-                case "stop":
-                case "stopp":
-                    element.innerHTML = "Stopp: '.$object->array_options["options_stopnummer"].'";
-                    break;
-                case "datum":
-                    
-                    break;
-                case "uhrzeit":
-                    
-                    break;
-                case "priorität":
-                    break;
-                case "dringlichkeit":
-                    element.innerHTML = "Dringlichkeit: '.$object->severity_code.'";
-                    break;
-                case "kategorie":
-                    element.innerHTML = "Kategorie: '.$object->category_label.'";
-                    break;
-                case "auftrag":
-                    element.innerHTML = \'Auftrag: '.json_encode($object->message).'\';
-                    break;
-                case "strasse":
-                case "straße":
-                    element.innerHTML = "Straße: '.$store->street.', '.$store->house_number.'";
-                    break;
-                case "hausnummer":
-                    element.innerHTML = "Hnr: '.$store->house_number.'";
-                    break;
-                case "stadt":
-                case "ort":
-                    element.innerHTML = "Ort: '.$store->city.', '.$store->zip_code.'";
-                    break;
-                case "plz":
-                    element.innerHTML = "Plz: '.$store->zip_code.'";
-                    break;
-                case "ext.ticketnummer":
-                    element.innerHTML = "Ext. Ticketnummer: '.$object->array_options["options_externalticketnumber"].'";
-                    break;
-                case "telefonnummer":
-                case "tel":
-                    element.innerHTML = "Tel.Nummer: '.$store->phone.'";
-                    break;
-                default:
-                    element.innerHTML = "nothing";
-                    break;
-            }
-        }
-});
-// Search for all textareas with attr data-locked = true
-let lockedTextareas = document.querySelectorAll(\'textarea[data-locked="true"]\');
-lockedTextareas.forEach((textarea) => {
-    textarea.disabled = true;
-});
-
-
-    
-    </script>';
-}else{
+if($existingReportRes){
 echo
  '<script>
         const form = document.getElementById("report-form");
@@ -1001,8 +978,8 @@ echo
         const params = '.base64_decode($existingReportRes[0][1]).';
         params.forEach(param => {
             const element = document.getElementById(param.id);
-            console.log("Element:", element);
-            console.log("Param:", param);
+            //console.log("Element:", element);
+            //console.log("Param:", param);
             if (element) {
                 if (element.type === "checkbox" || element.type === "radio") {
                     element.checked = param.value;
@@ -1010,30 +987,23 @@ echo
                     // Do not attempt to set element.value
                     // Instead, handle displaying previously uploaded files
                 }else if(element.tagName === "CANVAS"){
-                    console.log("Canvas element found with id:", param.id);
                     const context = element.getContext("2d");
                         let canvas = document.getElementById(param.id);
                         const img = new Image();
                         img.onload = function() {
-                            console.log("Image loaded successfully for canvas with id:", param.id);
-                            console.log("Canvas width:", element.width, "Canvas height:", element.height);
-                            console.log("Image width:", img.width, "Image height:", img.height);
-                            console.log("Device Pixel Ratio:", window.devicePixelRatio || 1);
-                            console.log("Canvas width / DPR:", element.width / (window.devicePixelRatio || 1));
-                            // Draw the image at the correct size without additional scaling
+                            // Draw image without additional scaling
                             context.clearRect(0, 0, canvas.width, canvas.height); 
-                            context.drawImage(img, 0, 0);
+                            context.drawImage(img, 0, 0, canvas.width, canvas.height);
                         };
                         img.onerror = function() {
                             console.error("Failed to load image for canvas with id:", param.id);
                         };
                         img.src = param.value;
-                        console.log("Image source:", img.src);
+                        //console.log("Image source:", img.src);
                 }else {
                     element.value = param.value;
                 }
             }
         });
-        //setupSaveButtons();
     </script>';
 }
