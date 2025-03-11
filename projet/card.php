@@ -292,28 +292,26 @@ if (empty($reshook)) {
 				// Karim's code start:
 				// Every new project created should get assigned the default design
 				
-				$projectId = $object->id;
-				$sql = "INSERT INTO llx_reports (";
-				//echo $sql;
-				$sql.= "fk_user, parameters, content, title, date, description, projectId";
-				//echo $sql;
-				$sql.= ") SELECT ";
-				//echo $sql;
-				$sql.= $user->id.", parameters, content, title, ";
-				//echo $sql;
-				$sql.= "'".date("Y-m-d H:i:s")."', ";  // or use date("Y-m-d H:i:s") if suitable
-				//echo $sql;
-				$sql.= "description, ".$projectId;
-				//echo $sql;
-				$sql.= " FROM llx_reports";
-				//echo $sql;
-				$sql.= " WHERE rowid = 0";
-				echo $sql;
-				// 2) Execute the SQL
-				 $resql = $db->query($sql);
+				// 1. Insert into llx_design
+				$projectId = (int)$object->id;
+				$createSQL = "INSERT INTO llx_design (fk_project) VALUES (?)";
+				$db->query($createSQL, [$projectId]);
+				$base_id = $db->last_insert_id("llx_design");
+
+				// 2. Insert into llx_design_version
+				$sql = "INSERT INTO llx_design_version (
+					fk_user, parameters, content, title, date, description, base_id, version
+				) SELECT 
+					?, parameters, content, title, NOW(), description, ?, 1 
+				FROM llx_design_version 
+				WHERE base_id = 0 
+				AND version = (SELECT MAX(version) FROM llx_design_version WHERE base_id = 0)";
+
+				// Execute with parameter binding
+				$db->query($sql, [$user->id, $base_id]);
+				$resql = $db->query($sql);
 				if (!$resql) {
 				 	setEventMessages($db->lasterror(), null, 'errors');
-				 	// Potentially do more error handling
 				 }
 
 				// Karim's code end
@@ -2017,26 +2015,19 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			print $num ? $num : 0;
 			print "</td></tr>";
 		}
-		// Karims code:
-		// Report Design
-		// $sql = "SELECT * FROM llx_reports WHERE projectid = ".$object->id.";";
-		// $result = $db->query($sql)->fetch_all(MYSQLI_ASSOC)[0];
-		// //var_dump($result);
-		// if (isModEnabled('reportdesigner')) {
-		// 	if(isset($result)){
-		// 		print '<tr><td class="valignmiddle">'.$langs->trans("ReportDesign").'</td><td>';
-		// 		print '<a href="'.DOL_URL_ROOT.'/custom/reportdesigner/reportdesignerindex.php?action=edit&reportId='.$result["rowid"].'">'.$result["title"].'</a>';
-		// 		print "</td></tr>";
-		// 	}else{
-		// 		print '<tr><td class="valignmiddle">'.$langs->trans("ReportDesign").'</td><td>';
-		// 		print '<a href="'.DOL_URL_ROOT.'/custom/reportdesigner/reportdesignerindex.php?action=overview">Noch kein Design zugewiesen.</a>';
-		// 		print "</td></tr>";
-		// 	}			
-		// }
+		
 
 				
 		// Fetch the current report design for the project
-		$sql = "SELECT * FROM llx_reports WHERE projectid = " . intval($object->id) . " LIMIT 1;";
+		$sql = "SELECT dv.* 
+		FROM llx_design d
+		INNER JOIN llx_design_version dv 
+			ON d.rowid = dv.base_id
+		WHERE d.fk_project = ".$object->id."
+			AND d.archived = 0
+		ORDER BY dv.version DESC
+		LIMIT 1";
+		
 		$resql = $db->query($sql);
 
 		if (!$resql) {
