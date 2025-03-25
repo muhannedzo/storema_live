@@ -1,17 +1,25 @@
 <?php
-
+require_once DOL_DOCUMENT_ROOT.'/core/lib/project.lib.php';
 
 // require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
 class Compress {
 
-  
-      
+    // Db variable that can be passed on creation of this object
+    private $db;    
+    private $rows;
+    private $storesImages;
+    private $ticketsImages;
+    function set_db($db){
+        $this->db = $db;
+    }
 
     public function compress_image($tempPath, $originalPath, $imageQuality){
-			
+        //echo json_encode(['status' => 'debug', 'params' => [$tempPath, $originalPath, $imageQuality]]);
         // Get image info 
+        
         $imgInfo = getimagesize($tempPath); 
         $mime = $imgInfo['mime']; 
+        
         
         // Create a new image from file 
         switch($mime){ 
@@ -26,22 +34,33 @@ class Compress {
                 break; 
             default: 
                 $image = imagecreatefromjpeg($tempPath); 
-        } 
+        }   
         
         // Save image 
         imagejpeg($image, $originalPath, $imageQuality);    
         // Return compressed image 
         return $originalPath; 
     }
+
+
+
+
+
     // Fix this later, this is bad code:
-    public function print_list($imagesList){
+    public function print_list($imagesList, $type){ 
         // Process each image group to make 'images' a sequential array
         foreach($imagesList as &$elem){
             // Ensure 'images' is a sequential array
             $elem['images'] = array_values($elem['images']);
         }
         unset($elem);
-    
+        if($type == "store"){
+            $this->storesImages = $imagesList;
+        }else{
+           
+            $this->ticketsImages = $imagesList;
+        }
+        
         // Output the main modal and full-view modal once
         echo '
         <!-- Image Modal -->
@@ -68,15 +87,26 @@ class Compress {
             <img id="fullViewImage" class="full-view-content" src="">
         </div>
         ';
-    
         // Loop over each image group
-        foreach($imagesList as $groupIndex => $elem){
-            echo '<div class="group">';
+       
+        foreach($imagesList as $group => $elem){
+            $groupIndex = $group + $this->rows;
+            if($type == "store"){
+                $groupTitle = $elem["title"];
+            }else{
+                $ticketObj = new Ticket($this->db);
+                $ticketObj->fetch($elem["title"]);
+                $projectObj = new Project($this->db);
+                $projectObj->fetch($ticketObj->fk_project);
+                $groupTitle = $ticketObj->getNomUrl() . ' - ' .  $projectObj->title;
+                //$groupTitle = $ticketObj->getNomUrl();
+            }
+            echo '<div class="group" id = "group-'.$groupIndex.'">';
                 echo '<div class="group-header">';
                     // Group title displayed directly
                     echo '<div style="display: flex; align-items: center;">';
                         echo '<div>';
-                            echo $elem["title"]; // Display the group title directly
+                            echo $groupTitle; // Display the group title directly
                         echo '</div>';
                     echo '</div>';
                     // Delete group and add more images options
@@ -89,23 +119,91 @@ class Compress {
                         echo '</form>';  
                     echo '</div>';
                 echo '</div>';
-    
+                // Initialize an array to store descriptions that already exist in the group
+                $existingDescriptions = [];
+                if (!empty($elem["images"])) {
+                    foreach ($elem["images"] as $image) {
+                        $parts = explode("|", $image, 2);
+                        $desc = isset($parts[1]) ? $parts[1] : '';  
+                        // Store unique descriptions
+                        if (!in_array($desc, $existingDescriptions)) {
+                            $existingDescriptions[] = $desc;
+                        }
+                    }
+                }
                 // Output each image in the group
                 foreach($elem["images"] as $imageIndex => $image){
                     $parts = explode("|", $image, 2);
                     $imageName = $parts[0];
                     $desc = isset($parts[1]) ? $parts[1] : '';
-                    $src = $elem['directoryUrl'] . $imageName;
+                    echo "<script> console.log('".$desc."') </script>";
+                    // Removed directoryPath from elem
+                    if($type == 'store'){
+                        $src = './img/' . $imageName;
+                    }else{
+                        $src = '../../formsImages/' . $imageName;
+                    }
                     echo '<div class="group-element">';
                         // Image thumbnail
                         echo '<div class="element-image">';
                             echo '<img class="myImg" alt="img" src="'.$src.'" width="100" height="100" onclick="openModal('.$groupIndex.', '.$imageIndex.');">';
                         echo '</div>';
                         // Form for editing description and deleting image
+                        // #TODO: Add options to select from based on the label of the available upload fields in the form design. -> Add a new column imageList or maybe even props that stores a list of the available fields in the form design
                         echo '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
                             echo '<div class="element-description">';
-                                echo '<input id="desc-'.$groupIndex.'-'.$imageIndex.'" name="description" type="text" placeholder="Description.." value="'.htmlspecialchars($desc, ENT_QUOTES).'" disabled>';
-                            echo '</div>';
+                                if($type == "ticket"){
+                                    // Inside the ticket mode
+                                    $options = [
+                                        "sv"   => "Serverschrank vorher",
+                                        "sr"   => "Seriennummer Router",
+                                        "sf"   => "Seriennummer Firewall",
+                                        "f"    => "Firewall (Beschriftung Patchkabel)",
+                                        "k"    => "Kabeletikett",
+                                        "sn"   => "Serverschrank nachher",
+                                        "hc"   => "Health Check",
+                                        "an"   => "Arbeitssplatz nachher",
+                                        "bmtn" => "Bon mit TSE Nr",
+                                        "t"    => "Testprotokoll"
+                                    ];
+
+                                    // Initialize current value for description
+                                    $currVal = '';
+
+                                    // Find the corresponding value for the current description
+                                    foreach ($options as $value => $label) {
+                                        if ($label == $desc) {
+                                            $currVal = $value;
+                                            break;
+                                        }
+                                    }
+
+                                    // Output the select field
+                                    echo '<select id="desc-' . $groupIndex . '-' . $imageIndex . '" name="description" disabled>';
+
+                                    // Output the default option first if it exists
+                                    if ($currVal !== "" && isset($options[$currVal])) {
+                                        echo '<option value="' . $currVal . '" selected>' . $options[$currVal] . '</option>';
+                                    }
+
+                                    // Output the remaining options (excluding the already selected description)
+                                    foreach ($options as $value => $label) {
+                                        // Only display the option if it is not already in the existing descriptions
+                                        if (!in_array($label, $existingDescriptions) && $value !== $currVal) {
+                                            echo '<option value="' . $value . '">' . $label . '</option>';
+                                        }
+                                    }
+
+                                    echo '</select>';
+
+                                    
+
+                                }else{
+                                    echo '<input id="desc-'.$groupIndex.'-'.$imageIndex.'" name="description" type="text" placeholder="Description.." value="'.htmlspecialchars($desc, ENT_QUOTES).'" disabled>';
+                            
+                                }
+                                
+                                echo '</div>';
                             echo '<div class="element-buttons">';
                                 echo '<button type="submit" name="delete" onclick="return confirmDelete();">Delete</button>';
                                 echo '<button type="button" id="edit-button-'.$groupIndex.'-'.$imageIndex.'" onclick="toggleEdit('.$groupIndex.', '.$imageIndex.')">Edit</button>';
@@ -119,34 +217,97 @@ class Compress {
                             if(isset($elem['id'])) {
                                 echo '<input type="hidden" name="id" value="'.$elem['id'].'">';
                             }
-                            if(isset($elem['formId'])) {
-                                echo '<input type="hidden" name="formId" value="'.$elem['formId'].'">';
-                            }
                         echo '</form>';
                     echo '</div>';
                 }
-    
+                
                 // Form to add more images to the group
-                echo '<div class="addmore-'.$groupIndex.'" style="display:none">';
+                if($type == "store"){
+                    echo '<div class="addmore-'.$groupIndex.'" style="display:none">';
                     echo '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
                         echo '<input type="file" name="files[]" multiple>';
+                        echo '<input type="submit" name="submitAdd" value="addmore">';
+                        echo '<input type="text" name="index" value="'.$groupIndex.'" hidden>';
+                    echo '</form>';
+                    echo '</div>';
+                }else{
+                    // Display select options for the available fields in the form design
+                    echo '<div class="addmore-'.$groupIndex.'" style="display:none">';
+                    echo '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+                    // If one image with a type from the list below exists, then the option should not be available
+                    // Define an array of possible descriptions
+                    $options = [
+                        "sv" => "Serverschrank vorher",
+                        "sr" => "Seriennummer Router",
+                        "sf" => "Seriennummer Firewall",
+                        "f" => "Firewall (Beschriftung Patchkabel)",
+                        "k" => "Kabeletikett",
+                        "sn" => "Serverschrank nachher",
+                        "hc" => "Health Check",
+                        "an" => "Arbeitssplatz nachher",
+                        "bmtn" => "Bon mit TSE Nr",
+                        "t" => "Testprotokoll"
+                    ];
+
+                    // Initialize an array to store descriptions that already exist in the group
+                    $existingDescriptions = [];
+
+                    // Loop through images and collect existing descriptions
+                    foreach ($elem["images"] as $image) {
+                        $parts = explode("|", $image, 2);
+                        $desc = isset($parts[1]) ? $parts[1] : '';
+                        
+                        // Store the description
+                        if (!in_array($desc, $existingDescriptions)) {
+                            $existingDescriptions[] = $desc;
+                        }
+                    }
+
+                    // Display the select dropdown
+                    echo '<select name="imageField">';
+
+                    // Loop through options and check if the description already exists
+                    foreach ($options as $value => $label) {
+                        // Only display the option if the description does not exist in the group
+                        if (!in_array($label, $existingDescriptions)) {
+                            echo '<option value="' . $value . '">' . $label . '</option>';
+                        }
+                    }
+
+                    echo '</select>';
+                        echo '<input type="file" name="files[]">';
                         echo '<input type="submit" name="submitAdd" value="add more...">';
                         echo '<input type="text" name="index" value="'.$groupIndex.'" hidden>';
-                    echo '</form>';  
-                echo '</div>';
-            echo '</div>';
+                    echo '</form>';
+                    echo '</div>';
+                }
+            echo '</div>';    
         
+                  
+        }
+        //ar_dump($imagesList);
+        $this->rows += count($imagesList);
+       
         // JavaScript code (adjusted as needed)
+        // Merge both stores and tickets images
+        if($this->rows - count($imagesList) != 0){
+            //var_dump($this->storesImages);
+           //var_dump($this->ticketsImages);
+            $imagesList = array_merge($this->storesImages, $this->ticketsImages);
+            
+        }   
+       
         $imagesListJson = json_encode($imagesList);
+        
         echo '<script>
         var imagesList = '.$imagesListJson.';
         var currentIndex = 0;
         var currentGroupKey = 0;
         var rotation = 0;
-        var imageKeys = {};
-    
+        var imageKeys = {};   
+        //console.log(imageListLength);
         function openModal(groupKey, imageKey) {
-            currentGroupKey = groupKey.toString(); // Ensure groupKey is a string
+            currentGroupKey = groupKey.toString() ; // Ensure groupKey is a string
             rotation = 0; // Reset rotation
             var group = imagesList[currentGroupKey];
             var images = group["images"];
@@ -175,7 +336,12 @@ class Compress {
             var currentKey = keys[currentIndex];
     
             var imageData = images[currentKey].split("|");
-            var imageSrc = group["directoryUrl"] + imageData[0];
+            var imageSrc;
+            if(currentGroupKey == 0){
+                imageSrc = "./img/" + imageData[0];
+            }else{
+                imageSrc = "../../formsImages/" + imageData[0];
+            }
             var imageDesc = imageData.length > 1 ? imageData.slice(1).join("|") : "";
             console.log(imageData);
             console.log(group["directoryUrl"]);
@@ -229,7 +395,7 @@ class Compress {
     
         function conf(groupIndex){
             var deleteButton = document.getElementById("delete-group-delete-" + groupIndex);
-            if(confirm("Are you sure you want to delete this group?")){
+            if(confirm("Sind Sie sicher, dass sie alle Bilder löschen wollen?")){
                 deleteButton.click();
             }
         }
@@ -240,7 +406,11 @@ class Compress {
         }
     
         function toggleEdit(groupIndex, imageIndex) {
+            var mode = (groupIndex > '.count($this->storesImages).') ? "ticket" : "stores";
+            console.log(groupIndex);
+            console.log(imageIndex);
             var descId = "desc-" + groupIndex + "-" + imageIndex;
+            console.log(descId);
             var editButtonId = "edit-button-" + groupIndex + "-" + imageIndex;
             var saveButtonId = "save-button-" + groupIndex + "-" + imageIndex;
     
@@ -260,7 +430,7 @@ class Compress {
         }
     
         function confirmDelete() {
-            return confirm("Are you sure you want to delete this image?");
+            return confirm("Sind Sie sicher, dass die das Bild löschen wollen?");
         }
         </script>';
     
@@ -456,8 +626,6 @@ class Compress {
             </style>';
 
             print '<script>
-            </script>';            
-        }
+            </script>';  
     }
-
 }
