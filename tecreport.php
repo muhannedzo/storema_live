@@ -93,14 +93,14 @@ dol_include_once('/stores/compress.php');
  
  print load_fiche_titre($langs->trans("TicketReport").$project->title, '', '');
  //////////////////////////////////////////////////////////////////////////////////////////
-   
+
  
-   $sql = 'SELECT f.content, f.parameters, f.images, t.fk_project, p.ref, f.extra_images
+   $sql = 'SELECT f.content, f.parameters, f.images, t.fk_project, p.ref 
             FROM llx_tec_forms f 
                LEFT JOIN llx_ticket t ON t.rowid = f.fk_ticket
                LEFT JOIN llx_projet p ON p.rowid = t.fk_project 
             WHERE f.fk_ticket = '.$object->id.' AND f.fk_user = '.$user->id.' AND f.fk_store = '.$storeid.' AND f.fk_soc = '.$object->fk_soc.';';
-   
+   // var_dump($sql);
    $result = $db->query($sql)->fetch_all()[0];
    $sqll = 'SELECT t.fk_project, p.ref 
             FROM llx_ticket t
@@ -111,7 +111,6 @@ dol_include_once('/stores/compress.php');
    $encoded_params = json_encode($parameters);
    $projectId = $resu[0];
    $projectRef = $resu[1];
-   $extraImages = $result[5];
    print '<div id="report-body">';
    
       // if(strpos($company->name_alias, 'NCR') !== false && strpos($company->name_alias, 'NCR') >= 0){
@@ -1424,79 +1423,599 @@ dol_include_once('/stores/compress.php');
             print '</div>';
          print '</div>';
          print '<br>';
+         // print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+         //    print '<div class="row">
+         //                <div class="col">
+         //                   <select id="images-types-selector" style="width: 100%" name="image-type">
+         //                      <option selected>Serverschrank vorher</option>
+         //                      <option>Seriennummer Router</option>
+         //                      <option>Seriennummer Firewall</option>
+         //                      <option>Firewall (Beschriftung Patchkabel)</option>
+         //                      <option>Kabeletikett</option>
+         //                      <option>Serverschrank nachher</option>
+         //                      <option>Health Check</option>
+         //                      <option>Arbeitssplatz nachher</option>
+         //                      <option>Bon mit TSE Nr</option>
+         //                      <option>Testprotokoll</option>
+         //                   </select>
+         //                </div>
+         //                <div class="col">
+         //                   <input style="width: 100%" type="file" name="files[]">
+         //                </div>
+         //                <div class="col">
+         //                   <input style="width: 100%" type="submit" name="submit" value="'.$langs->trans("upload").'">
+         //                </div>
+         //          </div>';
+         // print '</form>';
+         print '<br>';
+         ///////////////////////////////////////////////////////
+         $imagesGroup = json_decode(base64_decode($result[2]));
+         // var_dump($imagesGroup);
+
          print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
-            print '<div class="row">
-                        <div class="col">
-                           <select id="images-types-selector" style="width: 100%" name="image-type">
-                              <option selected disabled>Bildtyp wählen</option>
-                              <option>Serverschrank vorher</option>
-                              <option>Seriennummer Router</option>
-                              <option>Seriennummer Firewall</option>
-                              <option>Firewall (Beschriftung Patchkabel)</option>
-                              <option>Kabeletikett</option>
-                              <option>Serverschrank nachher</option>
-                              <option>Health Check</option>
-                              <option>Arbeitssplatz nachher</option>
-                              <option>Testprotokoll</option>
-                           </select>
-                        </div>
-                        <div class="col">
-                           <input style="width: 100%" type="file" name="files[]">
-                        </div>
-                        <div class="col">
-                           <input style="width: 100%" type="submit" name="submit" value="'.$langs->trans("upload").'">
-                        </div>
-                  </div>';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Serverschrank vorher" id="image-type" style="width:100%!important" disabled>';
+                  print '<input type="hidden" name="image-type" value="Serverschrank vorher">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-serverschrankvorher">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Serverschrank vorher";
+                  })) : [];
+                  // var_dump($disableUpload);
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-serverschrankvorher" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
          print '</form>';
          print '<br>';
-         if($result[2]){
-            // print '<div class="container">';
-               print '<div class="row mb-2">';
-               $imagesGroup = json_decode(base64_decode($result[2]));
-               foreach($imagesGroup as $group){
-                  print '<div class="row">';
-                     print '<div class="col-12 mt-2" style="background: #aaa;padding: 5px 0 5px 10px; display: flex">';
-                        print '<div class="header-text">';
-                           print $group->type;
-                        print '</div>';
-                        print '<div class="header-action">';
-                           print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
-                              print '<span id="remove-group '.$group->type.'" class="fa fa-trash" style="color:red;margin:5px" onclick="handleClick(this.id)"></span>';
-                              print '<button type="submit" class="remove-group '.$group->type.'" name="delete-group" hidden>delete</button></td>';
-                              print '<input type="hidden" name="image-group" value="'.$group->type.'">';
-                              print '<input type="hidden" name="image" value="'.$group->images[0].'">';
-                           print '</form>';
-                        print '</div>';
-                     print '</div>';
-                  print '</div>';
-                  foreach($group->images as $image){
-                     print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
-                        print '<img class="group-image" src="formsImages/'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Serverschrank vorher";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
                         print '<form method="POST" enctype="multipart/form-data">';
-                           print '<input type="hidden" name="image" value="'.$image.'">';
-                           print '<input type="hidden" name="image-group" value="'.$group->type.'">';
-                           print '<input type="submit" name="delete-image" class="btn btn-danger" id="'.$image.','.$group->type.'" style="font-size: 10px; padding: 5px;" value="'.$langs->trans("delete").'">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
                         print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
                      print '</div>';
-                  }
                }
-               print '</div>';
-            // print '</div>';
+            }
+            print '</div>';
+            print '<br>';
          }
-         print '<hr>';
+         //////////////////////////////////////////////////////////////////////////////
          print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
-            print '<div class="row">
-                        <div class="col-2">
-                           <h5>Extra Images</h5>
-                        </div>
-                        <div class="col-5">
-                           <input style="width: 100%" type="file" name="files[]" multiple>
-                        </div>
-                        <div class="col-5">
-                           <input style="width: 100%" type="submit" name="submitExtra" value="'.$langs->trans("upload").'">
-                        </div>
-                  </div>';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Seriennummer Router" id="image-type" style="width:100%!important" disabled>';
+                  print '<input type="hidden" name="image-type" value="Seriennummer Router">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-seriennummerrouter">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Seriennummer Router";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-seriennummerrouter" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
          print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Seriennummer Router";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         ///////////////////////////////////////////////////////
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Seriennummer Firewall" id="image-type" style="width:100%!important" disabled>';
+                  print '<input type="hidden" name="image-type" value="Seriennummer Firewall">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-seriennummerfirewall">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Seriennummer Firewall";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-seriennummerfirewall" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
+         print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Seriennummer Firewall";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         ////////////////////////////////////////////////////////////////////////////////////
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Firewall (Beschriftung Patchkabel)" style="width:100%!important" id="image-type" disabled>';
+                  print '<input type="hidden" name="image-type" value="Firewall (Beschriftung Patchkabel)">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-firewall">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Firewall (Beschriftung Patchkabel)";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-firewall" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
+         print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Firewall (Beschriftung Patchkabel)";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         /////////////////////////////////////////////////////////////////
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Kabeletikett" id="image-type" style="width:100%!important" disabled>';
+                  print '<input type="hidden" name="image-type" value="Kabeletikett">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-kabeletikett">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Kabeletikett";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-kabeletikett" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
+         print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Kabeletikett";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         ///////////////////////////////////////////////////////////////
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Serverschrank nachher" style="width:100%!important" id="image-type" disabled>';
+                  print '<input type="hidden" name="image-type" value="Serverschrank nachher">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-serverschranknacher">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Serverschrank nachher";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-serverschranknacher" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
+         print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Serverschrank nachher";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         //////////////////////////////////////////////////////////////////////
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Health Check" id="image-type" style="width:100%!important" disabled>';
+                  print '<input type="hidden" name="image-type" value="Health Check">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-healthcheck">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Health Check";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-healthcheck" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
+         print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Health Check";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         ///////////////////////////////////////////////////////////////////
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Arbeitssplatz nachher" style="width:100%!important" id="image-type" disabled>';
+                  print '<input type="hidden" name="image-type" value="Arbeitssplatz nachher">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-arbeitssplatz">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Arbeitssplatz nachher";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-arbeitssplatz" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
+         print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Arbeitssplatz nachher";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         ///////////////////////////////////////////////////////////
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Bon mit TSE Nr" style="width:100%!important" id="image-type" disabled>';
+                  print '<input type="hidden" name="image-type" value="Bon mit TSE Nr">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-bonmit">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Bon mit TSE Nr";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-bonmit" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
+         print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Bon mit TSE Nr";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         ///////////////////////////////////////////////////////////////////////////
+         print '<form action="" method="POST" enctype="multipart/form-data"><input type="hidden" name="token" value="'.newToken().'">';
+            print '<div class="row">';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input type="text" value="Testprotokoll" style="width:100%!important" id="image-type" disabled>';
+                  print '<input type="hidden" name="image-type" value="Testprotokoll">';
+               print '</div>';
+               print '<div class="col-5 col-md-4 col-lg-4">';
+                  print '<input style="width: 100%" type="file" name="files[]" class="file-input" data-target="submit-testprotokoll">';
+               print '</div>';
+               print '<div class="col-2 col-md-4 col-lg-4">';
+
+                  // Check if images already exist
+                  $disableUpload = ($result[2] && isset($imagesGroup) && is_array($imagesGroup)) ? array_values(array_filter($imagesGroup, function($item) {
+                     return $item->type === "Testprotokoll";
+                  })) : [];
+
+                  $isDisabled = !empty($disableUpload) ? 'disabled' : ''; // determine if the button should be disabled.
+                  print '<input style="width: 100%" type="submit" name="submit" class="submit-button" id="submit-testprotokoll" value="📤" '.$isDisabled.'>'; //add the disabled attribute.
+               print '</div>';
+            print '</div>';
+         print '</form>';
+         print '<br>';
+
+         if ($result[2]) {
+            print '<div class="row mb-2">';
+            if(isset($imagesGroup) && is_array($imagesGroup)){
+               $imageNode10 = array_values(array_filter($imagesGroup, function ($item) {
+                     return $item->type === "Testprotokoll";
+               }));
+               if ($imageNode10) {
+                     print '<div class="row">';
+                     foreach ($imageNode10[0]->images as $image) {
+                        print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+                        print '<img class="group-image" src="formsImages/' . $image . '" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+                        print '<form method="POST" enctype="multipart/form-data">';
+                        print '<input type="hidden" name="image" value="' . $image . '">';
+                        print '<input type="hidden" name="image-group" value="' . $imageNode10[0]->type . '">';
+                        print '<input type="submit" name="delete-image" class="btn btn-danger" id="' . $image . ',' . $imageNode10[0]->type . '" style="font-size: 10px; padding: 5px;" value="' . $langs->trans("delete") . '">';
+                        print '</form>';
+                        print '<br>';
+                        print '</div>';
+                     }
+                     print '</div>';
+               }
+            }
+            print '</div>';
+            print '<br>';
+         }
+         //////////////////////////////////////////////////////////////////////////
+         //old method//
+         // if($result[2]){
+         //    // print '<div class="container">';
+         //       print '<div class="row mb-2">';
+         //       $imagesGroup = json_decode(base64_decode($result[2]));
+         //       foreach($imagesGroup as $group){
+         //          print '<div class="row">';
+         //             print '<div class="col-12 mt-2" style="background: #aaa;padding: 5px 0 5px 10px; display: flex">';
+         //                print '<div class="header-text">';
+         //                   print $group->type;
+         //                print '</div>';
+         //                print '<div class="header-action">';
+         //                   print '<form action="" method="POST"><input type="hidden" name="token" value="'.newToken().'">';
+         //                      print '<span id="remove-group '.$group->type.'" class="fa fa-trash" style="color:red;margin:5px" onclick="handleClick(this.id)"></span>';
+         //                      print '<button type="submit" class="remove-group '.$group->type.'" name="delete-group" hidden>delete</button></td>';
+         //                      print '<input type="hidden" name="image-group" value="'.$group->type.'">';
+         //                      print '<input type="hidden" name="image" value="'.$group->images[0].'">';
+         //                   print '</form>';
+         //                print '</div>';
+         //             print '</div>';
+         //          print '</div>';
+         //          foreach($group->images as $image){
+         //             print '<div class="col-3 col-md-3 mt-2" style="text-align:center">';
+         //                print '<img class="group-image" src="formsImages/'.$image.'" style="width:100%; height:13rem" onclick="showImageFull(this.src)">';
+         //                print '<form method="POST" enctype="multipart/form-data">';
+         //                   print '<input type="hidden" name="image" value="'.$image.'">';
+         //                   print '<input type="hidden" name="image-group" value="'.$group->type.'">';
+         //                   print '<input type="submit" name="delete-image" class="btn btn-danger" id="'.$image.','.$group->type.'" style="font-size: 10px; padding: 5px;" value="'.$langs->trans("delete").'">';
+         //                print '</form>';
+         //             print '</div>';
+         //          }
+         //       }
+         //       print '</div>';
+         //    // print '</div>';
+         // }
+         // disable upload button if there is no image has been choosed
+         print '<script>';
+            print 'class FileUploadHandler {';
+            print '  constructor(fileInput, submitButton) {';
+            print '    this.fileInput = fileInput;';
+            print '    this.submitButton = submitButton;';
+            print '    this.init();';
+            print '  }';
+
+            print '  init() {';
+            print '    this.fileInput.addEventListener("change", () => this.updateSubmitButtonState());';
+            print '    this.updateSubmitButtonState();';
+            print '  }';
+
+            print '  updateSubmitButtonState() {';
+            print '    if (this.fileInput.files.length === 0) {';
+            print '      this.submitButton.disabled = true;';
+            print '    } else {';
+            print '        this.submitButton.disabled = false;';
+            print '    }';
+            print '  }';
+            print '}';
+
+            print 'document.addEventListener("DOMContentLoaded", function() {';
+            print '  const fileInputs = document.querySelectorAll(".file-input");';
+
+            print '  fileInputs.forEach(fileInput => {';
+            print '    const targetId = fileInput.dataset.target;';
+            print '    const submitButton = document.getElementById(targetId);';
+
+            print '    if (submitButton) {';
+            print '      new FileUploadHandler(fileInput, submitButton);';
+            print '    }';
+            print '  });';
+            print '});';
+         print '</script>';
+         // end disable upload button if there is no image has been choosed
+         //////////////////////////////////////////////////////////////////////////
          print '<div>';
             print '<label>'.$langs->trans("additionalnotes").'</label>';
             print '<br>';
@@ -1692,22 +2211,22 @@ dol_include_once('/stores/compress.php');
                ';
 
                print '
-                  function toggleTableInputs(disable) {
-                     console.log("Function called");
-                     const rows = document.querySelectorAll(\'#questions-table .oddeven\');
-                     for (let i = 0 ; i<rows.length; i++){
-                        const row = rows[i];
-                        const cells = row.children;
-                        if(cells.length == 8){
-                           cells[3].querySelector(\'input[type="radio"]\').disabled = disable;
-                           cells[4].querySelector(\'input[type="radio"]\').disabled = disable;
-                           cells[5].querySelector(\'input[type="checkbox"]\').disabled = disable;
-                           cells[6].querySelector(\'input[type="radio"]\').disabled = disable;
-                           cells[7].querySelector(\'input[type="radio"]\').disabled = disable;   
-                        }  
-                     }
+               function toggleTableInputs(disable) {
+               console.log("Function called");
+                  const rows = document.querySelectorAll(\'#questions-table .oddeven\');
+                  for (let i = 0 ; i<rows.length; i++){
+                     const row = rows[i];
+                     const cells = row.children;
+                     if(cells.length == 8){
+                        cells[3].querySelector(\'input[type="radio"]\').disabled = disable;
+                        cells[4].querySelector(\'input[type="radio"]\').disabled = disable;
+                        cells[5].querySelector(\'input[type="checkbox"]\').disabled = disable;
+                        cells[6].querySelector(\'input[type="radio"]\').disabled = disable;
+                        cells[7].querySelector(\'input[type="radio"]\').disabled = disable;   
+                     }  
                   }
-               ';
+               }
+            ';
    
                print '
                   function testTracker() {
@@ -2098,7 +2617,7 @@ dol_include_once('/stores/compress.php');
                         }
                      });
                   });';
-            // end calculate distance/times
+            // end calculate distance/times  
             }
          print '</script>';
 
@@ -2131,242 +2650,151 @@ dol_include_once('/stores/compress.php');
             <i class="material-icons">Save</i>
           </button>';
  
-   $dir = DOL_DOCUMENT_ROOT.'/formsImages/';
-   if(!is_dir($dir)){
-      mkdir($dir);
-   }
+ $dir = DOL_DOCUMENT_ROOT.'/formsImages/';
+ if(!is_dir($dir)){
+    mkdir($dir);
+ }
  
-   $imagesList = array();
-   $images = array();	
+ $imagesList = array();
+ $images = array();	
 
-   $query = 'SELECT images FROM llx_tec_forms WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
-   $list = $db->query($query)->fetch_row();
+ $query = 'SELECT images FROM llx_tec_forms WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+ $list = $db->query($query)->fetch_row();
 
-   if($list[0 != null]) {
+ if($list[0 != null]) {
 
-      $arr = json_decode(base64_decode($list[0]));
-      foreach($arr as $elm){
-         array_push($imagesList, $elm);
-      }
-   }
+    $arr = json_decode(base64_decode($list[0]));
+    foreach($arr as $elm){
+       array_push($imagesList, $elm);
+    }
+ }
 
  
-   if(isset($_POST['delete-image'])) {
+ if(isset($_POST['delete-image'])) {
 
-      $imagesList = array_filter($imagesList, function ($object) {
-         return $object->type !== $_POST["image-group"];
-      });
-      $filepath = $dir.$_POST["image"];
-      $list = json_encode($imagesList);
-      $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
-      $db->query($sql,0,'ddl');
-      unlink($filepath);
-      print '<script>window.location.href = window.location.href;
-      </script>';
-   }
+   $imagesList = array_values(array_filter($imagesList, function ($object) {
+      return $object->type !== $_POST["image-group"];
+   }));
+   $filepath = $dir.$_POST["image"];
+   $list = json_encode($imagesList);
+   $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+   $db->query($sql,0,'ddl');
+   unlink($filepath);
+   print '<script>window.location.href = window.location.href;
+   </script>';
+ }
 
-   if(isset($_POST['delete-group'])) {
-      // var_dump($_POST);
-      $imagesList = array_filter($imagesList, function ($object) {
-         return $object->type !== $_POST["image-group"];
-      });
-      $filepath = $dir.$_POST["image"];
-      $list = json_encode($imagesList);
-      $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
-      $db->query($sql,0,'ddl');
-      unlink($filepath);
-      print '<script>window.location.href = window.location.href;
-      </script>';
-   }
+ if(isset($_POST['delete-group'])) {
+   // var_dump($_POST);
+   $imagesList = array_filter($imagesList, function ($object) {
+      return $object->type !== $_POST["image-group"];
+   });
+   $filepath = $dir.$_POST["image"];
+   $list = json_encode($imagesList);
+   $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+   $db->query($sql,0,'ddl');
+   unlink($filepath);
+   print '<script>window.location.href = window.location.href;
+   </script>';
+ }
 
-   if(isset($_POST['submit'])) {
-      $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
-      
-      $maxsize = 1024 * 1024;
-      
-      if(!empty(array_filter($_FILES['files']['name']))) {
-         
-   
-         foreach ($_FILES['files']['tmp_name'] as $key => $value) {
-            
-            $file_tmpname = $_FILES['files']['tmp_name'][$key];
-            $file_name = $_FILES['files']['name'][$key];
-            $file_names = $_FILES['files']['name'][$key];
-            $file_size = $_FILES['files']['size'][$key];
-            $imageQuality = 20;
-            $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
-            if($_POST['image-type'] == "Testprotokoll"){
-               $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
-            } else if($_POST['image-type'] == "Serverschrank nachher") {
-               $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0].".".$file_ext;
-            } else {
-               $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type'].".".$file_ext;
-            }
-            
-            $filepath = $dir.$file_names;
-   
-
-            if(in_array(strtolower($file_ext), $allowed_types)) {
-               //Karim test
-               if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
-                  $exif = exif_read_data($file_tmpname);
-                  if (!empty($exif['Orientation'])) {
-                     $image = imagecreatefromjpeg($file_tmpname);
-                     switch ($exif['Orientation']) {
-                        case 3:
-                              $image = imagerotate($image, 180, 0);
-                              break;
-                        case 6:
-                              $image = imagerotate($image, -90, 0);
-                              break;
-                        case 8:
-                              $image = imagerotate($image, 90, 0);
-                              break;
-                     }
-                     imagejpeg($image, $file_tmpname, 90); // Save the rotated image
-                     imagedestroy($image);
-                  }
-               }
-
-               if(file_exists($filepath)) {
-                  unlink($filepath);
-                  //  $fileN = time().$file_names;
-                  $filepath = $dir.$file_names;
-                  $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
-                  if( $compressedImage) {
-                     array_push($images, $file_names);
-                  } else {                    
-                     dol_htmloutput_errors("Error uploading {$file_name} <br />");
-                  }
-               }else {
-                  $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
-                  if($compressedImage) {
-                     array_push($images,$file_names);
-                  }else {                    
-                     dol_htmloutput_errors("Error uploading {$file_name} <br />");
-                  }
-               }      
-            }else {
-               dol_htmloutput_errors("Error uploading {$file_name} ");
-               dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
-            }
+ if(isset($_POST['submit'])) {
+   $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
+     
+   $maxsize = 1024 * 1024;
+    
+   if(!empty(array_filter($_FILES['files']['name']))) {
+       
+  
+      foreach ($_FILES['files']['tmp_name'] as $key => $value) {
+          
+         $file_tmpname = $_FILES['files']['tmp_name'][$key];
+         $file_name = $_FILES['files']['name'][$key];
+         $file_names = $_FILES['files']['name'][$key];
+         $file_size = $_FILES['files']['size'][$key];
+         $imageQuality = 20;
+         $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+         if($_POST['image-type'] == "Testprotokoll"){
+           $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2]."_".$ticketId.".".$file_ext;
+         //   $file_names = "09.10.24_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
+         } else if($_POST['image-type'] == "Serverschrank nachher") {
+           $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0]."_".$ticketId.".".$file_ext;
+         } else {
+           $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type']."_".$ticketId.".".$file_ext;
          }
-      }else {
-         dol_htmloutput_errors("No files selected.");
-      }
-      $node = [
-         "type" => $_POST['image-type'],
-         "images" => $images
-      ];
-      array_push($imagesList, $node);
-      $list = json_encode($imagesList);
-      if($result){
-         $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
-         $db->query($sql,0,'ddl');
-         print '<script>window.location.href = window.location.href;
-         </script>';
-      } else {
-         $sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("'.$ticketId.'", "'.$user->id.'", "'.$object->fk_soc.'", "'.$storeid.'", "'.base64_encode($list).'")';
-         $db->query($sql,0,'ddl');
-         print '<script>window.location.href = window.location.href;
-         </script>';
-      }
-   }
-
-   if(isset($_POST['submitExtra'])) {
-      
-      // $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
-      
-      // $maxsize = 1024 * 1024;
-      
-      // if(!empty(array_filter($_FILES['files']['name']))) {
          
-   
-      //    foreach ($_FILES['files']['tmp_name'] as $key => $value) {
-            
-      //       $file_tmpname = $_FILES['files']['tmp_name'][$key];
-      //       $file_name = $_FILES['files']['name'][$key];
-      //       $file_names = $_FILES['files']['name'][$key];
-      //       $file_size = $_FILES['files']['size'][$key];
-      //       $imageQuality = 20;
-      //       $file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
-      //       if($_POST['image-type'] == "Testprotokoll"){
-      //          $file_names = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
-      //       } else if($_POST['image-type'] == "Serverschrank nachher") {
-      //          $file_names = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $_POST['image-type'])[0].".".$file_ext;
-      //       } else {
-      //          $file_names = "VKST_".explode("-", $store->b_number)[2]."_".$_POST['image-type'].".".$file_ext;
-      //       }
-            
-      //       $filepath = $dir.$file_names;
-   
+         $filepath = $dir.$file_names;
+ 
 
-      //       if(in_array(strtolower($file_ext), $allowed_types)) {
-      //          //Karim test
-      //          if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
-      //             $exif = exif_read_data($file_tmpname);
-      //             if (!empty($exif['Orientation'])) {
-      //                $image = imagecreatefromjpeg($file_tmpname);
-      //                switch ($exif['Orientation']) {
-      //                   case 3:
-      //                         $image = imagerotate($image, 180, 0);
-      //                         break;
-      //                   case 6:
-      //                         $image = imagerotate($image, -90, 0);
-      //                         break;
-      //                   case 8:
-      //                         $image = imagerotate($image, 90, 0);
-      //                         break;
-      //                }
-      //                imagejpeg($image, $file_tmpname, 90); // Save the rotated image
-      //                imagedestroy($image);
-      //             }
-      //          }
-
-      //          if(file_exists($filepath)) {
-      //             unlink($filepath);
-      //             //  $fileN = time().$file_names;
-      //             $filepath = $dir.$file_names;
-      //             $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
-      //             if( $compressedImage) {
-      //                array_push($images, $file_names);
-      //             } else {                    
-      //                dol_htmloutput_errors("Error uploading {$file_name} <br />");
-      //             }
-      //          }else {
-      //             $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
-      //             if($compressedImage) {
-      //                array_push($images,$file_names);
-      //             }else {                    
-      //                dol_htmloutput_errors("Error uploading {$file_name} <br />");
-      //             }
-      //          }      
-      //       }else {
-      //          dol_htmloutput_errors("Error uploading {$file_name} ");
-      //          dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
-      //       }
-      //    }
-      // }else {
-      //    dol_htmloutput_errors("No files selected.");
-      // }
-      // $node = [
-      //    "type" => $_POST['image-type'],
-      //    "images" => $images
-      // ];
-      // array_push($imagesList, $node);
-      // $list = json_encode($imagesList);
-      // if($result){
-      //    $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
-      //    $db->query($sql,0,'ddl');
-      //    print '<script>window.location.href = window.location.href;
-      //    </script>';
-      // } else {
-      //    $sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("'.$ticketId.'", "'.$user->id.'", "'.$object->fk_soc.'", "'.$storeid.'", "'.base64_encode($list).'")';
-      //    $db->query($sql,0,'ddl');
-      //    print '<script>window.location.href = window.location.href;
-      //    </script>';
-      // }
+         if(in_array(strtolower($file_ext), $allowed_types)) {
+            //Karim test
+            if (strtolower($file_ext) == 'jpg' || strtolower($file_ext) == 'jpeg') {
+               $exif = exif_read_data($file_tmpname);
+               if (!empty($exif['Orientation'])) {
+                   $image = imagecreatefromjpeg($file_tmpname);
+                   switch ($exif['Orientation']) {
+                       case 3:
+                           $image = imagerotate($image, 180, 0);
+                           break;
+                       case 6:
+                           $image = imagerotate($image, -90, 0);
+                           break;
+                       case 8:
+                           $image = imagerotate($image, 90, 0);
+                           break;
+                   }
+                   imagejpeg($image, $file_tmpname, 90); // Save the rotated image
+                   imagedestroy($image);
+               }
+            }
+            if(file_exists($filepath)) {
+               unlink($filepath);
+               //  $fileN = time().$file_names;
+               $filepath = $dir.$file_names;
+               $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
+               if( $compressedImage) {
+                  array_push($images, $file_names);
+               } else {                    
+                   dol_htmloutput_errors("Error uploading {$file_name} <br />");
+               }
+            }else {
+               $compressedImage = $compress->compress_image($file_tmpname, $filepath, $imageQuality);
+               if($compressedImage) {
+                  array_push($images,$file_names);
+               }else {                    
+                  dol_htmloutput_errors("Error uploading {$file_name} <br />");
+               }
+            }      
+         }else {
+         dol_htmloutput_errors("Error uploading {$file_name} ");
+         dol_htmloutput_errors("({$file_ext} file type is not allowed)<br / >");
+         }
+      }
+   }else {
+      dol_htmloutput_errors("No files selected.");
    }
+   $node = [
+      "type" => $_POST['image-type'],
+      "images" => $images
+   ];
+   array_push($imagesList, $node);
+   $list = json_encode($imagesList);
+   if($result){
+         // var_dump($imagesList);
+         // var_dump($images);
+      $sql = 'UPDATE llx_tec_forms set images = "'.base64_encode($list).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$user->id.' AND fk_store = '.$storeid.' AND fk_soc = '.$object->fk_soc.';';
+      $db->query($sql,0,'ddl');
+      print '<script>window.location.href = window.location.href;
+      </script>';
+   } else {
+         // var_dump($imagesList);
+         // var_dump($_POST);
+      $sql = 'INSERT INTO llx_tec_forms (`fk_ticket`, `fk_user`, `fk_soc`, `fk_store`, `images`) VALUES ("'.$ticketId.'", "'.$user->id.'", "'.$object->fk_soc.'", "'.$storeid.'", "'.base64_encode($list).'")';
+      $db->query($sql,0,'ddl');
+      print '<script>window.location.href = window.location.href;
+      </script>';
+   }
+}
 // if (isset($_POST['submit'])) {
 //    $allowed_types = array('jpg', 'png', 'jpeg', 'gif');
 //    $maxsize = 1024 * 1024;
