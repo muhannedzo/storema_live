@@ -474,7 +474,32 @@ if ($action == "assign") {
 
 
 
-    }else if($action == "archive"){
+    }else if($action == "restore"){
+        $design_id = GETPOST("reportId", 'int');
+        $sql = "UPDATE llx_design SET archived = 0 WHERE rowid = " . $design_id;
+        $db->query($sql);
+        echo '<script>window.location.href = "?action=overview";</script>';
+    }else if($action == "delete_perm"){
+        // Ask if user is sure
+        echo '<div class="container mt-3">';
+        echo '<h1>Endgültig löschen</h1>';
+        echo '<p>Sind Sie sicher, dass Sie dieses Design endgültig löschen möchten? Dieser Vorgang kann nicht rückgängig gemacht werden. Alle Versionen des Designs werden gelöscht
+        und Tickets, die mit dem Design erstellt wurden, werden möglicherweise unbrauchbar!</p>';
+        echo '<div class="d-flex gap-2">';
+        echo '<a href="?action=overview" class="btn btn-outline-primary">Abbrechen</a>';
+        echo '<a href="?action=delete_perm_confirm&reportId='.GETPOST("reportId", 'int').'" class="btn btn-danger">Löschen</a>';
+        echo '</div>';
+        echo '</div>';
+    }else if($action == "delete_perm_confirm"){
+
+        $design_id = GETPOST("reportId", 'int');
+        $sqlDesign = "DELETE FROM llx_design_version WHERE base_id = " . $design_id;
+        $db->query($sqlDesign);
+        $sql = "DELETE FROM llx_design WHERE rowid = " . $design_id;
+        $db->query($sql);
+        echo '<script>window.location.href = "?action=overview";</script>';
+    }
+    else if($action == "archive"){
         $sql = "SELECT 
         d.rowid AS design_id,
         u.firstname,
@@ -569,7 +594,7 @@ if ($action == "assign") {
                 echo '      <button class="custom-dropdown-toggle">Aktionen <span>&#9662;</span></button>';
                 echo '      <div class="custom-dropdown-menu">';
                 echo '          <a href="?action=restore&reportId='.$designId.'">Wiederherstellen</a>';
-                echo '          <a href="#" class="delete-archive" data-design-id="'.intval($designId).'">Endgültig löschen</a>';
+                echo '          <a href="?action=delete_perm&reportId='.$designId.'" class="delete-archive" data-design-id="'.intval($designId).'">Endgültig löschen</a>';
                 echo '      </div>';
                 echo '  </div>';
                 echo '</td>';
@@ -1045,7 +1070,7 @@ if ($action == "assign") {
         // "Zuweisen" always shown, no projectid check
         echo "<button id='deleteSelectedBtn' class='btn btn-sm btn-danger' disabled>Löschen</button>";
         // Archived button
-        echo "<a href='?action=archive' class='btn btn-sm btn-info'>Archiv</a>";
+        echo "<a href='?action=archive' class='btn btn-sm btn-archive'>Archiv</a>";
         //echo "<a href='?action=basicDesign' class='btn btn-sm btn-outline-primary'>Basis-Design bearbeiten</a>";
     }else if($isOverwriteMode && !$isAssignMode){
         echo "<a href='?action=overview' class='btn btn-outline-primary btn-sm'>Zurück zur Übersicht</a>";
@@ -1676,12 +1701,11 @@ if ($action == "assign") {
 
 		/* Custom styling for buttons at the top of the table */
 		.optionRow .btn {
-		padding: 10px 20px;
-		font-size: 0.9rem;
-		border-radius: 5px;
-		transition: all 0.3s ease;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		text-transform: none;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-transform: none;
 		}
 
 		.optionRow .btn-dark-gray {
@@ -1695,31 +1719,17 @@ if ($action == "assign") {
 			text-decoration: none;
 		}
 
-		/* Primary (filled) button styles */
-		.optionRow .btn-primary,
-		.optionRow .btn-success,
-		.optionRow .btn-danger {
-		border: none;
-		}
 
+        .btn-archive{
+            background-color: #6C757D; /* Neutral gray */
+            color: white !important;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none !important;
+        }
 
-
-
-		/* Hover effects for filled buttons */
-		.optionRow .btn-danger:hover {
-		background-color: #c82333;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-		}
-
-		.optionRow .btn-success:hover {
-		background-color: #218838;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-		}
-
-		.optionRow .btn-primary:hover {
-		background-color: #0056b3;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-		}
 
 		/* Disabled state */
 		.optionRow .btn:disabled {
@@ -3735,7 +3745,9 @@ class ReportElementTextarea extends ReportGeneratorElement {
         textarea.addEventListener("input", (e) => {
             this._content = e.target.value;
         });
-        textarea.setAttribute("data-locked", this.locked ? "true" : "false");
+        if(this.locked){
+            textarea.setAttribute("data-content-type", "locked");
+        }
         // Append the textarea to the wrapperDiv
         wrapperDiv.appendChild(textarea);
     }
