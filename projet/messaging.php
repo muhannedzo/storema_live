@@ -228,7 +228,7 @@ if (!empty($object->id)) {
 	$filters = array();
 	$filters['search_agenda_label'] = $search_agenda_label;
 	$filters['search_rowid'] = $search_rowid;
-
+	echo $object->id;
 	show_actions_messaging($conf, $langs, $db, $object, null, 0, $actioncode, '', $filters, $sortfield, $sortorder);
 }
 

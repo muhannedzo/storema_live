@@ -3159,10 +3159,10 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 	$trackid = 'proj'.$object->id;
 
 	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
-
 	// Hook to add more things on page
 	$parameters = array();
 	$reshook = $hookmanager->executeHooks('mainCardTabAddMore', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+	
 } else {
 	print $langs->trans("RecordNotFound");
 }
