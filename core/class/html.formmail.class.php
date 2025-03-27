@@ -965,8 +965,9 @@ class FormMail extends Form
 			$sql .= " LEFT JOIN llx_ticket t on t.rowid = f.fk_ticket";
 			$sql .= " LEFT JOIN llx_stores_branch s on s.rowid = f.fk_store";
 			$sql .= " LEFT JOIN llx_ticket_extrafields te on te.fk_object = f.fk_ticket";
-			$sql .= " WHERE t.fk_project = ".$projectId." AND te.dateofuse = '".$currentDay."'";
+			$sql .= " WHERE t.fk_project = ".$projectId." AND DATE(te.dateofuse) = '".$currentDay."'";
 			$sql .= " ORDER BY t.fk_statut DESC";
+			var_dump($sql);
 			$results = $db->query($sql)->fetch_all();
 			$arr = [];
 			foreach ($results as $result) {

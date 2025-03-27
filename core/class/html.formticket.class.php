@@ -715,6 +715,10 @@ class FormTicket
 		$socid = GETPOST("socid");
 		$customerid = GETPOST("customerid");
 		$storeid = GETPOST("storeid");
+		$parentid = GETPOST("parentid");
+		if($parentid){
+			$mainid = $parentid;
+		}
 		// Load translation files required by the page
 		$langs->loadLangs(array('other', 'mails', 'ticket'));
 
@@ -723,15 +727,17 @@ class FormTicket
 		$ticketstatic = new Ticket($this->db);
 		$store = new Branch($this->db);
 		$proj = new Project($this->db);
-		$mainticket = new Ticket($this->db);
-		$mainticket->fetch($mainid);
-		$mainticketref = $mainticket->ref;
-		$sql = 'SELECT * FROM llx_ticket_extrafields WHERE parentticket = '.$mainid;
-		$total = $this->db->query($sql)->num_rows;
-		$parts = explode("-", $mainticketref);
-		$parts[0] = "27";
-		$parts[] = $total + 1;
-		$newRef = implode("-", $parts);
+		if($mainid){
+			$mainticket = new Ticket($this->db);
+			$mainticket->fetch($mainid);
+			$mainticketref = $mainticket->ref;
+			$sql = 'SELECT * FROM llx_ticket_extrafields WHERE parentticket = '.$mainid;
+			$total = $this->db->query($sql)->num_rows;
+			$parts = explode("-", $mainticketref);
+			$parts[0] = "27";
+			$parts[] = $total + 1;
+			$newRef = implode("-", $parts);
+		}
 		
 		
 
@@ -829,13 +835,15 @@ class FormTicket
 		}
 		
 		// Parent Ticket
-		$parentticket = $mainid;
-		if(isset($_COOKIE["parentticket"])){
-			$parentticket = $_COOKIE["parentticket"];
+		if($mainid){
+			$parentticket = $mainid;
+			if(isset($_COOKIE["parentticket"])){
+				$parentticket = $_COOKIE["parentticket"];
+			}
+			print '<tr><td class="titlefieldcreate"><span class="fieldrequired">'.$langs->trans("Parent Ticket").'</span></td><td>';
+			print $form->selectTickets($parentticket,'options_parentticket');
+			print '</td></tr>';
 		}
-		print '<tr><td class="titlefieldcreate"><span class="fieldrequired">'.$langs->trans("Parent Ticket").'</span></td><td>';
-		print $form->selectTickets($parentticket,'options_parentticket');
-		print '</td></tr>';
 
 		$externalref = "";
 		if(isset($_COOKIE["externalref"])){
@@ -884,6 +892,9 @@ class FormTicket
 				// If no socid, set to -1 to avoid full contacts list
 				$selectedCompany = ($this->withfromsocid > 0) ? $this->withfromsocid : -1;
 				$selectedOrderVia = 0;
+				if($mainid){
+					$selectedOrderVia = "Storema";
+				}
 				if(isset($_COOKIE["ordervia"])){
 					$selectedOrderVia = $_COOKIE["ordervia"];
 				}
@@ -1270,8 +1281,12 @@ class FormTicket
 		}
 
 		// Type of Ticket
+		$typeCode = (GETPOST('type_code', 'alpha') ? GETPOST('type_code', 'alpha') : $this->type_code);
+		if($mainid){
+			$typeCode = $mainticket->type_code;
+		}
 		print '<tr><td class="titlefield"><span class="fieldrequired"><label for="selecttype_code">'.$langs->trans("TicketTypeRequest").'</span></label></td><td>';
-		$this->selectTypesTickets((GETPOST('type_code', 'alpha') ? GETPOST('type_code', 'alpha') : $this->type_code), 'type_code', '', 2, 1, 0, 0, 'minwidth200');
+		$this->selectTypesTickets($typeCode, 'type_code', '', 2, 1, 0, 0, 'minwidth200');
 		print '</td></tr>';
 
 		// Group => Category
@@ -1280,12 +1295,20 @@ class FormTicket
 		if ($public) {
 			$filter = 'public=1';
 		}
-		$this->selectGroupTickets((GETPOST('category_code') ? GETPOST('category_code') : $this->category_code), 'category_code', $filter, 2, 1, 0, 0, 'minwidth200');
+		$categoryCode = (GETPOST('category_code') ? GETPOST('category_code') : $this->category_code);
+		if($mainid){
+			$categoryCode = $mainticket->category_code;
+		}
+		$this->selectGroupTickets($categoryCode, 'category_code', $filter, 2, 1, 0, 0, 'minwidth200');
 		print '</td></tr>';
 
 		// Severity => Priority
+		$severityCode = (GETPOST('severity_code') ? GETPOST('severity_code') : $this->severity_code);
+		if($mainid){
+			$severityCode = $mainticket->severity_code;
+		}
 		print '<tr><td><span class="fieldrequired"><label for="selectseverity_code">'.$langs->trans("TicketSeverity").'</span></label></td><td>';
-		$this->selectSeveritiesTickets((GETPOST('severity_code') ? GETPOST('severity_code') : $this->severity_code), 'severity_code', '', 2, 1);
+		$this->selectSeveritiesTickets($severityCode, 'severity_code', '', 2, 1);
 		print '</td></tr>';
 
 		if (!empty($conf->knowledgemanagement->enabled)) {
@@ -1361,6 +1384,9 @@ class FormTicket
 					$subject = $langs->trans('SubjectAnswerToTicket').' '.$this->withreadid.' : '.$this->topic_title;
 				} else {
 					$subject = GETPOST('subject', 'alpha');
+				}
+				if($mainid){
+					$subject = $mainticket->subject;
 				}
 				print '<input class="text minwidth500" id="subject" name="subject" value="'.$subject.'"'.(empty($this->withemail)?' autofocus':'').' />';
 			}
@@ -1477,35 +1503,36 @@ class FormTicket
 
 		$timestamp = strtotime($dateString);
 
-		print $form->selectDate($timestamp, 'options_dateofuse', 0, 0, 0, "perso", 1, 0);
-		print '<span class="nowraponall">
-					<select class="flat valignmiddle maxwidth50 " id="options_datehour" name="options_datehour">
-						';
-						foreach ($hours as $hour) {
-							print '<option value="' . $hour["value"] . '"';
+		print $form->selectDate($timestamp, 'options_dateofuse', 1, 1, 0, "perso", 1, 0);
+		// print '<span class="nowraponall">
+		// 			<select class="flat valignmiddle maxwidth50 " id="options_datehour" name="options_datehour">
+		// 				';
+		// 				foreach ($hours as $hour) {
+		// 					print '<option value="' . $hour["value"] . '"';
 							
-							if ($hour["value"] == $datehour) {
-								print ' selected';
-							}
+		// 					if ($hour["value"] == $datehour) {
+		// 						print ' selected';
+		// 					}
 							
-							print '>' . $hour["label"] . '</option>';
-						} print '
-					</select>
-					:
-					<select class="flat valignmiddle maxwidth50 " id="options_datemin" name="options_datemin">
-						';
-						foreach ($minutes as $minute) {
-							print '<option value="' . $minute["value"] . '"';
+		// 					print '>' . $hour["label"] . '</option>';
+		// 				} print '
+		// 			</select>
+		// 			:
+		// 			<select class="flat valignmiddle maxwidth50 " id="options_datemin" name="options_datemin">
+		// 				';
+		// 				foreach ($minutes as $minute) {
+		// 					print '<option value="' . $minute["value"] . '"';
 							
-							if ($minute["value"] == $datemin) {
-								print ' selected';
-							}
+		// 					if ($minute["value"] == $datemin) {
+		// 						print ' selected';
+		// 					}
 							
-							print '>' . $minute["label"] . '</option>';
-						} print '
-					</select>
-				</span>
-				&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';		
+		// 					print '>' . $minute["label"] . '</option>';
+		// 				} print '
+		// 			</select>
+		// 		</span>
+		// 		&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';	
+		print '&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';
 		$timehour = 0;
 		if(isset($_COOKIE["timehour"])){
 			$timehour = $_COOKIE["timehour"];
@@ -1519,8 +1546,12 @@ class FormTicket
 					<input type="number" name="options_timeminute" id="options_timeminute" min="0" step="1" value="'.$timeminute.'" style="width:35px"> mn
 				</span>';
 		print '</td></tr>';
+
 		// MESSAGE
 		$msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : '';
+		if($mainid){
+			$msg = $mainticket->subject;
+		}
 		print '<tr><td><label for="message"><span class="fieldrequired">'.$langs->trans("Message").'</span></label></td><td>';
 
 		// If public form, display more information
@@ -1532,6 +1563,25 @@ class FormTicket
 		include_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 		$uselocalbrowser = true;
 		$doleditor = new DolEditor('message', $msg, '100%', 230, $toolbarname, 'In', true, $uselocalbrowser, getDolGlobalInt('FCKEDITOR_ENABLE_TICKET'), ROWS_8, '90%');
+		$doleditor->Create();
+		print '</td></tr>';
+
+		// Solution
+		$sol = GETPOSTISSET('options_losung') ? GETPOST('options_losung', 'restricthtml') : '';
+		if($mainid){
+			$sol = $mainticket->array_options["options_losung"];
+		}
+		print '<tr><td><label for="message"><span class="fieldrequired">'.$langs->trans("Lösung").'</span></label></td><td>';
+
+		// If public form, display more information
+		$toolbarname = 'dolibarr_notes';
+		if ($this->ispublic) {
+			$toolbarname = 'dolibarr_details';
+			print '<div class="warning hideonsmartphone">'.(getDolGlobalString("TICKET_PUBLIC_TEXT_HELP_MESSAGE", $langs->trans('TicketPublicPleaseBeAccuratelyDescribe'))).'</div>';
+		}
+		include_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
+		$uselocalbrowser = true;
+		$doleditor = new DolEditor('options_losung', $sol, '100%', 230, $toolbarname, 'In', true, $uselocalbrowser, getDolGlobalInt('FCKEDITOR_ENABLE_TICKET'), ROWS_8, '90%');
 		$doleditor->Create();
 		print '</td></tr>';
 
@@ -2248,17 +2298,18 @@ class FormTicket
 		}
 		
 		print '<tr><td><label for="subject"><span class="fieldrequired">'.$langs->trans("Date of use / Estimated duration").'</span></label></td><td>';
-		print $form->selectDate($open, 'options_dateofuse', 0, 0, 0, "perso", 1, 0);
-		print '<span class="nowraponall">
-					<select class="flat valignmiddle maxwidth50 " id="options_datehour" name="options_datehour">
-						<option value="00" selected>00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option>
-					</select>
-					:
-					<select class="flat valignmiddle maxwidth50 " id="options_datemin" name="options_datemin">
-						<option value="00" selected>00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>
-					</select>
-				</span>
-				&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';
+		print $form->selectDate($open, 'options_dateofuse', 1, 1, 0, "perso", 1, 0);
+		// print '<span class="nowraponall">
+		// 			<select class="flat valignmiddle maxwidth50 " id="options_datehour" name="options_datehour">
+		// 				<option value="00" selected>00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option>
+		// 			</select>
+		// 			:
+		// 			<select class="flat valignmiddle maxwidth50 " id="options_datemin" name="options_datemin">
+		// 				<option value="00" selected>00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>
+		// 			</select>
+		// 		</span>
+		// 		&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';
+		print '&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';
 		print '<span class="nowraponall">
 					<input type="number" name="options_timehour" id="options_timehour" min="0" step="1" value="0" style="width:35px"> H
 					<input type="number" name="options_timeminute" id="options_timeminute" min="0" step="1" value="0" style="width:35px"> mn
@@ -2278,6 +2329,22 @@ class FormTicket
 		include_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 		$uselocalbrowser = true;
 		$doleditor = new DolEditor('message', $msg, '100%', 230, $toolbarname, 'In', true, $uselocalbrowser, getDolGlobalInt('FCKEDITOR_ENABLE_TICKET'), ROWS_8, '90%');
+		$doleditor->Create();
+		print '</td></tr>';
+
+		// Solution
+		$sol = GETPOSTISSET('options_losung') ? GETPOST('options_losung', 'restricthtml') : '';
+		print '<tr><td><label for="options_losung"><span class="fieldrequired">'.$langs->trans("Lösung").'</span></label></td><td>';
+
+		// If public form, display more information
+		$toolbarname = 'dolibarr_notes';
+		if ($this->ispublic) {
+			$toolbarname = 'dolibarr_details';
+			print '<div class="warning hideonsmartphone">'.(getDolGlobalString("TICKET_PUBLIC_TEXT_HELP_MESSAGE", $langs->trans('TicketPublicPleaseBeAccuratelyDescribe'))).'</div>';
+		}
+		include_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
+		$uselocalbrowser = true;
+		$doleditor = new DolEditor('options_losung', $sol, '100%', 230, $toolbarname, 'In', true, $uselocalbrowser, getDolGlobalInt('FCKEDITOR_ENABLE_TICKET'), ROWS_8, '90%');
 		$doleditor->Create();
 		print '</td></tr>';
 
@@ -3792,7 +3859,7 @@ class FormTicket
 					$out .= '})';
 					$out .= '</script>'."\n";
 					// var_dump($listofpaths);
-					if (count($listofpaths)) {
+					if (count($listofnames)) {
 						foreach ($listofpaths as $key => $val) {
 							$out .= '<div id="attachfile_'.$key.'">';
 							$out .= img_mime($listofnames[$key]).' '.$listofnames[$key];
