@@ -45,28 +45,31 @@ if (!empty($extrafieldsobjectkey) && !empty($extrafields->attributes[$extrafield
 				$valuetoshow = $extrafields->showOutputField($key, $value, '', $extrafieldsobjectkey);
 				$title = dol_string_nohtmltag($valuetoshow);
 				
-				// Karims code:
-				if($extrafieldsobjectkey == "ticket" && $key == "dateofuse"){
-					print '<td'.($cssclass ? ' class="'.$cssclass.'"' : '');	// TODO Add 'css' and 'cssview' and 'csslist' for extrafields and use here 'csslist'
-						print ' data-key="'.$extrafieldsobjectkey.'.'.$key.'"';
-						print($title ? ' title="'.dol_escape_htmltag($title).'"' : '');
-						print '>';
-						if($valuetoshow){
-							print $valuetoshow." , ".$obj->options_datehour.":".$obj->options_datemin;
-						}else{
-							print $valuetoshow;
-						}
+				// // Karims code:
+				// if($extrafieldsobjectkey == "ticket" && $key == "dateofuse"){
+				// 	print '<td'.($cssclass ? ' class="'.$cssclass.'"' : '');	// TODO Add 'css' and 'cssview' and 'csslist' for extrafields and use here 'csslist'
+				// 		print ' data-key="'.$extrafieldsobjectkey.'.'.$key.'"';
+				// 		print($title ? ' title="'.dol_escape_htmltag($title).'"' : '');
+				// 		print '>';
+				// 		if($valuetoshow){
+				// 			$date = new DateTime($valuetoshow);
+    			// 			$formatted_date = $date->format('d.m.Y, H:i'); // German date format: dd.mm.yyyy, Hh:mm
+				// 			print $formatted_date;
+				// 			//print $valuetoshow." , ".$obj->options_datehour.":".$obj->options_datemin;
+				// 		}else{
+				// 			print $valuetoshow;
+				// 		}
 						
-					print '</td>';
-					// Karim end
-				}else{
+				// 	print '</td>';
+				// 	// Karim end
+				// }else{
 					print '<td'.($cssclass ? ' class="'.$cssclass.'"' : '');	// TODO Add 'css' and 'cssview' and 'csslist' for extrafields and use here 'csslist'
 						print ' data-key="'.$extrafieldsobjectkey.'.'.$key.'"';
 						print($title ? ' title="'.dol_escape_htmltag($title).'"' : '');
 						print '>';
 						print $valuetoshow;
 					print '</td>';
-				}
+				//}
 
 
 				
