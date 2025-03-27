@@ -462,6 +462,50 @@ if ($object->id > 0) {
 			$query = 'SELECT f.rowid, f.fk_ticket, f.images FROM llx_tec_forms f
 			WHERE fk_store = '.$id.' ORDER BY f.rowid';
 			$forms = $db->query($query)->fetch_all();
+			$checkForDesignQuery = 'SELECT f.rowid, f.fk_ticket, d.rowid, dv.parameters
+			FROM llx_tec_forms AS f
+			JOIN llx_ticket AS t ON f.fk_ticket = t.rowid
+			JOIN llx_projet AS p ON t.fk_project = p.rowid
+			JOIN llx_design AS d ON p.rowid = d.fk_project
+			JOIN (
+				SELECT base_id, parameters
+				FROM llx_design_version
+				WHERE (base_id, version) IN (
+					SELECT base_id, MAX(version)
+					FROM llx_design_version
+					GROUP BY base_id
+				)
+			) AS dv ON d.rowid = dv.base_id
+			WHERE f.fk_store = '.$id.'';
+			$designList = $db->query($checkForDesignQuery)->fetch_all();
+			//var_dump($designList);
+			// If we got a result, iterate through all rows, decode parameters and print them
+			if($designList){
+				// $rowsArr is array containing arrays, resembling each image row for the ticket
+				$rowsArr = [];
+				foreach($designList as $key => $design){
+					$decodedParam = base64_decode($design[3], true);
+					$decodedParam = json_decode($decodedParam, true);
+					// Decoded param -> design with potentially different upload element -> Insert empty row into rowsArr
+					$imageRow = [];
+					$imageRow = [
+						"title" => $design[1],
+						"labels" => []
+					];
+					foreach($decodedParam as $elem){
+						$type = $elem["type"];
+						$label = $elem["label"];
+						if($type == "upload"){	
+							$imageRow["labels"][] = $label;
+						}
+					}
+					$rowsArr[] = $imageRow;
+				}
+			}
+			//echo "<br>";
+			//var_dump($rowsArr);
+			//echo "<br>";
+			//var_dump($checkForDesignQuery);
 			$formsList = [];
 			//var_dump($forms);
 			if($forms){
@@ -470,18 +514,6 @@ if ($object->id > 0) {
 					$title = $form[1];
 					$imagesJson = base64_decode($form[2]);
 					$imagesData = json_decode($imagesJson, true);
-					//echo "<br>";
-					//echo "<br>";
-					//echo $title;
-					//echo " ";
-					//var_dump($imagesData);
-					//echo "<br>";
-					//echo "<br>";
-					
-					// echo "<br>";
-					// echo "<br>";
-					//var_dump($imagesData);
-					//var_dump($imagesData);
 					// Create a flat array of images with their types as descriptions
 					$flattenedImages = [];
 					if(is_array($imagesData)) {
@@ -508,7 +540,7 @@ if ($object->id > 0) {
 			$formsList = array_reverse($formsList);
 			//var_dump($imagesList);
 			$obj->print_list($imagesList, 'store');
-			$obj->print_list($formsList, 'ticket');
+			$obj->print_list($formsList, 'ticket', $rowsArr);
 			
 			////////////////////////////End Forms tickets images//////////////////////////////
 
@@ -531,7 +563,7 @@ if ($object->id > 0) {
 			// 		</div>';  
 					
 			if(isset($_POST['delete'])) {
-				var_dump($_POST);
+				//var_dump($_POST);
 				$groupIndex = $_POST["objectIndex"];
 				$imageIndex = $_POST["imgIndex"];
 				echo $imageIndex;
@@ -564,20 +596,22 @@ if ($object->id > 0) {
 			}
 			if(isset($_POST['edit'])) {
 				# TODO:
-				var_dump($_POST);
+				//var_dump($_POST);
 				$groupIndex = $_POST["objectIndex"];
 				$imageIndex = $_POST["imgIndex"];
+				
+				//echo $groupId;
 				//echo $imageIndex;
 				$mode = (count($imagesList) - 1 >= $groupIndex) ? "store" : "ticket";
 				if($mode == "ticket"){
 					$groupIndex = $groupIndex - count($imagesList);
 					$uploadList = array_reverse($forms);
+					$groupId = $uploadList[$groupIndex][1];
 					$ticketImages = json_decode(base64_decode($uploadList[$groupIndex][2]), true);
 					$dir = DOL_DOCUMENT_ROOT . '/formsImages/';
 
 					$currentImageStr = $ticketImages[$imageIndex]["images"][0];
         			$parts = explode("|", $currentImageStr);
-
 					$options = [
 						"sv"   => "Serverschrank vorher",
 						"sr"   => "Seriennummer Router",
@@ -590,15 +624,27 @@ if ($object->id > 0) {
 						"bmtn" => "Bon mit TSE Nr",
 						"t"    => "Testprotokoll"
 					];
+					foreach($rowsArr as $row){
+						echo $groupId;
+						echo "<br>";
+						echo $row["title"];
+						if($groupId == $row["title"]){
+							$options = [];
+							foreach($row["labels"] as $label){
+								$options[] = $label;
+							}
+						}
+					}
+					//var_dump($options);
 					$imageName = isset($options[$_POST['description']]) ? $options[$_POST['description']] : 'default';
-
+					echo $imageName;
 					$originalFilename = $parts[0];
 					$file_ext = pathinfo($originalFilename, PATHINFO_EXTENSION);
 
 					$partsNumber = explode('-', $object->b_number);
 					$ticketId = $uploadList[$groupIndex][1];	
 					$file_name = "VKST_" . $partsNumber[2] . "_" . $imageName . "_" . $ticketId . "." . $file_ext;
-        
+					echo $dir.$originalFilename;
 					// Optionally, rename the physical file on disk.
 					if(file_exists($dir . $originalFilename)) {
 						echo "Test";
@@ -667,7 +713,7 @@ if ($object->id > 0) {
 					}
 					unset($imagesList[$index]);
 					$list = json_encode(array_reverse($imagesList));
-					var_dump($list);
+					//var_dump($list);
 					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
 					$db->query($sql,0,'ddl');
 				}
@@ -798,27 +844,27 @@ if ($object->id > 0) {
 					
 					if($mode == "ticket"){
 					
-						echo "<br>";
-						echo $uploadList[0];
-						echo "<br>";
-						echo $uploadList[1];
-						echo "<br>";
-						var_dump(json_decode(base64_decode($uploadList[2]), true));
-						echo "<br>";
-						echo "<br>";
+						// echo "<br>";
+						// echo $uploadList[0];
+						// echo "<br>";
+						// echo $uploadList[1];
+						// echo "<br>";
+						// var_dump(json_decode(base64_decode($uploadList[2]), true));
+						// echo "<br>";
+						// echo "<br>";
 					
 
 					if($uploadList != null && count($uploadList) > 0){
 						$sql = 'UPDATE llx_tec_forms set images = "'.$uploadList[2].'" WHERE rowid = '.$formId;
-						echo "<br>";
-						echo "<br>";
-						var_dump($sql);
+						//echo "<br>";
+						//echo "<br>";
+						//var_dump($sql);
 						$db->query($sql,0,'ddl');
 					}
 					
 				}else{
 					$list = json_encode(array_reverse($imagesList));
-					var_dump($list);
+					//var_dump($list);
 					$sql = 'UPDATE llx_stores_branch set images = "'.addslashes($list).'" WHERE rowid = '.$id;
 					$db->query($sql,0,'ddl');
 				}

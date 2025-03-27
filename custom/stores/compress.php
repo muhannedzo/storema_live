@@ -12,6 +12,7 @@ class Compress {
     function set_db($db){
         $this->db = $db;
     }
+    private $predefinedList = [];
 
     public function compress_image($tempPath, $originalPath, $imageQuality){
         //echo json_encode(['status' => 'debug', 'params' => [$tempPath, $originalPath, $imageQuality]]);
@@ -47,12 +48,14 @@ class Compress {
 
 
     // Fix this later, this is bad code:
-    public function print_list($imagesList, $type){ 
+    public function print_list($imagesList, $type, $customSelectors = []){ 
         // Process each image group to make 'images' a sequential array
         foreach($imagesList as &$elem){
             // Ensure 'images' is a sequential array
+            //var_dump($elem);
+            //echo "<br>";
             $elem['images'] = array_values($elem['images']);
-        }
+        } 
         unset($elem);
         if($type == "store"){
             $this->storesImages = $imagesList;
@@ -131,6 +134,26 @@ class Compress {
                         }
                     }
                 }
+                $options = [
+                    "sv"   => "Serverschrank vorher",
+                    "sr"   => "Seriennummer Router",
+                    "sf"   => "Seriennummer Firewall",
+                    "f"    => "Firewall (Beschriftung Patchkabel)",
+                    "k"    => "Kabeletikett",
+                    "sn"   => "Serverschrank nachher",
+                    "hc"   => "Health Check",
+                    "an"   => "Arbeitssplatz nachher",
+                    "bmtn" => "Bon mit TSE Nr",
+                    "t"    => "Testprotokoll"
+                ];
+                // If the customSelectors array contains a row with the same title as the current group, use the labels from that row
+                foreach($customSelectors as $row){   
+                   if($row["title"] == $elem["title"]){
+                       $options = $row["labels"];
+                       break;
+                   }
+                }
+                
                 // Output each image in the group
                 foreach($elem["images"] as $imageIndex => $image){
                     $parts = explode("|", $image, 2);
@@ -154,18 +177,9 @@ class Compress {
                             echo '<div class="element-description">';
                                 if($type == "ticket"){
                                     // Inside the ticket mode
-                                    $options = [
-                                        "sv"   => "Serverschrank vorher",
-                                        "sr"   => "Seriennummer Router",
-                                        "sf"   => "Seriennummer Firewall",
-                                        "f"    => "Firewall (Beschriftung Patchkabel)",
-                                        "k"    => "Kabeletikett",
-                                        "sn"   => "Serverschrank nachher",
-                                        "hc"   => "Health Check",
-                                        "an"   => "Arbeitssplatz nachher",
-                                        "bmtn" => "Bon mit TSE Nr",
-                                        "t"    => "Testprotokoll"
-                                    ];
+                                    // Check if title from current ticket exists in customSelectors array
+                                    
+                                   
 
                                     // Initialize current value for description
                                     $currVal = '';
