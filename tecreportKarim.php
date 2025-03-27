@@ -684,7 +684,7 @@ var socId = '.$object->fk_soc.';
         const originalElements = form.querySelectorAll(\'.report-element\');
 
         let parameters = [];
-        parameters.push({ id: "design_id", value: '.$data[0].' });
+        parameters.push({ id: "design_id", value: "'.($data[0] ? $data[0] : " ").'" });
         const uploadedImages = window.uploadedImagesData || [];
 
         // Capture form data

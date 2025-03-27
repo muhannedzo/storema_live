@@ -82,8 +82,9 @@ if (!is_dir($dir)) {
     mkdir($dir, 0755, true);
 }
 
-function fetchImages($ticketId, $userId, $storeId, $socId, $db) {
-    $sql = 'SELECT images FROM llx_tec_forms WHERE fk_ticket = '.(int)$ticketId.' AND fk_user = '.(int)$userId.' AND fk_store = '.(int)$storeId.' AND fk_soc = '.(int)$socId;
+function fetchImages($ticketId, $db) {
+    // $sql = 'SELECT images FROM llx_tec_forms WHERE fk_ticket = '.(int)$ticketId.' AND fk_user = '.(int)$userId.' AND fk_store = '.(int)$storeId.' AND fk_soc = '.(int)$socId;
+    $sql = 'SELECT images FROM llx_tec_forms WHERE fk_ticket = '.(int)$ticketId;
     $resql = $db->query($sql);
     if ($resql) {
         $row = $db->fetch_array($resql);
@@ -99,20 +100,23 @@ function fetchImages($ticketId, $userId, $storeId, $socId, $db) {
 }
 
 
-function updateImageList($ticketId, $userId, $storeId, $socId, $imagesList, $db) {
+function updateImageList($ticketId, $imagesList, $db) {
     $encodedList = base64_encode(json_encode($imagesList));
     // Check if record exists
-    $sqlCheck = 'SELECT COUNT(*) as count FROM llx_tec_forms WHERE fk_ticket = '.(int)$ticketId.' AND fk_user = '.(int)$userId.' AND fk_store = '.(int)$storeId.' AND fk_soc = '.(int)$socId;
+    // $sqlCheck = 'SELECT COUNT(*) as count FROM llx_tec_forms WHERE fk_ticket = '.(int)$ticketId.' AND fk_user = '.(int)$userId.' AND fk_store = '.(int)$storeId.' AND fk_soc = '.(int)$socId;
+    $sqlCheck = 'SELECT COUNT(*) as count FROM llx_tec_forms WHERE fk_ticket = '.(int)$ticketId;
     $resqlCheck = $db->query($sqlCheck);
     if ($resqlCheck) {
         $rowCheck = $db->fetch_array($resqlCheck);
         if ($rowCheck['count'] > 0) {
             // Record exists, perform UPDATE
-            $sqlUpdate = 'UPDATE llx_tec_forms SET images = "'.$db->escape($encodedList).'" WHERE fk_ticket = '.(int)$ticketId.' AND fk_user = '.(int)$userId.' AND fk_store = '.(int)$storeId.' AND fk_soc = '.(int)$socId;
+            //$sqlUpdate = 'UPDATE llx_tec_forms SET images = "'.$db->escape($encodedList).'" WHERE fk_ticket = '.(int)$ticketId.' AND fk_user = '.(int)$userId.' AND fk_store = '.(int)$storeId.' AND fk_soc = '.(int)$socId;
+            $sqlUpdate = 'UPDATE llx_tec_forms SET images = "'.$db->escape($encodedList).'" WHERE fk_ticket = '.(int)$ticketId;
             $db->query($sqlUpdate);
         } else {
             // No record exists, perform INSERT
-            $sqlInsert = 'INSERT INTO llx_tec_forms (fk_ticket, fk_user, fk_store, fk_soc, images) VALUES ('.(int)$ticketId.', '.(int)$userId.', '.(int)$storeId.', '.(int)$socId.', "'.$db->escape($encodedList).'")';
+            //$sqlInsert = 'INSERT INTO llx_tec_forms (fk_ticket, fk_user, fk_store, fk_soc, images) VALUES ('.(int)$ticketId.', '.(int)$userId.', '.(int)$storeId.', '.(int)$socId.', "'.$db->escape($encodedList).'")';
+            $sqlInsert = 'INSERT INTO llx_tec_forms (fk_ticket, images) VALUES ('.(int)$ticketId.','.$db->escape($encodedList).'")';
             $db->query($sqlInsert);
         }
     } else {
@@ -138,11 +142,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
 
                     // Custom file naming
                     if ($imageType == "Testprotokoll") {
-                        $file_name = date("d.m.y", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
+                        $file_name = date("d.m.y, H:i", $object->array_options["options_dateofuse"])."_".$store->city."_VKST_".explode("-", $store->b_number)[2].".".$file_ext;
                     } elseif ($imageType == "Serverschrank nachher") {
-                        $file_name = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $imageType)[0].".".$file_ext;
+                        $file_name = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $imageType)[0]."_".$ticketId.".".$file_ext;
                     } else {
-                        $file_name = "VKST_".explode("-", $store->b_number)[2]."_".$imageType.".".$file_ext;
+                        $file_name = "VKST_".explode("-", $store->b_number)[2]."_".$imageType."_".$ticketId.".".$file_ext;
                     }
 
                     $filepath = $dir.$file_name;
@@ -188,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
             }
 
             // Update images list
-            $imagesList = fetchImages($ticketId, $userId, $storeId, $socId, $db);
+            $imagesList = fetchImages($ticketId, $db);
             // Check if the imageType exists in imagesList
             $found = false;
             foreach ($imagesList as &$node) {
@@ -208,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
                     'images' => $images
                 ];
             }
-            updateImageList($ticketId, $userId, $storeId, $socId, $imagesList, $db);
+            updateImageList($ticketId, $imagesList, $db);
 
             header('Content-Type: application/json');
             echo json_encode(['status' => 'success', 'images' => $imagesList]);
@@ -220,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
                 $filenameToDelete = GETPOST('filename', 'none');
 
                 // Update images list
-                $imagesList = fetchImages($ticketId, $userId, $storeId, $socId, $db);
+                $imagesList = fetchImages($ticketId, $db);
                 foreach ($imagesList as &$node) {
                     if ($node['type'] === $imageType) {
                         $node['images'] = array_filter($node['images'], function ($image) use ($filenameToDelete) {
@@ -235,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
                 $imagesList = array_filter($imagesList, function ($node) {
                     return !empty($node['images']);
                 });
-                updateImageList($ticketId, $userId, $storeId, $socId, $imagesList, $db);
+                updateImageList($ticketId, $imagesList, $db);
 
                 // Delete file from server
                 $filepath = $dir.$filenameToDelete;
@@ -255,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
             }
 
         case 'fetch_images':
-            $imagesList = fetchImages($ticketId, $userId, $storeId, $socId, $db);
+            $imagesList = fetchImages($ticketId, $db);
             header('Content-Type: application/json');
             echo json_encode(['status' => 'success', 'images' => $imagesList]);
             exit;
@@ -268,16 +272,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
     exit;
 }else if(isset($_POST['form'])){
     $form = $_POST['form'];
-    $storeId = $_POST['storeId'];
-    $userId = $_POST['userId'];
+    //$storeId = $_POST['storeId'];
+    //$userId = $_POST['userId'];
     $ticketId = $_POST['ticketId'];
-    $socId = $_POST['socId'];
+    //$socId = $_POST['socId'];
     $parameters = $_POST['parameters'];
 
-    $sql = 'SELECT * FROM llx_tec_forms WHERE fk_ticket = '.$ticketId.' and fk_user = '.$userId.' and fk_soc = '.$socId.' and fk_store = '.$storeId;
+    $sql = 'SELECT * FROM llx_tec_forms WHERE fk_ticket = '.$ticketId;
     $result = $db->query($sql)->fetch_all()[0];
     if($result[0]){
-        $sql = 'UPDATE llx_tec_forms SET content = "'.base64_encode($form).'", parameters = "'.base64_encode($parameters).'" WHERE fk_ticket = '.$ticketId.' AND fk_user = '.$userId.' AND fk_store = '.$storeId.' AND fk_soc = '.$socId.';';
+        $sql = 'UPDATE llx_tec_forms SET content = "'.base64_encode($form).'", parameters = "'.base64_encode($parameters).'" WHERE fk_ticket = '.$ticketId.';';
         $db->query($sql, 0, 'ddl');
         setEventMessages('Form saved on the DB', null, 'mesgs');
     }else{
@@ -286,7 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
         setEventMessages('Form saved on the DB', null, 'mesgs');
     }
     header('Content-Type: application/json');
-    echo json_encode(['status' => 'success', 'message' => 'Form saved on the DB']);
+    echo json_encode(['status' => 'success', 'message' => 'Form saved on the DB: '.$_POST['parameters']]);
     exit;
 }else{
 
