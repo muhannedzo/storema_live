@@ -158,6 +158,14 @@ function ticket_prepare_head($object)
 	$head[$h][2] = 'tabTicketReport';
 	$h++;
 
+	// Material overview
+	$head[$h][0] = DOL_URL_ROOT.'/ticket/material.php?id='.$object->id;
+	$head[$h][1] = $langs->trans("MaterialOverview");
+	$head[$h][2] = 'tabTicketMaterial';
+	$h++;
+
+	// Karim end
+
 
 	complete_head_from_modules($conf, $langs, $object, $head, $h, 'ticket', 'add', 'external');
 
