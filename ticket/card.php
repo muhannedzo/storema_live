@@ -637,6 +637,26 @@ if (empty($reshook)) {
 		}
 
 		$action = 'view';
+	} elseif ($action == "set_solution" && $user->hasRight('ticket', 'manage')) {
+		if (!GETPOST('cancel')) {
+			$object->fetch('', '', GETPOST('track_id', 'alpha'));
+			$fieldtomodify = GETPOST('options_losung', 'restricthtml');
+
+			$object->array_options["options_losung"] = $fieldtomodify;
+			$ret = $object->update($user);
+			if ($ret > 0) {
+				//include_once DOL_DOCUMENT_ROOT.'/core/class/utils_diff.class.php';
+				// output the result of comparing two files as plain text
+				//$log_action .= Diff::toString(Diff::compare(strip_tags($oldvalue_message), strip_tags($object->message)));
+
+				setEventMessages($langs->trans('TicketMessageSuccesfullyUpdated'), null, 'mesgs');
+			} else {
+				$error++;
+				setEventMessages($object->error, $object->errors, 'errors');
+			}
+		}
+
+		$action = 'view';
 	} elseif ($action == 'confirm_set_status' && $permissiontoadd && !GETPOST('cancel')) {
 		// Reopen ticket
 		if ($object->fetch(GETPOST('id', 'int'), GETPOST('track_id', 'alpha')) >= 0) {
@@ -773,6 +793,9 @@ if ($action == 'create' || $action == 'presend') {
 		';
 		print '</script>';
 	}
+
+	
+
 	// End Muhannad's Code
 	/*} elseif ($action == 'edit' && $user->rights->ticket->write && $object->status < Ticket::STATUS_CLOSED) {
 	$formticket = new FormTicket($db);
@@ -826,7 +849,7 @@ if ($action == 'create' || $action == 'presend') {
 
 	print '</form>'; */
 } elseif (empty($action) || $action == 'view' || $action == 'addlink' || $action == 'dellink' || $action == 'presend' || $action == 'presend_addmessage' || $action == 'close' || $action == 'abandon' || $action == 'delete' || $action == 'editcustomer' || $action == 'progression' || $action == 'categories' || $action == 'reopen'
-	|| $action== 'edit_contrat' || $action == 'editsubject' || $action == 'edit_extras' || $action == 'update_extras' || $action == 'edit_extrafields' || $action == 'set_extrafields' || $action == 'classify' || $action == 'sel_contract' || $action == 'edit_message_init' || $action == 'set_status' || $action == 'dellink') {
+	|| $action== 'edit_contrat' || $action == 'editsubject' || $action == 'edit_extras' || $action == 'update_extras' || $action == 'edit_extrafields' || $action == 'set_extrafields' || $action == 'classify' || $action == 'sel_contract' || $action == 'edit_solution' || $action == 'edit_message_init' || $action == 'set_status' || $action == 'dellink') {
 	if ($res > 0) {
 		// or for unauthorized internals users
 		if (!$user->socid && (getDolGlobalString('TICKET_LIMIT_VIEW_ASSIGNED_ONLY') && $object->fk_user_assign != $user->id) && !$user->hasRight('ticket', 'manage')) {
@@ -1221,17 +1244,18 @@ if ($action == 'create' || $action == 'presend') {
 						<input type="hidden" name="options_externalticketnumber" value="'.$externalNumber.'">
 						<input type="hidden" name="token" value="'.newToken().'">
 						<input type="hidden" name="id" value="'.$object->id.'">';
-						print $form->selectDate($object->array_options["options_dateofuse"], 'options_dateofuse', 0, 0, 0, "perso", 1, 0);
-						print '<span class="nowraponall">
-									<select class="flat valignmiddle maxwidth50 " id="options_datehour" name="options_datehour">
-										<option value="00" selected>00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option>
-									</select>
-									:
-									<select class="flat valignmiddle maxwidth50 " id="options_datemin" name="options_datemin">
-										<option value="00" selected>00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>
-									</select>
-								</span>
-								&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';
+						print $form->selectDate($object->array_options["options_dateofuse"], 'options_dateofuse', 1, 1, 0, "perso", 1, 0);
+						// print '<span class="nowraponall">
+						// 			<select class="flat valignmiddle maxwidth50 " id="options_datehour" name="options_datehour">
+						// 				<option value="00" selected>00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option>
+						// 			</select>
+						// 			:
+						// 			<select class="flat valignmiddle maxwidth50 " id="options_datemin" name="options_datemin">
+						// 				<option value="00" selected>00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>
+						// 			</select>
+						// 		</span>
+						// 		&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';
+						print '&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;';
 						print '<span class="nowraponall">
 									<input type="number" name="options_timehour" id="options_timehour" min="0" step="1" value="0" style="width:35px"> H
 									<input type="number" name="options_timeminute" id="options_timeminute" min="0" step="1" value="0" style="width:35px"> mn
@@ -1241,9 +1265,15 @@ if ($action == 'create' || $action == 'presend') {
 		}else{
 			print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&amp;action=edit_extras&amp;token='.newToken().'&amp;attribute=options_dateofuse&amp;ignorecollapsesetup=1"><span class="fas fa-pencil-alt" style=" color: #444;" title="Modify"></span></a>';
 			if($object->array_options["options_dateofuse"]){
-				print date('d.m.y', $object->array_options["options_dateofuse"])." ".$object->array_options["options_datehour"].":".$object->array_options["options_datemin"]." / ".$object->array_options["options_timehour"].":".$object->array_options["options_timeminute"];
+				print date('d.m.y, H:i', $object->array_options["options_dateofuse"])." / ".$object->array_options["options_timehour"].":".$object->array_options["options_timeminute"];
+				//print date('d.m.y, H:i', $object->array_options["options_dateofuse"])." ".$object->array_options["options_datehour"].":".$object->array_options["options_datemin"]." / ".$object->array_options["options_timehour"].":".$object->array_options["options_timeminute"];
 			}
 		}
+
+		
+		
+		
+
 		
 		print '</td></tr>';
 		print '</table>';
@@ -1256,10 +1286,10 @@ if ($action == 'create' || $action == 'presend') {
 			  var rows = tables[j].getElementsByTagName("tr");
 		
 			  for (var i = 0; i < rows.length; i++) {
-				var cells = rows[i].getElementsByClassName("ticket_extras_datemin");
-				if (cells.length > 0) {
-				  rows[i].style.display = "none";
-				}
+				// var cells = rows[i].getElementsByClassName("ticket_extras_datemin");
+				// if (cells.length > 0) {
+				//   rows[i].style.display = "none";
+				// }
 				var cells1 = rows[i].getElementsByClassName("ticket_extras_dateofuse");
 				if (cells1.length > 0) {
 				  rows[i].style.display = "none";
@@ -1274,6 +1304,10 @@ if ($action == 'create' || $action == 'presend') {
 				}
 				var cells4 = rows[i].getElementsByClassName("ticket_extras_datehour");
 				if (cells4.length > 0) {
+				  rows[i].style.display = "none";
+				}
+				  var cells5 = rows[i].getElementsByClassName("ticket_extras_losung");
+				if (cells5.length > 0) {
 				  rows[i].style.display = "none";
 				}
 			  }
@@ -1342,7 +1376,10 @@ if ($action == 'create' || $action == 'presend') {
 
 		// View Original message
 		$actionobject->viewTicketOriginalMessage($user, $action, $object);
-
+		
+		// View Solution
+		$actionobject->viewTicketSolution($user, $action, $object);
+		
 		// Classification of ticket
 		print '<div class="div-table-responsive-no-min">'; // You can use div-table-responsive-no-min if you dont need reserved height for your table
 		print '<table class="noborder tableforfield centpercent margintable">';
@@ -1539,7 +1576,7 @@ if ($action == 'create' || $action == 'presend') {
 
 		print dol_get_fiche_end();
 
-
+		
 		// Buttons for actions
 		if ($action != 'presend' && $action != 'presend_addmessage' && $action != 'editline') {
 			print '<div class="tabsAction">'."\n";
