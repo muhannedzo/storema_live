@@ -156,6 +156,7 @@ if ($resql) {
 
 
 if (GETPOST('action', 'alpha') == 'save_edit' && !empty($_POST['qty'])) {
+    // #TODO: Min/Max qty
     // Loop over each submitted quantity, where the key is the rowid
     foreach ($_POST['qty'] as $rowid => $newQty) {
         $newQty = (int) $newQty;
@@ -179,6 +180,7 @@ if (GETPOST('action', 'alpha') == 'save_edit' && !empty($_POST['qty'])) {
             $sqlUpdateWarehouseStock = "UPDATE llx_product_stock SET reel = reel + " . $products[$rowid]->qty . " WHERE fk_product = " . $products[$rowid]->fk_product . " AND fk_entrepot = " . $products[$rowid]->fk_warehouse;
             $db->query($sqlUpdateWarehouseStock);
         }
+        echo "<script>window.location.href = '" . $_SERVER['PHP_SELF'] . "?id=" . $_POST['id'] . "'; </script>";
     }
 
     // After saving, redirect back using the id parameter (keep the ticket id)
@@ -257,15 +259,15 @@ if(GETPOST('action') != 'add'){
             echo '<td>';
             if ($action =="edit") {
                 // Using product ticket's rowid as the key
-                echo '<input type="number" name="qty[' . (int) $product->rowid . ']" value="' . (int) $product->qty . '" min="0" class="form-control" style="width:100px;">';
+                $sqlGetWarehouseStock = "SELECT reel FROM llx_product_stock WHERE fk_product = " . $product->fk_product . " AND fk_entrepot = " . $product->fk_warehouse;
+                $resqlGetWarehouseStock = $db->query($sqlGetWarehouseStock);
+                $stock = $resqlGetWarehouseStock ? $db->fetch_object($resqlGetWarehouseStock)->reel : 0;
+                echo '<input type="number" name="qty[' . (int) $product->rowid . ']" value="' . (int) $product->qty . '" max='.$stock.' min="0" class="form-control" style="width:100px;">';
             } else {
                 echo (int) $product->qty;
             }
             echo '</td>';
             if($action == 'edit') {
-                $sqlGetWarehouseStock = "SELECT reel FROM llx_product_stock WHERE fk_product = " . $product->fk_product . " AND fk_entrepot = " . $product->fk_warehouse;
-                $resqlGetWarehouseStock = $db->query($sqlGetWarehouseStock);
-                $stock = $resqlGetWarehouseStock ? $db->fetch_object($resqlGetWarehouseStock)->reel : 0;
                 echo '<td>' . (int) $stock . '</td>';
             }
             echo '<td>' . dol_escape_htmltag($product->warehouse_description) . '</td>';
