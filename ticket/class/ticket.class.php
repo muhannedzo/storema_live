@@ -610,6 +610,35 @@ class Ticket extends CommonObject
 				return -1 * $error;
 			} else {
 				$this->db->commit();
+				// Karim's code:
+				if (isset($_POST['warehouseid']) && isset($_POST['selected_products'])) {
+	
+					$warehouse = (int) $_POST['warehouseid'];
+					$products = json_decode($_POST['selected_products'], true);
+				
+					if (is_array($products) && !empty($products)) {
+						$values = array();
+						foreach ($products as $product) {
+							$productId = (int) $product['id'];
+							$qty = (int) $product['qty'];
+							$values[] = "($this->id, $productId, $qty, $warehouse)";
+						}
+						
+						if (!empty($values)) {
+							$sqlInsert = "INSERT INTO llx_product_ticket (fk_ticket, fk_product, qty, fk_warehouse) VALUES ";
+							$sqlInsert .= implode(',', $values);
+							$resql = $this->db->query($sqlInsert);
+							if($resql){
+								foreach($products as $product) {
+									$productId = (int) $product['id'];
+									$qty = (int) $product['qty'];
+									$this->db->query("UPDATE llx_product_stock SET reel = $qty WHERE rowid = $productId");
+								}
+							}
+						}
+					}
+				}
+				// Karim's code end
 				return $this->id;
 			}
 		} else {
@@ -1688,14 +1717,14 @@ class Ticket extends CommonObject
 		if ($resql) {
 			$this->fk_user_assign = $id_assign_user; // May be used by trigger
 
-			if (!$notrigger) {
-				// Call trigger
-				$result = $this->call_trigger('TICKET_ASSIGNED', $user);
-				if ($result < 0) {
-					$error++;
-				}
-				// End call triggers
-			}
+			// if (!$notrigger) {
+			// 	// Call trigger
+			// 	$result = $this->call_trigger('TICKET_ASSIGNED', $user);
+			// 	if ($result < 0) {
+			// 		$error++;
+			// 	}
+			// 	// End call triggers
+			// }
 
 			if (!$error) {
 				$this->db->commit();
@@ -3011,6 +3040,7 @@ class Ticket extends CommonObject
 						}
 
 						$sendto = [
+							"rollout@sesoco.de",
 							"it-providermanagement@rossmann.de", 
 							"rollout-vkst4@rossmann.de", 
 							"Filialinfrastruktur@rossmann.de",
@@ -3018,8 +3048,7 @@ class Ticket extends CommonObject
 							"Timo.Woehler@rossmann.de",
 							"f.mutschler@telonic.de",
 							"rossmann.rollout@ncrvoyix.com",
-							"Kristijan.Novakovic@ncrvoyix.com",
-							"rollout@sesoco.de"
+							"Kristijan.Novakovic@ncrvoyix.com"
 						];
 						if (!empty($sendto)) {
 							$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
@@ -3131,6 +3160,7 @@ class Ticket extends CommonObject
 							// dont try to send email if no recipient
 							if (!empty($sendto)) {
 								$sendto = [
+											"rollout@sesoco.de",
 											"it-providermanagement@rossmann.de", 
 											"rollout-vkst4@rossmann.de", 
 											"Filialinfrastruktur@rossmann.de",
@@ -3138,8 +3168,7 @@ class Ticket extends CommonObject
 											"Timo.Woehler@rossmann.de",
 											"f.mutschler@telonic.de",
 											"rossmann.rollout@ncrvoyix.com",
-											"Kristijan.Novakovic@ncrvoyix.com",
-											"rollout@sesoco.de"
+											"Kristijan.Novakovic@ncrvoyix.com"
 										];
 								$this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
 							}
