@@ -1799,6 +1799,217 @@ class FormTicket
 			}
 		}
 
+		// Fetch Warehouse
+		print '
+			<tr>
+				<td>Lager</td>
+				<td>
+					<select id="warehouseid" name="warehouseid" class="flat minwidth200">
+						<option value="" selected disabled>' . $langs->trans("SelectWarehouse") . '</option>
+					</select>
+				</td>
+			</tr>';
+
+		print '<script type="text/javascript">
+				 $(document).ready(function () {
+					// Listen for changes in the project dropdown
+					$("#projectid").change(function () {
+						var projectId = $(this).val(); // Get the selected project ID
+
+						if (projectId) {
+							// Send an AJAX request to fetch warehouses for the selected project
+							$.ajax({
+								url: "'.dol_buildpath("/ticket/ajax/tickets.php", 1).'",
+								type: "GET",
+								data: { projectid: projectId },
+								dataType: "json",
+								success: function (response) {
+									// Clear the warehouse dropdown
+									$("#warehouseid").empty();
+									$("#warehouseid").append(\'<option value="" selected disabled>'.$langs->trans("SelectWarehouse").'</option>\');
+
+									// Populate the warehouse dropdown with the response data
+									if (response && response.length > 0) {
+										response.forEach(function (warehouse) {
+											$("#warehouseid").append(
+												\'<option value="\' + warehouse.rowid + \'">\' + warehouse.description + \'</option>\'
+											);
+										});
+									} else {
+										$("#warehouseid").append(
+											\'<option value="" disabled>'.$langs->trans("NoWarehousesFound").'</option>\'
+										);
+									}
+								},
+								error: function (xhr, status, error) {
+									console.error("Error fetching warehouses:", error);
+								}
+							});
+						}
+					});
+				});
+			</script>';
+
+		// Fetch products in warhouse
+		echo '
+		<tr>
+			<td>Produkte</td>
+			<td>
+				<div id="product-table-container" class="table-responsive">
+					<input type="text" id="product-search" placeholder="Search products..." class="form-control mb-3" />
+					<table id="product-table" class="table table-striped table-bordered">
+						<thead>
+							<tr>
+								<th>Auswählen</th>
+								<th>Produktname</th>
+								<th>Beschreibung</th>
+								<th>Lagerbestand</th>
+								<th>Menge</th>
+							</tr>
+						</thead>
+						<tbody id="product-table-body">
+							
+						</tbody>
+					</table>
+				</div>
+				<input type="hidden" id="selected-products" name="selected_products" value="">
+			</td>
+		</tr>
+		';
+
+		echo '<script type="text/javascript">
+				$(document).ready(function () {
+
+					// Fetch products when a warehouse is selected
+					$("#warehouseid").change(function () {
+						var warehouseId = $(this).val();
+						if (warehouseId) {
+							$.ajax({
+								url: "'. dol_buildpath("/ticket/ajax/tickets.php", 1).'",
+								type: "GET",
+								data: { warehouseid: warehouseId },
+								dataType: "json",
+								success: function (response) {
+									var tbody = $("#product-table-body");
+									tbody.empty();
+									if (response && response.length > 0) {
+										response.forEach(function (product) {
+											tbody.append(`
+												<tr data-product-id="${product.rowid}">
+													<td>
+														<input type="checkbox" class="product-select">
+													</td>
+													<td>${product.label}</td>
+													<td>${product.description}</td>
+													<td>${product.stock}</td>
+													<td>
+														<input type="number" class="product-qty form-control" placeholder="Stk" min="1" style="width:80px;" data-stock="${product.stock}" disabled>
+													</td>
+												</tr>
+											`);
+										});
+									} else {
+										tbody.append(\'<tr><td colspan="4">Keine Produkte gefunden</td></tr>\');
+									}
+								},
+								error: function (xhr, status, error) {
+									console.error("Error fetching products:", error);
+								}
+							});
+						}
+					});
+
+					// Enable/disable quantity input based on checkbox selection and update hidden field
+					$(document).on("change", ".product-select", function () {
+						var row = $(this).closest("tr");
+						var qtyInput = row.find(".product-qty");
+						if ($(this).is(":checked")) {
+							qtyInput.prop("disabled", false).focus();
+						} else {
+							qtyInput.prop("disabled", true).val("");
+						}
+						updateSelectedProducts();
+					});
+
+					// Function to check quantity against stock
+					function checkQty(input) {
+						var qty = parseInt(input.value);
+						var stock = parseInt($(input).data("stock")); // Correctly retrieve stock from data attribute
+
+						if (isNaN(qty) || qty < 1) {
+							input.value = 1; // Set to minimum value if invalid
+							qty = 1;
+						}
+
+						if (qty > stock) {
+							alert("Die Menge darf den Lagerbestand nicht überschreiten.");
+							input.value = stock;
+						}
+					};
+				
+
+					// Update hidden input when quantity is changed
+					$(document).on("input change", ".product-qty", function () {
+						checkQty(this); // Call checkQty with the input element
+						updateSelectedProducts(); // Call updateSelectedProducts after quantity change
+					});
+
+					// Search filter for products
+					$("#product-search").on("input", function () {
+						var searchTerm = $(this).val().toLowerCase();
+						$("#product-table-body tr").each(function () {
+							var productName = $(this).find("td:nth-child(2)").text().toLowerCase();
+							$(this).toggle(productName.indexOf(searchTerm) > -1);
+						});
+					});
+
+					// Update the hidden input with selected products and their quantities
+					function updateSelectedProducts() {
+						var selectedProducts = [];
+						$("#product-table-body tr").each(function () {
+							var checkbox = $(this).find(".product-select");
+							if (checkbox.is(":checked")) {
+								var productId = $(this).data("product-id");
+								var qty = $(this).find(".product-qty").val();
+								if (qty === "" || isNaN(qty) || qty <= 0) {
+									qty = 1;
+								}
+								selectedProducts.push({ id: productId, qty: qty });
+							}
+						});
+						$("#selected-products").val(JSON.stringify(selectedProducts));
+					}
+				});
+			</script>';
+
+		echo "
+		<style>
+			#product-table-container {
+				max-height: 400px;
+				overflow-y: auto;
+				border: 1px solid #ddd;
+				padding: 10px;
+				overflow-x: hidden;
+			}
+			#product-table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+			#product-table th, #product-table td {
+				padding: 8px;
+				text-align: left;
+				border-bottom: 1px solid #ddd;
+			}
+			#product-search {
+				width: 100%;
+				margin-bottom: 10px;
+				padding: 6px;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+			}
+		</style>
+		";
+
 		// Other attributes
 		// $parameters = array();
 		// $reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $ticketstat, $action); // Note that $action and $object may have been modified by hook
@@ -1814,7 +2025,10 @@ class FormTicket
 
 		print '<br><br>';
 
+		
+
 		print $form->buttonsSaveCancel(((isset($this->withreadid) && $this->withreadid > 0) ? "SendResponse" : "CreateTicket"), ($this->withcancel ? "Cancel" : ""));
+
 
 		/*
 		print '<div class="center">';
@@ -3734,6 +3948,12 @@ class FormTicket
 								"libelle" => "",
 								"lastname" => "",
 								"firstname" => "",
+								"email" => "rollout@sesoco.de"
+							],
+							[
+								"libelle" => "",
+								"lastname" => "",
+								"firstname" => "",
 								"email" => "it-providermanagement@rossmann.de"
 							],
 							[
@@ -3777,15 +3997,16 @@ class FormTicket
 								"lastname" => "",
 								"firstname" => "",
 								"email" => "Kristijan.Novakovic@ncrvoyix.com"
-							],
-							[
-								"libelle" => "",
-								"lastname" => "",
-								"firstname" => "",
-								"email" => "rollout@sesoco.de"
 							]
 						];
-						// var_dump($contacts);
+						// $contacts = [
+						// 	[
+						// 		"libelle" => "",
+						// 		"lastname" => "",
+						// 		"firstname" => "",
+						// 		"email" => "rollout@sesoco.de"
+						// 	]
+						// ];
 		
 						$sendto = array();
 		
