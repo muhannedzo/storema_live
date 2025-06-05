@@ -170,7 +170,7 @@ echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="ima
         <img src="" id="modalImage" class="img-fluid" alt="Full Size Image">
       </div>
       <div class="modal-footer p-2">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Schließen</button>
       </div>
     </div>
   </div>
@@ -291,101 +291,78 @@ var socId = '.($object->fk_soc || " ").';
         });
 
 
-        /* ---------------------------------------------------------------
-        0 · find the material-list table
-        ---------------------------------------------------------------- */
+        const assignedProducts = '.json_encode($assignedProducts).';
+        if (!Array.isArray(assignedProducts) || assignedProducts.length === 0) {
+            console.warn(\'No assigned products found for this ticket.\');
+        }
+
+        // 0. Find the material-list table
         const table = document.querySelector(\'[data-type="materialList"]\');
         if (!table) throw new Error(\'materialList table not found\');
 
-        /* ---------------------------------------------------------------
-        1 · map header texts → column indexes
-        ---------------------------------------------------------------- */
-        const headerCells = table.querySelectorAll(
-            \'thead th, tr:first-child th, tr:first-child td\'
-        );
+        // 1. Identify header row correctly
+        let headerRow = table.querySelector(\'thead tr\');
+        if (!headerRow) {
+            headerRow = table.querySelector(\'tr:first-child\');
+        }
+        if (!headerRow) throw new Error(\'Header row not found\');
 
-        let modellCol  = -1;
-        let snCol      = -1;
-        let anzahlCol  = -1;
+        const headerCells = headerRow.cells;
+        const colCount = headerCells.length;
+
+        // 2. Map header texts → column indexes
+        let modellCol = -1;
+        let snCol = -1;
+        let anzahlCol = -1;
         let checkboxCol = -1;
 
-        headerCells.forEach((th, idx) => {
+        Array.from(headerCells).forEach((th, idx) => {
             const txt = th.textContent.trim().toLowerCase();
-            if (txt === \'modell\')  modellCol   = idx;
-            if (txt === \'sn\')      snCol       = idx;
-            if (txt === \'anzahl\')  anzahlCol   = idx;
-            if (txt === \'\')        checkboxCol = idx;        // header over ✓ is blank
+            if (txt === \'modell\') modellCol = idx;
+            if (txt === \'sn\') snCol = idx;
+            if (txt === \'anzahl\') anzahlCol = idx;
+            if (txt === \'\' || th.innerHTML.trim() === \'\') checkboxCol = idx;
         });
 
         if (modellCol === -1 || snCol === -1 || anzahlCol === -1 || checkboxCol === -1) {
             throw new Error(\'Header row must contain “Modell”, “SN”, “Anzahl” and a blank checkbox column.\');
         }
 
-        /* ---------------------------------------------------------------
-        2 · grab tbody (or fallback to table) and its existing rows
-        ---------------------------------------------------------------- */
+        // 3. Clear existing table body completely
         const tbody = table.tBodies[0] || table;
-
-        if (tbody.rows.length) tbody.deleteRow(0);                
-
-        /* helper: does a row look completely empty? */
-        const rowIsEmpty = (tr) => [...tr.cells].every(cell =>
-            !cell.textContent.trim() && !cell.querySelector(\'input, textarea, select\')
-        );
-
-        /* the first data row is already there – keep it if it’s empty    */
-        let currentRowIndex = 0;
-
-        /* ---------------------------------------------------------------
-        3 · the PHP variable:  [ [modell, qty], … ]
-        ---------------------------------------------------------------- */
-        const assignedProducts = '.json_encode($assignedProducts).';
-        // example: [ ["Cisco C9200-24", 2], ["U6-LR", 5] ]
-
-        if (!Array.isArray(assignedProducts) || assignedProducts.length === 0) {
-            console.warn(\'No assigned products found for this ticket.\');
+        while (tbody.rows.length > 0) {
+            tbody.deleteRow(0);
         }
 
-        /* ---------------------------------------------------------------
-        4 · fill / append rows
-        ---------------------------------------------------------------- */
-        assignedProducts.forEach(([modell, qty], idx) => {
+        // 4. Create new rows with exact column count
+        assignedProducts.forEach(([modell, qty]) => {
+            for (let i = 0; i < qty; i++) {
+                const row = tbody.insertRow();
+                
+                // Create exactly the same number of cells as the header
+                for (let c = 0; c < colCount; c++) {
+                    row.insertCell();
+                }
 
-            /* decide which <tr> to use */
-            let row;
-            if (idx === 0 && tbody.rows.length && rowIsEmpty(tbody.rows[0])) {
-                /* use the existing, blank first data row */
-                row = tbody.rows[0];
-            } else {
-                /* create a brand-new row with 4 cells */
-                row = tbody.insertRow();
-                for (let i = 0; i < 4; i++) row.insertCell();
+                // Populate specific columns
+                row.cells[modellCol].textContent = modell;
+                
+                row.cells[snCol].innerHTML = \'\';
+                const snInput = document.createElement(\'input\');
+                snInput.type = \'text\';
+                snInput.className = \'form-control\';
+                row.cells[snCol].appendChild(snInput);
+                
+                row.cells[anzahlCol].textContent = \'1\';
+                
+                const cb = document.createElement(\'input\');
+                cb.type = \'checkbox\';
+                row.cells[checkboxCol].appendChild(cb);
             }
-
-            /* --- fill cells ------------------------------------------- */
-            /* Modell */
-            row.cells[modellCol].textContent = modell;
-
-            /* SN  (empty <input>) */
-            row.cells[snCol].innerHTML = \'\';                       // clear old content
-            const snInput = document.createElement(\'input\');
-            snInput.type  = \'text\';
-            snInput.className = \'form-control\';
-            row.cells[snCol].appendChild(snInput);
-
-            /* Anzahl */
-            row.cells[anzahlCol].textContent = qty;
-
-            /* Checkbox */
-            const cb = document.createElement(\'input\');
-            cb.type = \'checkbox\';
-            //cb.className = \'form-check-input\';
-            row.cells[3].appendChild(cb);
         });
 
-        // Search for all textareas with attr data-locked = true
-        let lockedTextareas = document.querySelectorAll(\'textarea[data-locked="true"]\');
-        lockedTextareas.forEach((textarea) => {
+        // Locked textareas handling
+        document.querySelectorAll(\'textarea[data-locked="true"]\').forEach(textarea => {
             textarea.disabled = true;
         });
 
@@ -557,7 +534,7 @@ var socId = '.($object->fk_soc || " ").';
         const clearBtn = document.createElement(\'button\');
         clearBtn.type = \'button\';
         clearBtn.dataset.action = \'clear-canvas\';
-        clearBtn.textContent = \'Clear Canvas\';
+        clearBtn.textContent = \'Unterschrift löschen\';
 
         // OPTIONAL: prevent it from spanning the whole width
         // (in case your CSS has button { width: 100% })
@@ -601,30 +578,30 @@ var socId = '.($object->fk_soc || " ").';
     
 
     // Handle file inputs on initial load
-    var fileInputs = document.querySelectorAll(\'input[type="file"]\');
-    fileInputs.forEach(function(input) {
-        input.accept = ".jpg, .png";
-        input.disabled = false;
-        let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
-        if (!uploadedImagesContainer) {
-            uploadedImagesContainer = document.createElement("div");
-            uploadedImagesContainer.classList.add("uploaded-images-container", "row");
-            input.parentElement.appendChild(uploadedImagesContainer);
-        }
+    // var fileInputs = document.querySelectorAll(\'input[type="file"]\');
+    // fileInputs.forEach(function(input) {
+    //     input.accept = ".jpg, .png";
+    //     input.disabled = false;
+    //     let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
+    //     if (!uploadedImagesContainer) {
+    //         uploadedImagesContainer = document.createElement("div");
+    //         uploadedImagesContainer.classList.add("uploaded-images-container", "row");
+    //         input.parentElement.appendChild(uploadedImagesContainer);
+    //     }
 
-        // Attach change event listener to this file input
-        input.addEventListener("change", function() {
-            const files = input.files;
-            if (files.length > 1) {
-                alert("Bitte nur eine Datei auswählen."); // "Please select only one file."
-                input.value = ""; // Reset the input
-                return;
-            }
-            if (files.length === 1) {
-                uploadFiles(files, input, uploadedImagesContainer);
-            }
-        });
-    });
+    //     // Attach change event listener to this file input
+    //     input.addEventListener("change", function() {
+    //         const files = input.files;
+    //         if (files.length > 1) {
+    //             alert("Bitte nur eine Datei auswählen."); // "Please select only one file."
+    //             input.value = ""; // Reset the input
+    //             return;
+    //         }
+    //         if (files.length === 1) {
+    //             uploadFiles(files, input, uploadedImagesContainer);
+    //         }
+    //     });
+    // });
 
     // Code to handle tables that should be extendable by the technician
     // (Assuming this code is correct and required)
@@ -821,6 +798,12 @@ var socId = '.($object->fk_soc || " ").';
 
         // Prepare form data for AJAX
         const formData = new FormData();
+        // Clear the collapse toggle or else we save it with the DOM
+        document.querySelectorAll(\'table\').forEach(table => {
+            if (table.nextElementSibling?.classList?.contains(\'collapse-toggle\')) {
+                table.nextElementSibling.remove();
+            }
+        });
         formData.append("form", formHtml); // Use the HTML without images
         formData.append("parameters", JSON.stringify(parameters));
         formData.append("uploadedImages", JSON.stringify(uploadedImages));
@@ -838,7 +821,7 @@ var socId = '.($object->fk_soc || " ").';
             contentType: false,
             success: function(response) {
                 if (response.status === \'success\') {
-                    alert("Report saved successfully");
+                    alert("Der Report wurde erfolgreich gespeichert!");
                     //console.log("Save Response:", response);
                     if (typeof callback === \'function\') {
                         callback();
@@ -854,6 +837,24 @@ var socId = '.($object->fk_soc || " ").';
             }
         });
     }
+    
+    // Ensures that tecform exists before the user uploads a pic. Otherwise nothing will happen
+    let formAlreadySaved = false;   // page-level flag
+
+    async function handleFileSelect(e) {
+        e.preventDefault();
+
+        if (!formAlreadySaved) {
+            await new Promise(resolve => {
+                saveForm(() => {
+                    formAlreadySaved = true;   // flip the flag
+                    resolve();
+                });
+            });
+        }
+    }
+
+    $(document).on(\'change\', \'input[type="file"]\', handleFileSelect);
 
     // Function to fetch images via AJAX
     function fetchUploadedImages() {
@@ -939,7 +940,7 @@ var socId = '.($object->fk_soc || " ").';
         deleteButton.classList.add("btn", "btn-danger", "mt-2");
         deleteButton.style.fontSize = "10px";
         deleteButton.style.padding = "5px";
-        deleteButton.textContent = "Delete";
+        deleteButton.textContent = "Löschen";
         deleteButton.type = "button";
         deleteButton.onclick = function() {
             deleteImage(image.filename, colDiv, image.inputId);
@@ -965,6 +966,7 @@ var socId = '.($object->fk_soc || " ").';
     // Function to upload files via AJAX
     function uploadFiles(files, fileInput, uploadedImagesContainer) {
         const formData = new FormData();
+        
         // Grab the div with the attribute data-element-id = fileInput.id
         const parentWrapper = fileInput.parentElement;
         // Grab label which is child of parentWrapper
