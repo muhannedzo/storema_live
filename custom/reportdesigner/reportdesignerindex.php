@@ -424,7 +424,7 @@ if ($action == "assign") {
                 // Update preview
                 if (encodedContent) {
                     const decodedContent = b64DecodeUnicode(encodedContent);
-                    console.log(decodedContent);
+                   //console.log(decodedContent);
                     designPreview.innerHTML = decodedContent;
                     document.getElementById("sortable-elements").style.border = null;
                     // Disable all inputs
@@ -450,7 +450,7 @@ if ($action == "assign") {
                 formData.append("action", "save_project_assignment");
                 formData.append("reportId", reportId);
                 formData.append("projectId", projectId);
-                console.log(formData);
+               //console.log(formData);
                 fetch("reportDesignerUpload.php", {
                     method: "POST",
                     body: formData
@@ -1946,6 +1946,22 @@ echo    '</div>
 echo
 '<script>
 
+// const CONFIG = {
+//     TIMEOUTS: {
+//         HANDLE_BAR_SHOW: 1000,
+//         AUTO_SAVE: 5000
+//     },
+//     ELEMENT_TYPES: {
+//         DISPLAY: \'display\',
+//         INPUT: \'input\',
+//         TABLE: \'table\'
+//     },
+//     CSS_CLASSES: {
+//         ACTIVE_CELL: \'active-cell\',
+//         HANDLE_BAR: \'handle-bar\',
+//         REPORT_ELEMENT: \'report-element\'
+//     }
+// };
 
 ////////////////////////
 // Jump: ReportGenerator.js
@@ -1968,7 +1984,7 @@ class ReportGenerator {
 
     // Called inside constructor to set up event listeners and bind to the correct context
     init () {
-    console.log("Init");
+   //console.log("Init");
         // Handle clicks outside of reportdesigner
         document.addEventListener("click", (e) => this.handleGlobalClick(e));
 
@@ -2027,7 +2043,7 @@ class ReportGenerator {
     // Pass json decoded params to load the report
     initFromParams(params){
         const reportParameters = params;
-        console.log(reportParameters);
+       //console.log(reportParameters);
         reportParameters.forEach(param => {
         if(param.label === ""){
             param.label = " ";
@@ -2048,7 +2064,7 @@ class ReportGenerator {
                     this.addElement(textareaElement);
                     break;
                 case "table":
-                    console.log(param.content);
+                   //console.log(param.content);
                     let tableElement = new ReportElementTable(param.content, param.style, param.content.length, param.content[0].length, param.label);
                     // param.content.forEach((row, rowIndex) => {
                     //     row.forEach((cell, cellIndex) => {
@@ -2056,6 +2072,10 @@ class ReportGenerator {
                     //     });
                     // });
                     this.addElement(tableElement);
+                    break;
+                case "materialList": 
+                    const materialListElement = new ReportElementMaterialList(param.content, param.style ?? "", param.label ?? "Materialliste");
+                    this.addElement(materialListElement);
                     break;
                 case "div":
                     const divElement = new ReportElementDiv(param.content, param.style);
@@ -2206,19 +2226,19 @@ class ReportGenerator {
 
 
     deleteSelectedElement() {
-        console.log("Delete Selected Element");
+        //console.log("Delete Selected Element");
         if (!this.selectedElement) {
-        console.log("No element selected");
+        //console.log("No element selected");
             return;
         }
 
         const elementId = this.selectedElement._type === "td" || this.selectedElement._type === "th" ? this.selectedElement._id.split("-")[0]+"-"+this.selectedElement._id.split("-")[1] : this.selectedElement._id;
-        console.log("Found elementId: " + elementId);
-        console.log("Selected Element: " + JSON.stringify(this.selectedElement));
+        //console.log("Found elementId: " + elementId);
+        //console.log("Selected Element: " + JSON.stringify(this.selectedElement));
         // Find the index of the element with the given ID
         const index = this.elements.findIndex(element => element._id === elementId);
-        console.log(this.elements);
-        console.log("Index: " + index);
+        //console.log(this.elements);
+        //console.log("Index: " + index);
         // If the element is found, remove it from the array
         if (index !== -1) {
             this.elements.splice(index, 1);
@@ -2230,18 +2250,22 @@ class ReportGenerator {
         // Remove the element from the DOM
         const element = document.querySelector(`.sortable-item[data-element-id="${elementId}"]`);
         if (element) {
-            console.log("Element found");
+            //console.log("Element found");
+            // TODO: Change ReportElementGenerator class to have a wrapperDiv attr
+            // Then create addEventListener and removEventListener
+
+            // Finally remove wrapper and all children from DOM
             element.remove();
         }
 
             // Clear the selected element
             this.selectedElement = null;
-        }
+    }
 
     editSelectedElement(){
-        console.log("Edit Selected Element");
+       //console.log("Edit Selected Element");
         if (!this.selectedElement) {
-            console.log("No element selected");
+           //console.log("No element selected");
             return;
         }
         // Overwrite selectedElement with element returend by editElement from creator
@@ -2250,20 +2274,20 @@ class ReportGenerator {
     }
 
     handleClick(e) {
-        console.log("Handle Click");
+       //console.log("Handle Click");
 
         const cell = e.target.closest("th", "td");
         if(cell){
-            console.log("Table Cell Clicked", cell);
+           //console.log("Table Cell Clicked", cell);
             this.selectElement(cell);
             return;
         }
 
-        console.log("Fired" + JSON.stringify(e.target));
+       //console.log("Fired" + JSON.stringify(e.target));
         const target = e.target.closest(".report-element");
         // If add element button is clicked then do not select any element and disable draggable timeout for current element
         if (e.target.id === "add-element-button-wrapper" && e.target.innerHTML === "+") {
-            console.log("Add Element Button Clicked");
+           //console.log("Add Element Button Clicked");
             if (this.selectedElement) {
                 this.selectedElement.clicked = false;
                 this.selectedElement = null;
@@ -2272,7 +2296,7 @@ class ReportGenerator {
         } else if (target) {
         // If a report element has been clicked disable draggable from currently selectedElement and set the clicked on element as the new selectedElement.
         // Then remove the draggable timeout from the new selectedElement
-            console.log("Element Clicked");
+           //console.log("Element Clicked");
             if(this.selectedElement) {
                 this.selectedElement.clicked = false;
                 this.selectedElement = null;
@@ -2280,9 +2304,9 @@ class ReportGenerator {
             this.selectElement(target);
             this.selectedElement.clicked = true;
             clearTimeout(this.selectedElement.handleBarTimeout);
-            console.log("Selected" + JSON.stringify(this.selectedElement));
+           //console.log("Selected" + JSON.stringify(this.selectedElement));
         } else {
-            console.log("Nothing Clicked");
+           //console.log("Nothing Clicked");
         // If no ReportElement has been clicked then disable draggable from currently selectedElement and remove that element
             if (this.selectedElement) {
 
@@ -2297,7 +2321,7 @@ class ReportGenerator {
 
 
     handleGlobalClick(e) {
-        console.log("Handle global Click");
+       //console.log("Handle global Click");
         // Check if the click is inside the report container
         if (!this.reportContainer.contains(e.target) && !this.propertyPanelElement.contains(e.target) && document.getElementById("elementModal").style.display != "block" && !document.getElementById("elementModal").contains(e.target)) {
             // If clicked outside the report container, reset clicked state
@@ -2305,15 +2329,15 @@ class ReportGenerator {
                 this.selectedElement.clicked = false;
                 this.selectedElement = null;
 
-                console.log("Clicked outside ReportDesigner, resetting state.");
+               //console.log("Clicked outside ReportDesigner, resetting state.");
             }
         }else if(this.propertyPanelElement.contains(e.target)) {
-            console.log("Clicked inside property panel");
+           //console.log("Clicked inside property panel");
 
         }else if(document.getElementById("preview") && document.getElementById("preview").contains(e.target)) {
-            console.log("Clicked inside ElementModal");
+           //console.log("Clicked inside ElementModal");
         }else {
-            console.log("Clicked inside ReportDesigner");
+           //console.log("Clicked inside ReportDesigner");
         }
     }
 
@@ -2342,7 +2366,7 @@ class ReportGenerator {
 
     // Function to add a new ReportElement to the array
     addElement(element) {
-        console.log("Element added");
+       //console.log("Element added");
         if (!(element instanceof ReportGeneratorElement)) {
             throw new TypeError("Element must be an instance of ReportGeneratorElement");
         }
@@ -2384,7 +2408,7 @@ class ReportGenerator {
     const orderedIds = Array.from(document.querySelectorAll("#sortable-elements .sortable-item"))
         .map(item => item.getAttribute(\'data-element-id\'));  // Fetch data-element-id
 
-    console.log("Ordered Ids:", orderedIds);  // Ensure IDs are logged correctly
+   //console.log("Ordered Ids:", orderedIds);  // Ensure IDs are logged correctly
 
     // Reorder this.elements based on the new order of IDs
     this.elements.sort((a, b) => orderedIds.indexOf(a._id) - orderedIds.indexOf(b._id));
@@ -2394,7 +2418,7 @@ class ReportGenerator {
     //     element.pos = index + 1;
     // });
 
-    console.log("Elements reordered:", this.elements);
+   //console.log("Elements reordered:", this.elements);
 }
 
   generateReport() {
@@ -2530,7 +2554,7 @@ class ReportGenerator {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log("Response: " + response);
+               //console.log("Response: " + response);
                 alert("Design saved successfully!");
             },
             error: function(xhr, status, error) {
@@ -2603,6 +2627,7 @@ class ReportElementCreator {
             { value: "signature", label: "Unterschrift", factory: this.createSignatureElementUI.bind(this) },
             { value: "timerange", label: "Zeitbereich", factory: this.createTimeRangeElementUI.bind(this) },
             { value: "time", label: "Zeit", factory: this.createTimeElementUI.bind(this) },
+            { value: "materialList", label: "Material-Liste", factory: this.createMaterialListElementUI.bind(this)},
             // { value: "clock", label: "Uhrzeit", factory: this.createClockElementUI.bind(this) },
             // { value: "div", label: "Box", factory: this.createDivElementUI.bind(this) }
         ];
@@ -2873,122 +2898,208 @@ class ReportElementCreator {
 
     // Create UI for Table element
     createTableElementUI(container) {
-        this.configBox = container;
+        
+    
+        this.container = container;
+        
+        // Create or reuse the preview table
+        if (this.mode === "create") {   
+            this.preview = new ReportElementTable();
+        }
         container.innerHTML = `
             <div class="accordion" id="accordionExample">
-    <!-- Table Label Section Accordion Item -->
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingLabel">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLabel" aria-expanded="true" aria-controls="collapseLabel">
-                Überschrift Optionen
-            </button>
-        </h2>
-        <div id="collapseLabel" class="accordion-collapse collapse show" aria-labelledby="headingLabel">
-            <div class="accordion-body">
-                <div class="mb-3" id="tableLabelSelection">
-                    Tabellenüberschrift
-                    <input type="text" id="tableLabel" class="form-control" value="Table">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Table Structure Section Accordion Item -->
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingStructure">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStructure" aria-expanded="false" aria-controls="collapseStructure">
-                Tabellenstruktur Optionen
-            </button>
-        </h2>
-        <div id="collapseStructure" class="accordion-collapse collapse" aria-labelledby="headingStructure">
-            <div class="accordion-body">
-                <div class="mb-3 d-flex gap-1 flex-column" id="tableStructureSelection">
-                    <div class="mb-3">
-                        <label for="tableRows">Anzahl Zeilen</label>
-                        <input type="number" id="tableRows" class="form-control" value="2">
-                    </div>
-                    <div class="mb-3">
-                        <label for="tableCols">Anzahl Spalten</label>
-                        <input type="number" id="tableCols" class="form-control" value="2">
-                    </div>
-                    <div class="mb-3">
-                        <label for="extendableTable">Erweiterbare Tabelle</label>
-                        <input type="checkbox" id="extendableTable" class="form-check-input">
+        <!-- Table Label Section Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingLabel">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLabel" aria-expanded="true" aria-controls="collapseLabel">
+                    Überschrift Optionen
+                </button>
+            </h2>
+            <div id="collapseLabel" class="accordion-collapse collapse show" aria-labelledby="headingLabel">
+                <div class="accordion-body">
+                    <div class="mb-3" id="tableLabelSelection">
+                        Tabellenüberschrift
+                        <input type="text" id="tableLabel" class="form-control" value="Table">
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Table Cell Section Accordion Item -->
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="headingCell">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCell" aria-expanded="false" aria-controls="collapseCell">
-                Zellen Optionen
-            </button>
-        </h2>
-        <div id="collapseCell" class="accordion-collapse collapse" aria-labelledby="headingCell">
-            <div class="accordion-body">
-                <div class="mb-3 d-flex gap-1 flex-column" id="tableCellContentSelection">
-                    <label for="cellContent">Zelleninhalt</label>
-                    <div class="mb-3">
-                        <input type="text" id="cellContent" class="form-control" value="Cell">
+        <!-- Table Structure Section Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingStructure">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStructure" aria-expanded="false" aria-controls="collapseStructure">
+                    Tabellenstruktur Optionen
+                </button>
+            </h2>
+            <div id="collapseStructure" class="accordion-collapse collapse" aria-labelledby="headingStructure">
+                <div class="accordion-body">
+                    <div class="mb-3 d-flex gap-1 flex-column" id="tableStructureSelection">
+                        <!-- Row Controls -->
+                        <div class="mb-3">
+                            <label for="tableRows" class="form-label">
+                                Gesamtzahl der Zeilen
+                            </label>
+                            <input type="number" id="tableRows" class="form-control" 
+                                min="1" value="${this.preview.rows}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="tableCols">Anzahl Spalten</label>
+                            <input type="number" id="tableCols" class="form-control" value="2">
+                        </div>
+                        <!-- Modified Column Controls -->
+                           <div class="mb-3">
+                                <label class="form-label fw-semibold">Spalte einfügen / löschen</label>
+
+                                <div class="row gx-2">
+                                    <!-- Insert Column -->
+                                    <div class="col-6">
+                                        <div class="input-group mb-3">
+                                            <input type="number" 
+                                                id="insertColPosition" 
+                                                class="form-control" 
+                                                min="1" 
+                                                value="1"
+                                                placeholder="Position"
+                                                style="min-width: 80px;">
+                                            <button class="btn btn-primary btn-sm" id="addColumnBtn">
+                                                Insert Column
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Delete Column -->
+                                    <div class="col-6">
+                                        <div class="input-group mb-3">
+                                            <input type="number" 
+                                                id="removeColPosition" 
+                                                class="form-control" 
+                                                min="1" 
+                                                value="1"
+                                                placeholder="Position"
+                                                style="min-width: 80px;">
+                                            <button class="btn btn-danger btn-sm" id="removeColumnBtn">
+                                                Delete Column
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <div class="mb-3">
+                            <label for="extendableTable">Erweiterbare Tabelle</label>
+                            <input type="checkbox" id="extendableTable" class="form-check-input">
+                        </div>
                     </div>
                 </div>
-                <div class="mb-3 d-flex gap-1 flex-column" id="cellContentTypeSelection">
-                    <label for="cellType">Zellentyp</label>
+            </div>
+        </div>
+        
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingColumns">
+                <button class="accordion-button collapsed" type="button" 
+                    data-bs-toggle="collapse" data-bs-target="#collapseColumns" 
+                    aria-expanded="false" aria-controls="collapseColumns">
+                    Spaltenoperationen
+                </button>
+            </h2>
+            <div id="collapseColumns" class="accordion-collapse collapse" 
+                aria-labelledby="headingColumns">
+                <div class="accordion-body">
                     <div class="mb-3">
-                        <select id="cellType" class="form-select">
-                            <option value="display" selected>Text</option>
-                            <option value="input">Input</option>
-                            <option value="textarea">Textarea</option>
-                            <option value="upload">Upload</option>
-                            <option value="checkbox">Checkbox</option>
-                            <option value="radio">Radio</option>
-                            <option value="time">Time</option>
-                            <option value="timerange">Time Range</option>
+                        <div class="row g-2">
+                            <div class="col">
+                                <select id="columnSelect" class="form-select">
+                                    ${Array.from({length: this.preview.cols}, (_, i) => 
+                                        `<option value="${i}">Spalte ${i+1}</option>`)}
+                                </select>
+                            </div>
+                            <div class="col">
+                                <select id="columnType" class="form-select">
+                                    <option value="display">Text</option>
+                                    <option value="input">Eingabe</option>
+                                    <option value="textarea">Textbereich</option>
+                                    <option value="time">Zeit</option>
+                                    <option value="checkbox">Checkbox</option>
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-primary" id="applyColumnType">
+                                    Auf Spalte anwenden
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                    
+        <!-- Table Cell Section Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingCell">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCell" aria-expanded="false" aria-controls="collapseCell">
+                    Zellen Optionen
+                </button>
+            </h2>
+            <div id="collapseCell" class="accordion-collapse collapse" aria-labelledby="headingCell">
+                <div class="accordion-body">
+                    <div class="mb-3 d-flex gap-1 flex-column" id="tableCellContentSelection">
+                        <label for="cellContent">Zelleninhalt</label>
+                        <div class="mb-3">
+                            <input type="text" id="cellContent" class="form-control" value="Cell">
+                        </div>
+                    </div>
+                    <div class="mb-3 d-flex gap-1 flex-column" id="cellContentTypeSelection">
+                        <label for="cellType">Zellentyp</label>
+                        <div class="mb-3">
+                            <select id="cellType" class="form-select">
+                                <option value="display" selected>Text</option>
+                                <option value="input">Input</option>
+                                <option value="textarea">Textarea</option>
+                                <option value="upload">Upload</option>
+                                <option value="checkbox">Checkbox</option>
+                                <option value="radio">Radio</option>
+                                <option value="time">Time</option>
+                                <option value="timerange">Time Range</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="lockTextareaSection" style="display: none;">
+                        <input type="checkbox" id="cellTextareaLocked" class="form-check-input">
+                        <label for="cellTextareaLocked" class="form-check-label">Schreibgeschützt</label>
+                    </div>
+                    <div class="mb-3" id="radioGroup" style="display: none;">
+                        <label for="radioGroup">Radio Gruppe</label>
+                        <i class="bi bi-question-circle" data-bs-toggle="popover" data-bs-content="Bei Buttons, die einer Gruppe angehören, kann immer nur ein Button angeklickt sein" data-bs-placement="right"></i>
+                        <input type="text" id="radioGroupInput" class="form-control" value="Gruppe1">
+                        <select id="prevGroup" class="form-select" style="display: none;">
+                        </select>
+                    </div>
+                    <div class="mb-3" id="displayType">
+                        <select id="predefinedText" class="form-select">
+                            <option value="default" selected>Dynamische Werte</option>
+                            <option value="projectname">Projektname / Report</option>
+                            <option value="ticketnumber">Ticketnummer</option>
+                            <option value="currentDate">Aktuelles Datum</option>
+                            <option value="creationDate">Erstellungsdatum</option>
+                            <option value="time">Uhrzeit</option>
+                            <option value="filial">Filiale</option>
+                            <option value="severity">Dringlichkeit</option>
+                            <option value="postalcode">Plz</option>
+                            <option value="city">Stadt</option>
+                            <option value="street">Straße</option>
+                            <option value="tickettype">Ticketart</option>
+                            <option value="telephonenumber">Telefonnummer</option>
+                            <option value="ticketdescription">Beschreibung / Auftrag</option>
                         </select>
                     </div>
                 </div>
-                <div class="mb-3" id="lockTextareaSection" style="display: none;">
-                    <input type="checkbox" id="cellTextareaLocked" class="form-check-input">
-                    <label for="cellTextareaLocked" class="form-check-label">Schreibgeschützt</label>
-                </div>
-                <div class="mb-3" id="radioGroup" style="display: none;">
-                    <label for="radioGroup">Radio Gruppe</label>
-                    <i class="bi bi-question-circle" data-bs-toggle="popover" data-bs-content="Bei Buttons, die einer Gruppe angehören, kann immer nur ein Button angeklickt sein" data-bs-placement="right"></i>
-                    <input type="text" id="radioGroupInput" class="form-control" value="Gruppe1">
-                    <select id="prevGroup" class="form-select" style="display: none;">
-                    </select>
-                </div>
-                <div class="mb-3" id="displayType">
-                    <select id="predefinedText" class="form-select">
-                        <option value="default" selected>Dynamische Werte</option>
-                        <option value="projectname">Projektname / Report</option>
-                        <option value="ticketnumber">Ticketnummer</option>
-                        <option value="currentDate">Aktuelles Datum</option>
-                        <option value="creationDate">Erstellungsdatum</option>
-                        <option value="time">Uhrzeit</option>
-                        <option value="filial">Filiale</option>
-                        <option value="severity">Dringlichkeit</option>
-                        <option value="postalcode">Plz</option>
-                        <option value="city">Stadt</option>
-                        <option value="street">Straße</option>
-                        <option value="tickettype">Ticketart</option>
-                        <option value="telephonenumber">Telefonnummer</option>
-                        <option value="ticketdescription">Beschreibung / Auftrag</option>
-                    </select>
-                </div>
             </div>
-        </div>
-    </div>
+        </div>`;
 
-        `;
 
-        // Create or reuse the preview table
-        if (this.mode === "create") {
-            this.preview = new ReportElementTable();
-        }
+
+       
         // If editing, presumably we already have "this.preview" as a ReportElementTable
         this.preview.onActiveCellChange = this.handleActiveCellChange.bind(this);
 
@@ -3024,15 +3135,88 @@ class ReportElementCreator {
         // --- Event listeners ---
 
         // Update rows
-        container.querySelector("#tableRows").addEventListener("change", (e) => {
-            this.preview.rows = +e.target.value;
+        document.getElementById("tableRows").addEventListener("change", (e) => {
+            const newRows = +e.target.value;
+            this.preview.rows = newRows;
             this.mountPreview(container);
         });
 
         // Update columns
-        container.querySelector("#tableCols").addEventListener("change", (e) => {
+        document.getElementById("tableCols").addEventListener("change", (e) => {
             this.preview.cols = +e.target.value;
             this.mountPreview(container);
+            this.syncColumnControls();
+        });
+
+        
+        // Column controls
+        document.getElementById("addColumnBtn").addEventListener("click", () => {
+            const userPosition = +document.getElementById("insertColPosition").value;
+            
+            // Validate input (should be between 1 and cols+1 for insertion)
+            if (userPosition < 1 || userPosition > this.preview.cols + 1) {
+                alert(`Position must be between 1 and ${this.preview.cols + 1}`);
+                return;
+            }
+            
+            // Convert to 0-based index for internal use
+            // User position 1 = insert at index 0 (before first column)
+            // User position 2 = insert at index 1 (between first and second column)  
+            // User position n+1 = insert at index n (after last column)
+            const zeroBasedPosition = userPosition - 1;
+            
+           //console.log(`Inserting column at user position ${userPosition} (internal index ${zeroBasedPosition})`);
+            
+            this.preview.insertColumn(zeroBasedPosition);
+            this.mountPreview(container);
+            
+            // After insertion, update both input fields appropriately
+            // Keep insert position the same for potential consecutive insertions
+            // Set remove position to the newly inserted column position
+            document.getElementById("removeColPosition").value = userPosition;
+            
+            this.syncColumnControls();
+        });
+
+        // Remove column
+        document.getElementById("removeColumnBtn").addEventListener("click", () => {
+            const userPosition = +document.getElementById("removeColPosition").value;
+            
+            // Validate input (should be between 1 and current cols)
+            if (userPosition < 1 || userPosition > this.preview.cols) {
+                alert(`Position must be between 1 and ${this.preview.cols}`);
+                return;
+            }
+            
+            // Dont allow removing the last column
+            if (this.preview.cols <= 1) {
+                alert("Cannot remove the last remaining column");
+                return;
+            }
+            
+            // Convert to 0-based index for internal use
+            // User position 1 = remove index 0 (first column)
+            // User position 2 = remove index 1 (second column)
+            const zeroBasedPosition = userPosition - 1;
+            
+           //console.log(`Removing column at user position ${userPosition} (internal index ${zeroBasedPosition})`);
+            
+            this.preview.removeColumn(zeroBasedPosition);
+            this.mountPreview(container);
+            
+            // After removal, adjust positions appropriately
+            // If we removed the last column, set remove position to the new last column
+            // Otherwise keep the same position (which now points to the next column)
+            const newRemovePos = Math.min(userPosition, this.preview.cols);
+            document.getElementById("removeColPosition").value = newRemovePos;
+            
+            // Update insert position to be reasonable (after the removed position or at end)
+            const currentInsertPos = +document.getElementById("insertColPosition").value;
+            if (currentInsertPos > this.preview.cols + 1) {
+                document.getElementById("insertColPosition").value = this.preview.cols + 1;
+            }
+            
+            this.syncColumnControls();
         });
 
         // Update table label
@@ -3044,6 +3228,14 @@ class ReportElementCreator {
         // Extendable?
         container.querySelector("#extendableTable").addEventListener("change", (e) => {
             this.preview.extendable = e.target.checked;
+            this.mountPreview(container);
+        });
+
+        // Column type selection
+        container.querySelector("#applyColumnType").addEventListener("click", (e) => {
+            const colIndex = parseInt(container.querySelector("#columnSelect").value);
+            const newType = container.querySelector("#columnType").value;
+            this.preview.changeColumnType(colIndex, newType);
             this.mountPreview(container);
         });
 
@@ -3180,11 +3372,15 @@ class ReportElementCreator {
         popoverTriggerList.map(function (popoverTriggerEl) {
             return new bootstrap.Popover(popoverTriggerEl);
         });
+
+
+        this.syncColumnControls();
+
     }
 
     // Called by the table whenever the user clicks a different cell
     handleActiveCellChange(activeCell) {
-        console.log(`Active cell changed to: ${activeCell.id}`);
+       //console.log(`Active cell changed to: ${activeCell.id}`);
 
         const cellContentType = this.configBox.querySelector("#cellType");
         const cellContentInput = this.configBox.querySelector("#cellContent");
@@ -3225,6 +3421,52 @@ class ReportElementCreator {
         } else {
             console.error("UI elements not found for cell editing.");
         }
+    }
+
+    // Helper method to update column controls
+    syncColumnControls() {
+        const colTotalInput = this.container.querySelector("#tableCols");
+        const insertPosInput = this.container.querySelector("#insertColPosition");
+        const removePosInput = this.container.querySelector("#removeColPosition");
+        const columnSelect = this.container.querySelector("#columnSelect");
+        const removeBtn = this.container.querySelector("#removeColumnBtn");
+
+        // a) Update total columns display
+        colTotalInput.value = this.preview.cols;
+
+        // b) Set valid ranges for position inputs
+        // For insertion: can insert from position 1 to cols+1
+        insertPosInput.min = 1;
+        insertPosInput.max = this.preview.cols + 1;
+        
+        // Clamp insert position to valid range
+        const currentInsertVal = +insertPosInput.value;
+        if (currentInsertVal < 1) {
+            insertPosInput.value = 1;
+        } else if (currentInsertVal > this.preview.cols + 1) {
+            insertPosInput.value = this.preview.cols + 1;
+        }
+
+        // For removal: can remove from position 1 to cols
+        removePosInput.min = 1;
+        removePosInput.max = this.preview.cols;
+        
+        // Clamp remove position to valid range
+        const currentRemoveVal = +removePosInput.value;
+        if (currentRemoveVal < 1) {
+            removePosInput.value = 1;
+        } else if (currentRemoveVal > this.preview.cols) {
+            removePosInput.value = this.preview.cols;
+        }
+
+        // c) Rebuild the column selector dropdown
+        columnSelect.innerHTML = Array.from(
+            { length: this.preview.cols },
+            (_, i) => `<option value="${i}">Spalte ${i + 1}</option>`
+        ).join("");
+
+        // d) Disable remove button when only one column remains
+        removeBtn.disabled = this.preview.cols === 1;
     }
 
     
@@ -3285,8 +3527,9 @@ class ReportElementCreator {
     `;
 
     // Create a preview instance
-    this.preview = new ReportElementUpload();
-
+    if (this.mode === "create") {
+        this.preview = new ReportElementUpload();
+    }
      // Get references to the input elements
     const uploadLabelInput = container.querySelector("#uploadLabel");
     //const includeSelectCheckbox = container.querySelector("#includeSelect");
@@ -3360,6 +3603,45 @@ class ReportElementCreator {
             this.mountPreview(container);
         });
         this.mountPreview(container);
+    }
+
+    // Create UI for material list element
+    createMaterialListElementUI(container) {
+
+        /* ---------- 1 · build the bare-bones UI --------------------- */
+        container.innerHTML = `
+            <div class="mb-3">
+                <label for="materialListLabel" class="form-label">
+                    Tabellenüberschrift
+                </label>
+                <input type="text" id="materialListLabel"
+                    class="form-control"
+                    value="Materialliste">
+            </div>
+        `;
+
+        /* ---------- 2 · instantiate or re-use preview --------------- */
+        if (this.mode === "create") {
+            /* brand-new element */
+            this.preview = new ReportElementMaterialList(
+                /* content = */ null,
+                /* style   = */ "",
+                /* label   = */ "Materialliste"
+            );
+        } else if (this.mode === "edit") {
+            /* editing an existing element → put current label in input */
+            container.querySelector("#materialListLabel").value = this.preview.label;
+        }
+
+        /* ---------- 3 · render the live preview once ---------------- */
+        this.mountPreview(container);
+
+        /* ---------- 4 · wire events -------------------------------- */
+        container.querySelector("#materialListLabel")
+            .addEventListener("input", (e) => {
+                this.preview.label = e.target.value;
+                this.mountPreview(container);
+            });
     }
 
 }
@@ -3464,17 +3746,13 @@ class ReportGeneratorElement {
     }
 
     get params(){
-
+        // Subclasses may add aditional values to baseParams (e.g: Display, Table...)
         const baseParams = {
             id: this._id,
             content: this.content,
             style: this._style,
             type: this._type,
             label: this._label
-        }
-
-        if(this instanceof ReportElementCell || this instanceof ReportElementDisplay){
-            baseParams.contentType = this._contentType;
         }
 
         return baseParams;
@@ -3499,19 +3777,7 @@ class ReportGeneratorElement {
     }
 
     handleBar() {
-        // const handleBar = document.createElement("div");
-        // handleBar.classList.add("handle-bar");
-        // handleBar.style.display = "none";  // Initially hidden
-        // handleBar.innerHTML = "&#x21C5;";  // Use a hamburger icon (or any icon)
-        // handleBar.style.cursor = "move";  // Cursor style to indicate draggable handle
-        // handleBar.style.padding = "5px";
-        // handleBar.style.backgroundColor = "rgba(224, 224, 224, 0.5)";
-        // handleBar.style.borderRight = "1px solid #ccc";
-        // handleBar.style.width = "100%";
-        // handleBar.style.height = "100%";
-        // handleBar.style.textAlign = "center";
-
-        // return handleBar;
+        
 
         const handleBar = document.createElement("div");
         handleBar.classList.add("handle-bar");
@@ -3527,10 +3793,18 @@ class ReportGeneratorElement {
 
         // Drag Button - this will act as the draggable handle
         const dragButton = document.createElement("div");
-        dragButton.classList.add("drag-button"); // You can style this in CSS as needed
+        dragButton.classList.add("drag-button");
         dragButton.style.cursor = "move";
         dragButton.innerHTML = "&#x21C5;";  // Icon or symbol to represent dragging
+        dragButton.style.display = "flex";
+        dragButton.style.alignItems = "center";
+        dragButton.style.justifyContent = "center";
+        dragButton.style.width = "24px"; 
+        dragButton.style.height = "24px";
+        dragButton.style.fontSize = "1.2rem";
         dragButton.style.marginRight = "auto";
+        
+        
         handleBar.appendChild(dragButton);
 
         // Edit Button
@@ -3582,7 +3856,7 @@ class ReportGeneratorElement {
                 wrapperDiv.style.cursor = "move";  // Change cursor to move
                 handleBar.style.justifyContent = "center";
                 handleBar.style.alignItems = "center";
-            }, 1000);  // Show after 1 second
+            }, 600);  // Show after 600ms. 
         }
     }
 
@@ -3775,7 +4049,9 @@ class ReportElementTable extends ReportGeneratorElement {
         this._onActiveCellChange = null;
         this._extendable = false;
 
-        console.log("Received id: " + this._id);
+        
+
+       //console.log("Received id: " + this._id);
 
         // If we have content, it means we are re-loading from saved data
         if (content) {
@@ -3791,24 +4067,22 @@ class ReportElementTable extends ReportGeneratorElement {
 
     // 1) Build the “_grid” array from scratch (no data loaded)
     initializeGrid() {
+        this._grid = [];
+        // Create header row (index 0) with th cells
         const headerRow = [];
-        for (let i = 0; i < this._cols; i++) {
-            const id = `${this._id}-cell-0-${i}`;
-            console.log("Passing id: " + id);
-
-            // By default, each header cell is a "display" type
+        for (let j = 0; j < this._cols; j++) {
+            const id = `${this._id}-cell-0-${j}`;
             const displayEl = new ReportElementDisplay("Überschrift", "", "", "static");
             const newCell = new ReportElementCell(displayEl, "th", id);
             headerRow.push(newCell);
         }
         this._grid.push(headerRow);
 
+        // Create data rows (index 1 onwards) with td cells
         for (let rowIndex = 1; rowIndex < this._rows; rowIndex++) {
             const row = [];
-            for (let colIndex = 0; colIndex < this._cols; colIndex++) {
-                const id = `${this._id}-cell-${rowIndex}-${colIndex}`;
-                console.log("Passing id: " + id);
-
+            for (let j = 0; j < this._cols; j++) {
+                const id = `${this._id}-cell-${rowIndex}-${j}`;
                 const displayEl = new ReportElementDisplay("", "", "", "static");
                 const newCell = new ReportElementCell(displayEl, "td", id);
                 row.push(newCell);
@@ -3847,6 +4121,7 @@ class ReportElementTable extends ReportGeneratorElement {
                 const cellType = cellData.cellType || forcedType;
 
                 const cell = new ReportElementCell(element, cellType, cellData.id);
+                //const cell = new ReportElementCell(element, cellType);
                 return cell;
             });
         });
@@ -3931,6 +4206,7 @@ class ReportElementTable extends ReportGeneratorElement {
                     // default new cell is a display cell
                     const displayEl = new ReportElementDisplay("", "", "", "static");
                     const newCell = new ReportElementCell(displayEl, "td", id);
+                    //const newCell = new ReportElementCell(displayEl, "td");
                     newRow.push(newCell);
                 }
                 this._grid.push(newRow);
@@ -3966,6 +4242,7 @@ class ReportElementTable extends ReportGeneratorElement {
                 const headerId = `${this._id}-cell-0-${colIndex}`;
                 const headerEl = new ReportElementDisplay("Überschrift", "", "", "static");
                 const headerCell = new ReportElementCell(headerEl, "th", headerId);
+                //const headerCell = new ReportElementCell(headerEl, "th");
                 this._grid[0].push(headerCell);
 
                 // For subsequent rows, use "td"
@@ -3973,6 +4250,7 @@ class ReportElementTable extends ReportGeneratorElement {
                     const id = `${this._id}-cell-${rowIndex}-${colIndex}`;
                     const displayEl = new ReportElementDisplay("", "", "", "static");
                     const newCell = new ReportElementCell(displayEl, "td", id);
+                    //const newCell = new ReportElementCell(displayEl, "td");
                     this._grid[rowIndex].push(newCell);
                 }
             }
@@ -3987,39 +4265,128 @@ class ReportElementTable extends ReportGeneratorElement {
         this.initializeContent();
     }
 
+    // Insert columns at a specific position
+    insertColumn(position) {
+        // Allow positions from 0 to cols (insert at end)
+        position = Math.max(0, Math.min(position, this._cols));
+
+        // Insert header cell
+        this._grid[0].splice(position, 0, 
+            new ReportElementCell(
+                new ReportElementDisplay("New Header", "", "", "static"),
+                "th",
+                `${this._id}-cell-0-${position}`
+            )
+        );
+
+        // Insert data cells
+        for (let row = 1; row < this._rows; row++) {
+            this._grid[row].splice(position, 0,
+                new ReportElementCell(
+                    new ReportElementDisplay("", "", "", "static"),
+                    "td",
+                    `${this._id}-cell-${row}-${position}` 
+                )
+            );
+        }
+
+        this._cols++;
+        this.initializeContent();
+    }
+
+    
+    // Remove columns at a specific position
+    removeColumn(position) {
+        // Validate position
+        if (position < 0 || position >= this._cols) {
+            console.error(`Invalid position ${position}. Must be between 0 and ${this._cols - 1}`);
+            return;
+        }
+        
+        // Dont allow removing if only one column left
+        if (this._cols <= 1) {
+            console.error("Cannot remove the last remaining column");
+            return;
+        }
+        
+       //console.log(`Removing column at index ${position} (total cols: ${this._cols})`);
+        
+        // Remove the column from each row using splice
+        for (let rowIndex = 0; rowIndex < this._rows; rowIndex++) {
+            this._grid[rowIndex].splice(position, 1);
+        }
+        
+        this._cols--;
+        this.initializeContent();
+        
+       //console.log(`Column removed. New column count: ${this._cols}`);
+    }
+
+
+    changeColumnType(colIndex, type) {
+        // Start from row 1 to preserve header row (0)
+        for (let rowIndex = 1; rowIndex < this._rows; rowIndex++) {
+            const cell = this.getCell(rowIndex, colIndex);
+            let newElement;
+
+            switch(type) {
+            case \'display\':
+                newElement = new ReportElementDisplay("", "", "", "static");
+                break;
+            case \'input\':
+                newElement = new ReportElementInput("", "", "Input");
+                break;
+            case \'textarea\':
+                newElement = new ReportElementTextarea("", "", "Textarea");
+                newElement.locked = false;
+                break;
+            case \'time\':
+                newElement = new ReportElementTime("", "", "Time");
+                break;
+            case \'checkbox\':
+                newElement = new ReportElementCheckbox(false, "", "Checkbox");
+                break;
+            // Add other types as needed
+            }
+
+            if (newElement) {
+            // Preserve cell type (td) but replace content
+            this.changeCellChildElement(rowIndex, colIndex, newElement);
+            }
+        }
+        this.initializeContent();
+        }
+
     // Append the <table> with all <tr> / <th> / <td>
     appendContent(wrapperDiv) {
         const table = document.createElement("table");
         table.classList.add("table", "table-bordered", "report-element");
-        if (this._extendable) {
-            table.setAttribute("data-extendable", "true");
-        }
         table.id = this._id;
 
+        // Add header row to <thead>
         const thead = document.createElement("thead");
-        const headerRow = document.createElement("tr");
-        for (let j = 0; j < this._cols; j++) {
-            const cellElement = this._grid[0][j].render();
-            cellElement.addEventListener("click", () => this.handleCellClick(0, j));
-            headerRow.appendChild(cellElement);
-        }
-        thead.appendChild(headerRow);
+        const headerTr = document.createElement("tr");
+        this._grid[0].forEach((cell, colIndex) => {
+            const cellElement = cell.render();
+            cellElement.addEventListener("click", () => this.handleCellClick(0, colIndex));
+            headerTr.appendChild(cellElement);
+        });
+        thead.appendChild(headerTr);
+        table.appendChild(thead);
 
+        // Add data rows to <tbody>
         const tbody = document.createElement("tbody");
-        for (let i = 1; i < this._rows; i++) {
+        for (let rowIndex = 1; rowIndex < this._rows; rowIndex++) {
             const tr = document.createElement("tr");
-            for (let j = 0; j < this._cols; j++) {
-                const cellElement = this._grid[i][j].render();
-                cellElement.addEventListener("click", () => this.handleCellClick(i, j));
+            this._grid[rowIndex].forEach((cell, colIndex) => {
+                const cellElement = cell.render();
+                cellElement.addEventListener("click", () => this.handleCellClick(rowIndex, colIndex));
                 tr.appendChild(cellElement);
-            }
+            });
             tbody.appendChild(tr);
         }
-
-        table.appendChild(thead);
         table.appendChild(tbody);
-        // Make table responsive 
-        wrapperDiv.classList.add("table-responsive");
+
         wrapperDiv.appendChild(table);
     }
 
@@ -4031,6 +4398,7 @@ class ReportElementTable extends ReportGeneratorElement {
             const id = `${this._id}-cell-${newRowIndex}-${j}`;
             const displayEl = new ReportElementDisplay("New Cell", "", "", "static");
             const newCell = new ReportElementCell(displayEl, "td", id);
+            //const newCell = new ReportElementCell(displayEl, "td");
             newRow.push(newCell);
         }
         this._grid.push(newRow);
@@ -4046,6 +4414,7 @@ class ReportElementTable extends ReportGeneratorElement {
         const headerId = `${this._id}-cell-0-${newColIndex}`;
         const headerEl = new ReportElementDisplay("New Header", "", "", "static");
         const headerCell = new ReportElementCell(headerEl, "th", headerId);
+        //const headerCell = new ReportElementCell(headerEl, "th");
         this._grid[0].push(headerCell);
 
         // Add to each subsequent row => normal "td"
@@ -4053,6 +4422,7 @@ class ReportElementTable extends ReportGeneratorElement {
             const id = `${this._id}-cell-${i}-${newColIndex}`;
             const displayEl = new ReportElementDisplay("New Cell", "", "", "static");
             const newCell = new ReportElementCell(displayEl, "td", id);
+            //const newCell = new ReportElementCell(displayEl, "td");
             this._grid[i].push(newCell);
         }
         this._cols++;
@@ -4069,16 +4439,6 @@ class ReportElementTable extends ReportGeneratorElement {
         }
     }
 
-    removeColumn() {
-        if (this._cols > 1) {
-            for (let i = 0; i < this._rows; i++) {
-                this._grid[i].pop();
-            }
-            this._cols--;
-            this.initializeContent();
-            this.render();
-        }
-    }
 
     getCell(row, col) {
         if (row < 0 || row >= this._rows || col < 0 || col >= this._cols) {
@@ -4125,7 +4485,7 @@ class ReportElementTable extends ReportGeneratorElement {
 
     handleCellClick(row, col) {
         const cell = this._grid[row][col];
-        console.log("Clicked cell:", cell.id);
+       //console.log("Clicked cell:", cell.id);
 
         // Remove highlight from the previous active cell
         if (this._activeCell && this._activeCell !== cell) {
@@ -4142,6 +4502,9 @@ class ReportElementTable extends ReportGeneratorElement {
 }
 
 
+//////////////////////////
+// Jump: ReportElementCell.js
+//////////////////////////
 
 
 class ReportElementCell {
@@ -4153,6 +4516,8 @@ class ReportElementCell {
         this._id = id;              // Unique identifier for the cell
         this._cellType = cellType;  // "td" or "th"
         this._contentElement = contentElement;
+        //this._id = id ?? `${crypto.randomUUID()}`; 
+
 
         // Validate the content element
         if (!(this._contentElement instanceof ReportGeneratorElement)) {
@@ -4217,6 +4582,86 @@ class ReportElementCell {
         return this._element;
     }
 }
+
+
+
+/////////////////////////
+// Jump: ReportElementMaterialList.js
+/////////////////////////
+
+class ReportElementMaterialList extends ReportElementTable {
+
+    /**
+     * A 2‑column table (Material | Menge).  
+     * No configurable rows/cols from the UI – one data row by default.
+     */
+    constructor(content = null, style = "", label = "Materialliste") {
+        const rows = content ? content.length : 2;  // header + one data row
+        const cols = 4;                             // fixed layout
+        super(content, style, rows, cols, label);
+
+        /* fresh table → build our custom structure ------------------------- */
+        if (!content) {
+            /* 1. header captions */
+            const headers = ["Modell", "SN", "Anzahl", ""];
+            headers.forEach((txt, c) =>
+                this._grid[0][c].contentElement.content = txt
+            );
+
+            /* 2. data-row templates */
+            for (let r = 1; r < this._rows; r++) {
+                // col-0 Modell  (display)
+                this._grid[r][0] = new ReportElementCell(
+                    new ReportElementDisplay("", "", "", "static"), "td", 
+                    `${this._id}-cell-${r}-0`);
+
+                // col-1 SN      (input)
+                this._grid[r][1] = new ReportElementCell(
+                    new ReportElementInput("", "", "SN"), "td", 
+                    `${this._id}-cell-${r}-1`);
+
+                // col-2 Anzahl  (display)
+                this._grid[r][2] = new ReportElementCell(
+                    new ReportElementDisplay("", "", "", "static"), "td", 
+                    `${this._id}-cell-${r}-2`);
+
+                // col-3 ✓       (checkbox)
+                this._grid[r][3] = new ReportElementCell(
+                    new ReportElementCheckbox(false, "", ""), "td", 
+                    `${this._id}-cell-${r}-3`);
+            }
+            this.initializeContent();   // keep serialisable snapshot in sync
+        }
+    }
+
+    /* ─────────────  identity & persistence helpers  ───────────── */
+    get type() { return "materialList"; }
+    get params() {
+        const p = super.params;
+        p.type = this.type;
+        return p;
+    }
+
+    /* ─────────────  hard-lock the structure  ───────────── */
+    changeCellChildElement() { /* blocked on purpose */ }
+    changeCellType()          { /* blocked on purpose */ }
+    set cols(_) { /* fixed layout – ignore external attempts */ }
+
+    /** Allow content edits only in data rows (row > 0). */
+    changeCellChildContent(row, col, newContent) {
+        if (row === 0) return;          // headers are read-only
+        super.changeCellChildContent(row, col, newContent);
+    }
+
+    /* ─────────────  render hook to tag DOM node  ───────────── */
+    appendContent(wrapperDiv) {
+        super.appendContent(wrapperDiv);
+        wrapperDiv.querySelector(`#${this._id}`)
+                  ?.setAttribute("data-type", "materialList");
+    }
+
+}
+
 
 ////////////////////////
 /// ReportElementSignature.js
@@ -4321,7 +4766,7 @@ class ReportElementTime extends ReportGeneratorElement {
     const timeInput = document.createElement("input");
     timeInput.type = "number";
     timeInput.id = `${this._id}-time`;
-    timeInput.classList.add("form-control", "report-element-time");
+    timeInput.classList.add("form-control", "report-element");
     
     // Format current hours and minutes as HH:MM
     const timeValue = `${this._hours.toString().padStart(2, "0")}:${this._minutes.toString().padStart(2, "0")}`;
@@ -4415,7 +4860,7 @@ class ReportElementTimeRange extends ReportGeneratorElement {
         const startTimeInput = document.createElement("input");
         startTimeInput.type = "time";
         startTimeInput.id = `${this._id}-start-time`;
-        startTimeInput.classList.add("form-control", "report-element-time");
+        startTimeInput.classList.add("form-control", "report-element");
         
         // Format hours and minutes as HH:MM
         const startTime = `${this._startHours.toString().padStart(2, "0")}:${this._startMinutes.toString().padStart(2, "0")}`;
@@ -4446,7 +4891,7 @@ class ReportElementTimeRange extends ReportGeneratorElement {
         const endTimeInput = document.createElement("input");
         endTimeInput.type = "time";
         endTimeInput.id = `${this._id}-end-time`;
-        endTimeInput.classList.add("form-control", "report-element-time");
+        endTimeInput.classList.add("form-control", "report-element");
         
         // Format hours and minutes as HH:MM
         const endTime = `${this._endHours.toString().padStart(2, "0")}:${this._endMinutes.toString().padStart(2, "0")}`;
@@ -4525,6 +4970,8 @@ class ReportElementUpload extends ReportGeneratorElement {
         this._label = label;
         this._content = [];
         this._multiple = false;
+        // this._min = 0;
+        // this._max = 0;
         this._accept = "*/*";
     }
 
@@ -4551,6 +4998,12 @@ class ReportElementUpload extends ReportGeneratorElement {
         input.type = "file";
         input.id = this._id;
         input.multiple = this._multiple;
+        // if(this._min){
+        //     input.dataset.min == this._min;
+        // }
+        // if(this._max){
+        //     input.dataset.max == this._max;
+        // }
         input.accept = "image/*";
         input.setAttribute("capture", "capture");
         input.classList.add("form-control", "report-element");
@@ -4559,6 +5012,12 @@ class ReportElementUpload extends ReportGeneratorElement {
         });
         input.disabled = true;
         wrapperDiv.appendChild(input);
+    }
+
+    get params(){
+        const baseParams = super.params;
+        baseParams.multiple = this._multiple;
+        return baseParams;
     }
 
 }
@@ -4732,6 +5191,7 @@ class ReportElementRadio extends ReportGeneratorElement{
     }
 
 }
+
 
 
 
