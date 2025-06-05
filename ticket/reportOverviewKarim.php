@@ -83,6 +83,14 @@ dol_include_once('/stores/compress.php');
  
  $object = new Ticket($db);
  $object->fetch($ticketId);
+ $assignedProductsSQL = "SELECT
+    p.label        AS product_label,
+    pt.qty
+    FROM llx_product_ticket AS pt
+    JOIN llx_product  AS p ON p.rowid  = pt.fk_product
+    WHERE pt.fk_ticket = ".$ticketId;
+
+ $assignedProducts = $db->query($assignedProductsSQL)->fetch_all();
  $socid = $object->socid;
  $storeid = $object->array_options["options_fk_store"];
  $company = new Societe($db);
@@ -108,11 +116,28 @@ print load_fiche_titre($langs->trans("TicketReportOverview")." - ".$project->tit
  //////////////////////////////////////////////////////////////////////////////////////////
 $existingReportSQL = "SELECT content, parameters, rowid FROM llx_tec_forms WHERE fk_ticket = ".$ticketId;
 $existingReportRes = $db->query($existingReportSQL)->fetch_all();
-
+$dateofuse = $object->array_options["options_dateofuse"];
+if($dateofuse == ""){
+    $dateofuse = 0;
+}
 if($existingReportRes){
 $tecFormId = $existingReportRes[0][2];
+// TODO: Check if we have to change this and instead load the design saved in the params array of that tecform with the id design_id
+// and then manually fill with params
 $form = base64_decode($existingReportRes[0][0]);
 $newcardbutton = dolGetButtonTitle($langs->trans('Edit'), '', 'fa fa-edit', dol_buildpath('/ticket/reportOverviewKarim.php', 1).'?id='.$ticketId.'&action=edit', '', $permissiontoadd).' ';
+
+$params = base64_decode($existingReportRes[0][1]);
+$params = json_decode($params, true);
+$designId = 0;
+// Iterate through params to find designid
+foreach($params as $param){
+    if($param["id"] === "design_id"){
+        $designId = $param["value"];
+        break;
+    }
+}
+
 // if($action === "edit"){
 //     $newcardbutton .= dolGetButtonTitle($langs->trans('Exit'), '', 'fa fa-times', dol_buildpath('/ticket/reportOverviewKarim.php', 1).'?id='.$ticketId.'&action=view', '', $permissiontoadd).' ';
 // }else{
@@ -137,7 +162,11 @@ echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="ima
 </div>';
 }else if(!$existingReportRes){
 //echo "In second case";
-$reportSQL = "SELECT * FROM llx_reports WHERE projectid = ".$object->fk_project;
+$reportSQL = "SELECT dv.* 
+FROM llx_design_version dv 
+JOIN llx_design d ON d.rowid = dv.base_id
+WHERE d.fk_project = ".$project->id."
+ORDER BY dv.version DESC LIMIT 1";
 $reportRes = $db->query($reportSQL)->fetch_all();
 if($reportRes){
 $reportData = $reportRes[0];
@@ -157,7 +186,11 @@ echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="ima
 </div>';
 }else{
     echo "<h3> Projekt ist keinem Design zugewiesen oder der Techniker hat noch nichts ausgefüllt. </h3>";
-    $basicSQL = "SELECT * FROM llx_reports WHERE rowid = 0";
+    $basicSQL = "SELECT dv.* 
+    FROM llx_design_version dv
+    JOIN llx_design d ON d.rowid = dv.base_id
+    WHERE d.rowid = 0 
+    ORDER BY dv.version DESC LIMIT 1";
     $basicRes = $db->query($basicSQL)->fetch_all();
     $basicData = $basicRes[0];
     $form = base64_decode($basicData[2]);
@@ -193,12 +226,131 @@ echo '<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="ima
 if($action !== "mail"){
 echo '<script>
 var ticketId ='.$ticketId.';
-var userId ='.$user->id.';
-var storeId ='.$storeid.';
+var userId ='.($user->id || " ").';
+var storeId ='.($storeid || " ").';
 var socId = '.$object->fk_soc.';
 var action = "'.$action.'";
 //document.addEventListener("DOMContentLoaded", function() {
-console.log("Document loaded");
+// Function to display a single uploaded image
+
+    function showImageFull(src) {
+        const modalImage = document.getElementById("modalImage");
+        modalImage.src = src;
+
+        const imageModal = new bootstrap.Modal(document.getElementById(\'imageModal\'), {
+            keyboard: true
+        });
+        imageModal.show();
+    }
+
+    function displayUploadedImage(image, container) {
+        console.log("Displaying image:", image);
+        const colDiv = document.createElement("div");
+            colDiv.classList.add("col-12", "col-sm-6", "col-md-3", "mt-2", "text-center");
+
+        const img = document.createElement("img");
+        img.src = "'.DOL_MAIN_URL_ROOT.'/formsImages/" + encodeURIComponent(image.filename) + "?t=" + new Date().getTime();
+        console.log("Image url:", img.src);
+        img.style.width = "100%";
+        img.style.height = "13rem";
+        img.onerror = function() {
+            console.error("Failed to load image:", img.src);
+        };
+        img.onload = function() {
+                //console.log("Image loaded successfully:", img.src);
+        };
+        img.onclick = function() {
+            showImageFull(img.src);
+        };
+
+        const deleteButton = document.createElement("button");
+        deleteButton.classList.add("btn", "btn-danger", "mt-2");
+        deleteButton.style.fontSize = "10px";
+        deleteButton.style.padding = "5px";
+        deleteButton.textContent = "Delete";
+        deleteButton.type = "button";
+        deleteButton.onclick = function() {
+            deleteImage(image.filename, colDiv, image.inputId);
+        };
+
+        colDiv.appendChild(img);
+        if(action === "edit"){
+            colDiv.appendChild(deleteButton);
+        }else{
+            deleteButton.style.display = "none";
+        }
+        container.appendChild(colDiv);
+    }
+
+
+    function fetchUploadedImages() {
+        //console.log("Fetching uploaded images...");
+        const formData  = new FormData();
+        formData.append("action", "fetch_images");
+        formData.append("mode", "image");
+        formData.append("ticketId", ticketId);
+        formData.append("userId", userId);
+        formData.append("storeId", storeId);
+        formData.append("socId", socId);
+
+        $.ajax({
+            url: "'.DOL_URL_ROOT.'/tecform.php",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                    console.log(response);
+                if (response.status === \'success\') {
+                    const imagesArray = Object.values(response.images);
+                    window.uploadedImagesData = imagesArray;
+                    window.uploadedImagesData.forEach(imageNode => {
+                        const inputId = imageNode.type;
+                        // Search for wrapper with label.innerHTML = inputId
+                        const labels = document.querySelectorAll(\'label\');
+                        const label = Array.from(labels).find(label => label.innerHTML === inputId);
+                        const wrapper = label.parentElement;
+                        const fileInput = wrapper.querySelector(\'input[type="file"]\');
+                        if (fileInput) {
+                            let uploadedImagesContainer = fileInput.parentElement.querySelector(\'.uploaded-images-container\');
+                            if (!uploadedImagesContainer) {
+                                uploadedImagesContainer = document.createElement(\'div\');
+                                uploadedImagesContainer.classList.add(\'uploaded-images-container\', \'row\');
+                                fileInput.parentElement.appendChild(uploadedImagesContainer);
+                            }
+                            imageNode.images.forEach(filename => {
+                                const image = { filename: filename, inputId: inputId };
+                                displayUploadedImage(image, uploadedImagesContainer);
+                            });
+                        }
+                    });
+                } else {
+                    console.error(\'Failed to fetch uploaded images:\', response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+            }
+        });
+    }
+
+    function disableInputs(){
+    // All inputs disabled
+        var inputs = document.querySelectorAll("input[type=text], input[type=checkbox], input[type=time], input[type=number], input[type=radio], input[type=file], textarea, select, canvas");
+        inputs.forEach(function(input) {
+            input.disabled = true;
+        });
+    }
+
+
+
+    function hideSaveButtons(){
+        var saveButtons = document.querySelectorAll("button#save-form-button-wrapper, button#save-form-button");
+        saveButtons.forEach(function(button) {
+            button.style.display = "none";
+        });
+    }
+    //console.log("Document loaded");
     fetchUploadedImages();
     if (action === "view") {
         // View mode
@@ -207,204 +359,372 @@ console.log("Document loaded");
     } else if(action === "edit") {
         // Edit mode
         // After switching to edit mode
-        enableInputs();
+        //enableInputs();
         setupCanvasEvents();
         // Re-apply the image from params (or a stored variable)
-        params.forEach(param => {
-            if (param.id === canvas.id && param.value.startsWith("data:image")) {
-                const img = new Image();
-                img.onload = function() {
-                    context.clearRect(0, 0, canvas.width, canvas.height);
-                    context.drawImage(img, 0, 0);
-                };
-                img.src = param.value;
-            }
-        });
+        // params.forEach(param => {
+        //     if (param.id === canvas.id && param.value.startsWith("data:image")) {
+        //         const img = new Image();
+        //         img.onload = function() {
+        //             context.clearRect(0, 0, canvas.width, canvas.height);
+        //             context.drawImage(img, 0, 0);
+        //         };
+        //         img.src = param.value;
+        //     }
+        // });
 
         setupFileInputs();
-        setupExtendableTables();
+        // Unintended: For some reason the save buttons are saved in the HTML. Remove them first
+        const saveButtons = document.querySelectorAll("button#save-form-button-wrapper, button#save-form-button");
+        saveButtons.forEach(button => button.remove());
         setupSaveButtons();
-    }
+        //fillDynamicContent();
 
-    // Fetch uploaded images for both modes
+
+        function fillDynamicContent() {
+            // Fill dynamic content here
+                
+            // Switch to handle the dynamically generated content
+
+            let dynamicDisplays = document.querySelectorAll([\'[data-content-type]\']);
+            dynamicDisplays.forEach((element) => {
+                console.log(element);
+                var text = element.innerHTML.toLowerCase();
+                var index = text.indexOf(" ") !== -1 ? text.indexOf(" ") : text.length;
+                var result = text.substring(0, index);
+                
+                if(element.dataset.contentType === "dynamic"){
+                    console.log(result);
+                    switch(result){
+                        case "filiale":
+                            element.innerHTML = "Filiale: " + '.json_encode($store->b_number).' ;
+                            break;
+                        case "tickettyp":
+                        case "ticketart":
+                            element.innerHTML = "Ticketart: " + '.json_encode($object->type_label).' ;
+                            break;
+                        case "termin":
+                            let dateofuse = '.$dateofuse.';
+                            // Format dateofuse to dd.mm.yyyy hh:ii
+                            let date = 0;
+                            if(dateofuse !== 0){
+                                date = new Date(dateofuse * 1000);
+                                date = date.toLocaleString("de-DE");
+                            }else{
+                                date = "Kein Termin festgelegt";
+                            }
+                            element.innerHTML = "Termindatum: " + date;
+                            break;
+                        case "Themengruppe":
+                            element.innerHTML = "Themengruppe: " + '.json_encode($object->category_code).' ;
+                            break;
+                        case "ticketnummer":
+                            element.innerHTML = "Ticketnummer: " + '.json_encode($object->ref).' ;
+                            break;
+                        case "kundennummer":
+                            element.innerHTML = "Kundennummer: " + '.json_encode($company->id).' ;
+                            break;
+                        case "kundenname":
+                            element.innerHTML = "Kundenname: " + '.json_encode($store->customer_name).' ;
+                            break;
+                        case "name":
+                            element.innerHTML = '.json_encode($project->title).' ;
+                            break;
+                        case "stop":
+                        case "stopp":
+                            element.innerHTML = "Stopp: " + '.json_encode($object->array_options["options_stopnummer"]).' ;
+                            break;
+                        case "datum":
+                            break;
+                        case "uhrzeit":
+                            break;
+                        case "priorität":
+                            break;
+                        case "dringlichkeit":
+                            element.innerHTML = "Dringlichkeit: " + '.json_encode($object->severity_code).' ;
+                            break;
+                        case "kategorie":
+                            element.innerHTML = "Kategorie: " + '.json_encode($object->category_label).' ;
+                            break;
+                        case "auftrag":
+                            element.innerHTML = "Auftrag: " + '.json_encode($object->message).' ;
+                            break;
+                        case "lösungsvorschlag":
+                            element.innerHTML = "Lösung: " + '.json_encode($object->array_options["options_losung"]).' ;
+                            break;
+                        case "strasse":
+                        case "straße":
+                            element.innerHTML = "Straße: " + '.json_encode($store->street).' + ", " + '.json_encode($store->house_number).' ;
+                            break;
+                        case "hausnummer":
+                            element.innerHTML = "Hnr: " + '.json_encode($store->house_number).' ;
+                            break;
+                        case "stadt":
+                        case "ort":
+                            element.innerHTML = "Ort: " + '.json_encode($store->city).' + ", " + '.json_encode($store->zip_code).' ;
+                            break;
+                        case "plz":
+                            element.innerHTML = "Plz: " + '.json_encode($store->zip_code).' ;
+                            break;
+                        case "ext.ticketnummer":
+                            element.innerHTML = "Ext. Ticketnummer: " + '.json_encode($object->array_options["options_externalticketnumber"]).' ;
+                            break;
+                        case "telefonnummer":
+                        case "tel":
+                            element.innerHTML = "Tel.Nummer: " + '.json_encode($store->phone).' ;
+                            break;
+                        default:
+                            element.innerHTML = "nothing";
+                            break;
+                    }
+
+                }
+            });
+            // Search for all textareas with attr data-locked = true
+            let lockedTextareas = document.querySelectorAll(\'textarea[data-locked="true"]\');
+            lockedTextareas.forEach((textarea) => {
+                textarea.disabled = true;
+            });
+        }
+
     
-//});
 
-// Function definitions
+    
 
-function hideSaveButtons() {
-    var saveButtons = document.querySelectorAll(\'button#save-form-button-wrapper, button#save-form-button\');
-    saveButtons.forEach(function(button) {
-        button.style.display = "none";
-    });
-}
-
-function removeDeleteButtons() {
-    var deleteButtons = document.querySelectorAll(\'button.btn-danger\');
-    deleteButtons.forEach(function(button) {
-        button.remove();
-    });
-}
-
-function disableInputs() {
-    var inputs = document.querySelectorAll(\'input, select, textarea, button\');
-    inputs.forEach(function(input) {
-        input.disabled = true;
-        if(input.innerHTML === "Close"){
+    function setupFileInputs() {
+        var fileInputs = document.querySelectorAll(\'input[type="file"]\');
+        fileInputs.forEach(function(input) {
+            input.accept = ".jpg, .png";
             input.disabled = false;
+            const isMulti = input.multiple;
+            let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
+            if (!uploadedImagesContainer) {
+                uploadedImagesContainer = document.createElement("div");
+                uploadedImagesContainer.classList.add("uploaded-images-container", "row");
+                input.parentElement.appendChild(uploadedImagesContainer);
+            }
+
+            // Attach change event listener to this file input
+            input.addEventListener("change", function() {
+                const files = input.files;
+                if (!isMulti && files.length > 1) {     // single-upload field
+                    alert("Bitte nur eine Datei auswählen.");
+                    input.value = "";
+                    return;
+                }
+                if (files.length > 0) {                 // single or multi
+                    uploadFiles(files, input, uploadedImagesContainer);
+                }
+            });
+        });
+    }
+
+    // Called once on page load
+    function setupCanvasEvents() {
+            const canvases = document.querySelectorAll(\'canvas.report-element\');
+            canvases.forEach((canvas, index) => {
+                // 1) Assign a unique id if not already set
+                if (!canvas.id) {
+                    // e.g. "canvas-0", "canvas-1", etc.
+                    canvas.id = \'canvas-\' + index;
+                }
+                // 2) Setup the canvas and drawing events
+            setupCanvasEventForCanvas(canvas);
+                // 3) Create a clear button
+                addClearButton(canvas);
+        });
+    }
+
+    // Setup the canvas (matching displayed size) + add draw listeners
+    function setupCanvasEventForCanvas(canvas) {
+            // 1) Initialize it to match actual rendered size
+        setupCanvas(canvas);
+
+            // 2) Get drawing context
+            const ctx = canvas.getContext(\'2d\');
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+            // === MOUSE EVENTS ===
+            canvas.addEventListener(\'mousedown\', e => {
+                e.preventDefault();
+                const [x, y] = getMouseCoords(e, canvas);
+                startDrawing(x, y);
+            });
+            canvas.addEventListener(\'mousemove\', e => {
+                e.preventDefault();
+                const [x, y] = getMouseCoords(e, canvas);
+                draw(x, y);
+            });
+            canvas.addEventListener(\'mouseup\', e => {
+                e.preventDefault();
+                stopDrawing();
+            });
+            canvas.addEventListener(\'mouseleave\', e => {
+                e.preventDefault();
+                stopDrawing();
+            });
+
+            // === TOUCH EVENTS ===
+            canvas.addEventListener(\'touchstart\', e => {
+                e.preventDefault();
+                const coords = getTouchCoords(e, canvas);
+                startDrawing(coords.x, coords.y);
+        });
+            canvas.addEventListener(\'touchmove\', e => {
+                e.preventDefault();
+                const coords = getTouchCoords(e, canvas);
+                draw(coords.x, coords.y);
+        });
+            canvas.addEventListener(\'touchend\', e => {
+                e.preventDefault();
+                stopDrawing();
+            });
+            canvas.addEventListener(\'touchcancel\', e => {
+                e.preventDefault();
+                stopDrawing();
+            });
+
+            function startDrawing(x, y) {
+            isDrawing = true;
+                lastX = x;
+                lastY = y;
         }
-    });
 
-    // Disable canvas drawing
-    var canvases = document.querySelectorAll(\'canvas.report-element\');
-    canvases.forEach(function(canvas) {
-        canvas.style.pointerEvents = \'none\';
-    });
-}
+            function draw(x, y) {
+            if (!isDrawing) return;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                lastX = x;
+                lastY = y;
+        }
 
-function enableInputs() {
-    var inputs = document.querySelectorAll(\'input[type=text], input[type=checkbox], input[type=radio], select, textarea\');
+        function stopDrawing() {
+            isDrawing = false;
+            }
+        }
+
+        // Simple function: exact (x,y) = client - rect
+        function getMouseCoords(event, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            return [x, y];
+        }
+
+        function getTouchCoords(event, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (event.touches && event.touches.length > 0) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                // Fallback for pointer events or single touch
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            const rawX = clientX - rect.left;
+            const rawY = clientY - rect.top;
+            return { x: rawX, y: rawY };
+    }
+
+    // Make the canvas\' internal size match the displayed size
+    function setupCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+
+        const ctx = canvas.getContext(\'2d\');
+        ctx.fillStyle = \'#f9f9f9\';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = \'#000\';
+        ctx.lineWidth = 3;
+        ctx.lineCap = \'round\';
+    }
+
+    // Create a button that clears the canvas
+    function addClearButton(canvas) {
+        const clearBtn = document.createElement(\'button\');
+        clearBtn.type = \'button\';
+        clearBtn.dataset.action = \'clear-canvas\';
+        clearBtn.textContent = \'Clear Canvas\';
+
+        // OPTIONAL: prevent it from spanning the whole width
+        // (in case your CSS has button { width: 100% })
+        clearBtn.style.width = \'auto\';
+        clearBtn.style.display = \'inline-block\';
+        clearBtn.style.marginTop = \'0.5em\';
+
+        // Insert the button immediately after the canvas
+        const canvasParent = canvas.parentElement.parentElement;
+        canvasParent.insertBefore(clearBtn, canvas.nextSibling);
+
+        clearBtn.addEventListener(\'click\', function() {
+            clearCanvas(canvas.id);
+        });
+    }
+
+    // Clear the chosen canvas
+    function clearCanvas(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.warn(\'Canvas with ID\', canvasId, \'not found\');
+            return;
+        }
+        const ctx = canvas.getContext(\'2d\');
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset any transforms
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Re-run setup so it\'s blank but with correct style
+        setupCanvas(canvas);
+    }
+
+
+    // Query to enable all input type text and checkbox
+    var inputs = document.querySelectorAll("input[type=text], input[type=checkbox], input[type=radio]");
     inputs.forEach(function(input) {
         input.disabled = false;
     });
-}
 
-function setupCanvasEvents() {
-    var canvases = document.querySelectorAll(\'canvas.report-element\');
-    canvases.forEach(function(canvas) {
-        setupCanvasEventForCanvas(canvas);
-    });
-}
 
-function setupCanvasEventForCanvas(canvas) {
-    setupCanvas(canvas);
-    const context = canvas.getContext("2d");
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
+    
 
-    canvas.addEventListener("mousedown", startDrawing);
-    canvas.addEventListener("mousemove", draw);
-    canvas.addEventListener("mouseup", stopDrawing);
-    canvas.addEventListener("mouseleave", stopDrawing);
+    
 
-    // Add touch event listeners
-    canvas.addEventListener("touchstart", (event) => {
-        event.preventDefault();
-        startDrawing(event);
-    });
-    canvas.addEventListener("touchmove", (event) => {
-        event.preventDefault();
-        draw(event);
-    });
-    canvas.addEventListener("touchend", stopDrawing);
-    canvas.addEventListener("touchcancel", stopDrawing);
+    // // Handle file inputs on initial load
+    // var fileInputs = document.querySelectorAll(\'input[type="file"]\');
+    // fileInputs.forEach(function(input) {
+    //     input.accept = ".jpg, .png";
+    //     input.disabled = false;
+    //     let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
+    //     if (!uploadedImagesContainer) {
+    //         uploadedImagesContainer = document.createElement("div");
+    //         uploadedImagesContainer.classList.add("uploaded-images-container", "row");
+    //         input.parentElement.appendChild(uploadedImagesContainer);
+    //     }
 
-    function startDrawing(event) {
-        isDrawing = true;
-        [lastX, lastY] = getCoordinates(event, canvas);
-    }
+    //     // Attach change event listener to this file input
+    //     input.addEventListener("change", function() {
+    //         const files = input.files;
+    //         if (files.length > 1) {
+    //             alert("Bitte nur eine Datei auswählen."); // "Please select only one file."
+    //             input.value = ""; // Reset the input
+    //             return;
+    //         }
+    //         if (files.length === 1) {
+    //             uploadFiles(files, input, uploadedImagesContainer);
+    //         }
+    //     });
+    // });
 
-    function draw(event) {
-        if (!isDrawing) return;
-        let [x, y] = getCoordinates(event, canvas);
+    // Code to handle tables that should be extendable by the technician
+    // (Assuming this code is correct and required)
 
-        // Round to the nearest 0.5 pixel for sharper lines
-        x = Math.round(x * 2) / 2;
-        y = Math.round(y * 2) / 2;
-
-        context.beginPath();
-        context.moveTo(lastX, lastY);
-        context.lineTo(x, y);
-        context.stroke();
-        [lastX, lastY] = [x, y];
-    }
-
-    function stopDrawing() {
-        isDrawing = false;
-    }
-
-    function getCoordinates(event, canvas) {
-        const rect = canvas.getBoundingClientRect();
-        let x, y;
-        if (event.touches && event.touches.length > 0) {
-            x = event.touches[0].clientX - rect.left;
-            y = event.touches[0].clientY - rect.top;
-        } else {
-            x = event.clientX - rect.left;
-            y = event.clientY - rect.top;
-        }
-
-        // Adjust for device pixel ratio
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-
-        return [x * scaleX, y * scaleY];
-    }
-}
-
-    // Function to set up the canvas for high-DPI displays
-function setupCanvas(canvas) {
-    const ctx = canvas.getContext(\'2d\');
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-
-    // Set the canvas width and height to the CSS size multiplied by DPR
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-
-    // Scale the context to ensure correct drawing operations
-    ctx.scale(dpr, dpr);
-
-    // Optional: Set default styles
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 3; // This will remain consistent after scaling
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-}
-
-function clearCanvas(canvasId) {
-    const canvas = document.getElementById(canvasId);
-    if (canvas) {
-        const context = canvas.getContext("2d");
-        context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        setupCanvas(canvas); // Re-setup canvas after clearing
-        
-    } else {
-        console.warn(`Canvas element with id "${canvasId}" not found`);
-    }
-}
-
-function setupFileInputs() {
-    var fileInputs = document.querySelectorAll(\'input[type="file"]\');
-    fileInputs.forEach(function(input) {
-        input.accept = ".jpg, .png";
-        input.disabled = false;
-
-        let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
-        if (!uploadedImagesContainer) {
-            uploadedImagesContainer = document.createElement("div");
-            uploadedImagesContainer.classList.add("uploaded-images-container", "row");
-            input.parentElement.appendChild(uploadedImagesContainer);
-        }
-
-        // Attach change event listener to this file input
-        input.addEventListener("change", function() {
-            const files = input.files;
-            if (files.length > 1) {
-                alert("Bitte nur eine Datei auswählen."); // "Please select only one file."
-                input.value = ""; // Reset the input
-                return;
-            }
-            if (files.length === 1) {
-                uploadFiles(files, input, uploadedImagesContainer);
-            }
-        });
-    });
-}
-
-function setupExtendableTables() {
     var extendableTables = document.querySelectorAll(\'table[data-extendable="true"]\');
     extendableTables.forEach(function(table) {
         var parentDiv = table.parentElement;
@@ -443,364 +763,369 @@ function setupExtendableTables() {
             }
         });
     });
-}
 
     // Function to update IDs and names in the new row
-function updateRowAttributes(row, rowIndex) {
-    var inputs = row.querySelectorAll("input, select, textarea");
-    inputs.forEach(function(input) {
-        var name = input.getAttribute("name");
-        if (name) {
-            var newName = name.replace(/(\d+)/g, function(match) {
-                return parseInt(match) + rowIndex;
-            });
-            input.setAttribute("name", newName);
-        }
+    function updateRowAttributes(row, rowIndex) {
+        var inputs = row.querySelectorAll("input, select, textarea");
+        inputs.forEach(function(input) {
+            var name = input.getAttribute("name");
+            if (name) {
+                var newName = name.replace(/(\d+)/g, function(match) {
+                    return parseInt(match) + rowIndex;
+                });
+                input.setAttribute("name", newName);
+            }
 
-        var id = input.getAttribute("id");
-        if (id) {
-            var newId = id.replace(/(\d+)/g, function(match) {
-                return parseInt(match) + rowIndex;
-            });
-            input.setAttribute("id", newId);
-        }
+            var id = input.getAttribute("id");
+            if (id) {
+                var newId = id.replace(/(\d+)/g, function(match) {
+                    return parseInt(match) + rowIndex;
+                });
+                input.setAttribute("id", newId);
+            }
 
-        if (input.type === "checkbox" || input.type === "radio") {
-            input.checked = false;
-        } else {
-            input.value = "";
-        }
-    });
-}
+            if (input.type === "checkbox" || input.type === "radio") {
+                input.checked = false;
+            } else {
+                input.value = "";
+            }
+        });
+    }
 
     // Function to reattach event listeners to inputs in the new row
-function reattachEventListeners(row) {
-    var fileInputs = row.querySelectorAll(\'input[type="file"]\');
-    fileInputs.forEach(function(input) {
-        input.accept = ".jpg, .png";
-        input.disabled = false;
-        const uploadedImagesContainer = document.createElement("div");
-        uploadedImagesContainer.classList.add("uploaded-images-container", "row");
-        input.parentElement.appendChild(uploadedImagesContainer);
+    function reattachEventListeners(row) {
+        var fileInputs = row.querySelectorAll(\'input[type="file"]\');
+        fileInputs.forEach(function(input) {
+            input.accept = ".jpg, .png";
+            input.disabled = false;
+            const uploadedImagesContainer = document.createElement("div");
+            uploadedImagesContainer.classList.add("uploaded-images-container", "row");
+            input.parentElement.appendChild(uploadedImagesContainer);
 
-        // Attach change event listener to this file input
-        input.addEventListener("change", function() {
-            const files = input.files;
-            if (files.length > 0) {
-                uploadFiles(files, input, uploadedImagesContainer);
-            }
+            // Attach change event listener to this file input
+            input.addEventListener("change", function() {
+                const files = input.files;
+                if (files.length > 0) {
+                    uploadFiles(files, input, uploadedImagesContainer);
+                }
+            });
         });
-    });
-}
+    }
 
-function setupSaveButtons() {
-    const form = document.getElementById("report-form");
-    const submitButton = form.querySelector("button#save-form-button-wrapper");
-    submitButton.type = "button";
-    const saveStayButton = form.querySelector("button#save-form-button");
-    saveStayButton.type = "button";
-    form.appendChild(saveStayButton);
-    form.appendChild(submitButton);
+    function setupSaveButtons() {
+        const form = document.getElementById("report-form");
+            const submitButton = document.createElement("button");
+            submitButton.innerHTML = "Speichern und verlassen";
+            submitButton.id = "save-form-button-wrapper";
+            submitButton.classList.add("btn", "btn-primary");
+            const saveStayButton = document.createElement("button");
+            saveStayButton.innerHTML = "Speichern";
+            saveStayButton.classList.add("btn", "btn-primary");
+            saveStayButton.id = "save-form-button";
+        form.appendChild(saveStayButton);
+        form.appendChild(submitButton);
+            // const submitButton = form.querySelector("button#save-form-button-wrapper");
+            // submitButton.type = "button";
+            // const saveStayButton = form.querySelector("button#save-form-button");
+            // saveStayButton.type = "button";
+            // form.appendChild(saveStayButton);
+            // form.appendChild(submitButton);
 
-    // Set up event listeners
-    submitButton.addEventListener("click", saveFormAndExit);
+        // Set up event listeners
+        submitButton.addEventListener("click", saveFormAndExit);
 
-    saveStayButton.addEventListener("click", function(event) {
+        saveStayButton.addEventListener("click", function(event) {
+            event.preventDefault();
+            saveForm(function() {
+                // After saving, redirect to the same page with action=view
+                //window.location.href = window.location.pathname + \'?id=\' + '.$ticketId.' + \'&action=edit\';
+            });
+        });
+    }
+
+    function saveFormAndExit(event) {
         event.preventDefault();
         saveForm(function() {
-            // After saving, redirect to the same page with action=view
-            //window.location.href = window.location.pathname + \'?id=\' + ticketId + \'&action=edit\';
+            // Redirect after saving
+                window.location.href = window.location.pathname + \'?id=\' + '.$ticketId.' + \'&action=view\';
+        });
+    }
+
+    function saveForm(callback) {
+        event.preventDefault(); // Prevent default form submission
+        
+        const form = document.getElementById("report-form");
+
+        // Clone the form to manipulate it without affecting the DOM
+        const formClone = form.cloneNode(true);
+
+        // Remove dynamically added image elements
+        const uploadedImagesContainers = formClone.querySelectorAll(\'.uploaded-images-container\');
+        uploadedImagesContainers.forEach(container => container.remove());
+
+        // Remove all clearCanvas buttons
+        const clearButtons = formClone.querySelectorAll(\'button[type="button"][data-action="clear-canvas"]\');
+        clearButtons.forEach(button => button.remove());
+        // check for buttons with innerHTML clear canvas
+        const clearCanvasButtons = formClone.querySelectorAll(\'button\');
+        clearCanvasButtons.forEach(button => {
+            if (button.innerHTML === "Clear Canvas") {
+                button.remove();
+            }
+        });
+
+        // Clear save buttons with class save-form-button and save-form-button-wrapper
+        const saveButtons = formClone.querySelectorAll(\'.save-form-button, .save-form-button-wrapper\');
+        saveButtons.forEach(button => button.remove());
+
+            
+
+        // Now get the HTML of the cloned form without images
+        //const formHtml = formClone.innerHTML;
+        const originalElements = form.querySelectorAll(\'.report-element\');
+
+        let parameters = [];
+        let designId = '.($designId !== null ? $designId : 0).';
+        if(designId !== 0){
+            parameters.push({ id: "design_id", value: designId });
+        }
+        
+        const uploadedImages = window.uploadedImagesData || [];
+
+        // Capture form data
+        const elements = formClone.querySelectorAll(\'.report-element\');
+        originalElements.forEach((element) => {
+            const id = element.id;
+            let value = "";
+            if (element.type === "checkbox" || element.type === "radio") {
+                value = element.checked;
+                parameters.push({ id: id, value: value });
+            } else if (element.type === "file") {
+                // No action needed for file inputs
+            } else if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
+                value = element.value;
+                parameters.push({ id: id, value: value });
+                console.log("Element:", element, "Value:", value);
+            } else if (element.tagName === "CANVAS") {
+                var dataURL = element.toDataURL();
+                parameters.push({ id: id, value: dataURL });
+            } else {
+                // For other elements, save their innerHTML if needed
+                value = element.innerHTML;
+                // parameters.push({ id: id, value: value }); // Uncomment if necessary
+            }
+        });
+
+        const formHtml = formClone.innerHTML;
+
+        // Prepare form data for AJAX
+        const formData = new FormData();
+        formData.append("form", formHtml); // Use the HTML without images
+        formData.append("parameters", JSON.stringify(parameters));
+        formData.append("uploadedImages", JSON.stringify(uploadedImages));
+
+        formData.append("storeId", storeId);
+        formData.append("userId", userId);
+        formData.append("ticketId", ticketId);
+        formData.append("socId", socId);
+        // AJAX request to save the form
+        $.ajax({
+            url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.status === \'success\') {
+                    alert("Report saved successfully");
+                    console.log("Save Response:", response);
+                    if (typeof callback === \'function\') {
+                        callback();
+                    }
+                } else {
+                    console.error("Server Error:", response.message);
+                    alert("Save failed: " + response.message);
+                }
+                
+            },
+            error: function(xhr, status, error) {
+                console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+            }
+        });
+    }
+
+    // Function to fetch images via AJAX
+    
+
+    
+
+    function showImageFull(src) {
+        const modalImage = document.getElementById("modalImage");
+        modalImage.src = src;
+
+        const imageModal = new bootstrap.Modal(document.getElementById(\'imageModal\'), {
+            keyboard: true
+        });
+        imageModal.show();
+    }
+
+    function uploadFiles(files, fileInput, uploadedImagesContainer) {
+        const formData = new FormData();
+        // Clear the collapse toggle or else we save it with the DOM
+        document.querySelectorAll(\'table\').forEach(table => {
+            if (table.nextElementSibling?.classList?.contains(\'collapse-toggle\')) {
+                table.nextElementSibling.remove();
+            }
+        });
+        const parentWrapper = fileInput.parentElement;
+        const label = parentWrapper.querySelector("label");
+        const inputId = label.innerHTML || "unknown";
+        const imageType = inputId;
+
+        for (let i = 0; i < files.length; i++) {
+            formData.append("files[]", files[i]);
+        }
+
+        formData.append("imageType", imageType);
+        formData.append("action", "upload_images");
+        formData.append("mode", "image");
+        formData.append("ticketId", ticketId);
+        formData.append("userId", userId);
+        formData.append("storeId", storeId);
+        formData.append("socId", socId);
+
+        // flag for the server
+        if (fileInput.multiple) {
+            formData.append(\'mult\', \'1\');
+        }else{
+            formData.append(\'mult\', \'0\');
+        }
+
+
+        $.ajax({
+            url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                console.log(response);
+                if (response.status === \'success\') {
+                        // Update uploaded images data
+                        const imagesList = Object.values(response.images);
+                        window.uploadedImagesData = imagesList;
+
+                        // Clear and update the UI
+                    uploadedImagesContainer.innerHTML = "";
+                    imagesList.forEach(imageNode => {
+                        if (imageNode.type === imageType) {
+                            const fileList = Array.isArray(imageNode.images)
+                                ? imageNode.images                 // already an array
+                                : Object.values(imageNode.images); // turn object → ["…_1.png", "…_2.png", "…_4.png"]
+
+                            fileList.forEach(filename => {
+                                const image = { filename, inputId };
+                                displayUploadedImage(image, uploadedImagesContainer);
+                            });
+                        }
+                    });
+                } else {
+                    alert("Upload failed: " + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Request failed with status: " + xhr.status + ", Error: " + error);
+                alert("An error occurred during the upload.");
+            }
+        });
+    }
+
+    // Function to delete an image via AJAX
+    function deleteImage(filename, imageElement, inputId) {
+        const formData = new FormData();
+        formData.append("action", "delete_image");
+        formData.append("mode", "image");
+        formData.append("filename", filename);
+        formData.append("imageType", inputId);
+        formData.append("ticketId", ticketId);
+        formData.append("userId", userId);
+        formData.append("storeId", storeId);
+        formData.append("socId", socId);
+
+        $.ajax({
+            url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
+            type: "POST",
+            data: formData,
+                processData: false, // Prevent jQuery from processing the data
+                contentType: false, // Prevent jQuery from setting the content type
+            success: function(response) {
+                console.log("Delete Image Response:", response);
+                if (response.status === \'success\') {
+                        // Remove the image element from the UI
+                    imageElement.remove();
+
+                        // Update the global uploadedImagesData array
+                    window.uploadedImagesData = window.uploadedImagesData.filter(node => {
+                        if (node.type === inputId) {
+                            node.images = node.images.filter(img => img !== filename);
+                            return node.images.length > 0;
+                        }
+                        return true;
+                    });
+                } else {
+                        // Display an error message if deletion failed
+                    alert("Deletion failed: " + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("AJAX Error - Status:", status, "Error:", error);
+                alert("An error occurred during deletion.");
+            }
+        });
+    }
+}
+
+function makeTablesCollapsible() {
+    /** Find every table inside the report markup */
+    document.querySelectorAll(\'table\').forEach(table => {
+
+        if (table.nextElementSibling?.classList?.contains(\'collapse-toggle\')) {
+            table.nextElementSibling.remove();
+        }
+        const rows = table.querySelectorAll(\'tbody tr\');
+        
+        if (rows.length <= 4) return;               // nothing to do
+
+        /* Hide rows 6 … n and tag them */
+        rows.forEach((row, idx) => {
+        if (idx >= 4) row.classList.add(\'collapsed-row\');
+        });
+
+        /* Build a toggle element */
+        const toggle = document.createElement(\'div\');
+        toggle.className = \'collapse-toggle\';
+        toggle.textContent = `Zeige ${rows.length - 4} mehr…`;
+
+        /* Insert toggle *after* the table */
+        table.after(toggle);
+
+        /* Attach behaviour */
+        let expanded = false;
+        toggle.addEventListener(\'click\', () => {
+        expanded = !expanded;
+        rows.forEach((row, idx) => {
+            if (idx >= 4) row.classList.toggle(\'collapsed-row\', !expanded);
+        });
+        toggle.textContent = expanded ? \'Verstecke extra Zeilen\' :
+            `Zeige ${rows.length - 4} mehr…`;
         });
     });
 }
 
-function saveFormAndExit(event) {
-    event.preventDefault();
-    saveForm(function() {
-        // Redirect after saving
-        window.location.href = "'.DOL_MAIN_URL_ROOT.'/ticket/reportOverviewKarim.php?id=" + ticketId + "&action=view";
-    });
-}
-
-function saveForm(callback) {
-    event.preventDefault(); // Prevent default form submission
-    
-    const form = document.getElementById("report-form");
-
-    // Clone the form to manipulate it without affecting the DOM
-    const formClone = form.cloneNode(true);
-
-    // Remove dynamically added image elements
-    const uploadedImagesContainers = formClone.querySelectorAll(\'.uploaded-images-container\');
-    uploadedImagesContainers.forEach(container => container.remove());
-
-    // Now get the HTML of the cloned form without images
-    //const formHtml = formClone.innerHTML;
-    const originalElements = form.querySelectorAll(\'.report-element\');
-
-    let parameters = [];
-    const uploadedImages = window.uploadedImagesData || [];
-
-    // Capture form data
-    const elements = formClone.querySelectorAll(\'.report-element\');
-    originalElements.forEach((element) => {
-        const id = element.id;
-        let value = "";
-        if (element.type === "checkbox" || element.type === "radio") {
-            value = element.checked;
-            parameters.push({ id: id, value: value });
-        } else if (element.type === "file") {
-            // No action needed for file inputs
-        } else if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
-            value = element.value;
-            parameters.push({ id: id, value: value });
-            console.log("Element:", element, "Value:", value);
-        } else if (element.tagName === "CANVAS") {
-            var dataURL = element.toDataURL();
-            parameters.push({ id: id, value: dataURL });
-        } else {
-            // For other elements, save their innerHTML if needed
-            value = element.innerHTML;
-            // parameters.push({ id: id, value: value }); // Uncomment if necessary
-        }
+    document.addEventListener("DOMContentLoaded", (event) => {
+        makeTablesCollapsible();
     });
 
-     const formHtml = formClone.innerHTML;
-
-    // Prepare form data for AJAX
-    const formData = new FormData();
-    formData.append("form", formHtml); // Use the HTML without images
-    formData.append("parameters", JSON.stringify(parameters));
-    formData.append("uploadedImages", JSON.stringify(uploadedImages));
-
-    formData.append("storeId", storeId);
-    formData.append("userId", userId);
-    formData.append("ticketId", ticketId);
-    formData.append("socId", socId);
-    // AJAX request to save the form
-    $.ajax({
-        url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
-        type: "POST",
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            if (response.status === \'success\') {
-                alert("Report saved successfully");
-                console.log("Save Response:", response);
-                if (typeof callback === \'function\') {
-                    callback();
-                }
-            } else {
-                console.error("Server Error:", response.message);
-                alert("Save failed: " + response.message);
-            }
-            
-        },
-        error: function(xhr, status, error) {
-            console.error("Request failed with status: " + xhr.status + ", Error: " + error);
-        }
-    });
-}
-
-// Function to fetch images via AJAX
-function fetchUploadedImages() {
-    console.log("Fetching uploaded images...");
-    const formData = new FormData();
-    formData.append("action", "fetch_images");
-    formData.append("mode", "image");
-    formData.append("ticketId", ticketId);
-    formData.append("userId", userId);
-    formData.append("storeId", storeId);
-    formData.append("socId", socId);
-
-    $.ajax({
-        url: "'.DOL_URL_ROOT.'/tecform.php",
-        type: "POST",
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-                console.log(response);
-            if (response.status === \'success\') {
-                const imagesArray = Object.values(response.images);
-                window.uploadedImagesData = imagesArray;
-                window.uploadedImagesData.forEach(imageNode => {
-                    const inputId = imageNode.type;
-                    // Search for wrapper with label.innerHTML = inputId
-                    const labels = document.querySelectorAll(\'label\');
-                    const label = Array.from(labels).find(label => label.innerHTML === inputId);
-                    const wrapper = label.parentElement;
-                    const fileInput = wrapper.querySelector(\'input[type="file"]\');
-                    if (fileInput) {
-                        let uploadedImagesContainer = fileInput.parentElement.querySelector(\'.uploaded-images-container\');
-                        if (!uploadedImagesContainer) {
-                            uploadedImagesContainer = document.createElement(\'div\');
-                            uploadedImagesContainer.classList.add(\'uploaded-images-container\', \'row\');
-                            fileInput.parentElement.appendChild(uploadedImagesContainer);
-                        }
-                        imageNode.images.forEach(filename => {
-                            const image = { filename: filename, inputId: inputId };
-                            displayUploadedImage(image, uploadedImagesContainer);
-                        });
-                    }
-                });
-            } else {
-                console.error(\'Failed to fetch uploaded images:\', response.message);
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("Request failed with status: " + xhr.status + ", Error: " + error);
-        }
-    });
-}
-
-    // Function to display a single uploaded image
-function displayUploadedImage(image, container) {
-    console.log("Displaying image:", image);
-    const colDiv = document.createElement("div");
-    colDiv.classList.add("col-3", "col-md-3", "mt-2", "text-center");
-
-    const img = document.createElement("img");
-    img.src = "'.DOL_MAIN_URL_ROOT.'/formsImages/" + encodeURIComponent(image.filename) + "?t=" + new Date().getTime();
-    console.log("Image url:", img.src);
-    img.style.width = "100%";
-    img.style.height = "13rem";
-    img.onerror = function() {
-        console.error("Failed to load image:", img.src);
-    };
-    img.onload = function() {
-        console.log("Image loaded successfully:", img.src);
-    };
-    img.onclick = function() {
-        showImageFull(img.src);
-    };
-
-    const deleteButton = document.createElement("button");
-    deleteButton.classList.add("btn", "btn-danger", "mt-2");
-    deleteButton.style.fontSize = "10px";
-    deleteButton.style.padding = "5px";
-    deleteButton.textContent = "Delete";
-    deleteButton.type = "button";
-    deleteButton.onclick = function() {
-        deleteImage(image.filename, colDiv, image.inputId);
-    };
-
-    colDiv.appendChild(img);
-    if(action === "edit"){
-        colDiv.appendChild(deleteButton);
-    }else{
-        deleteButton.style.display = "none";
-    }
-    container.appendChild(colDiv);
-}
-
-function showImageFull(src) {
-    const modalImage = document.getElementById("modalImage");
-    modalImage.src = src;
-
-    const imageModal = new bootstrap.Modal(document.getElementById(\'imageModal\'), {
-        keyboard: true
-    });
-    imageModal.show();
-}
-
-function uploadFiles(files, fileInput, uploadedImagesContainer) {
-    const formData = new FormData();
-    const parentWrapper = fileInput.parentElement;
-    const label = parentWrapper.querySelector("label");
-    const inputId = label.innerHTML || "unknown";
-    const imageType = inputId;
-
-    for (let i = 0; i < files.length; i++) {
-        formData.append("files[]", files[i]);
-    }
-
-    formData.append("imageType", imageType);
-    formData.append("action", "upload_images");
-    formData.append("mode", "image");
-    formData.append("ticketId", ticketId);
-    formData.append("userId", userId);
-    formData.append("storeId", storeId);
-    formData.append("socId", socId);
-
-    $.ajax({
-        url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
-        type: "POST",
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            console.log(response);
-            if (response.status === \'success\') {
-                    // Update uploaded images data
-                    const imagesList = Object.values(response.images);
-                    window.uploadedImagesData = imagesList;
-
-                    // Clear and update the UI
-                uploadedImagesContainer.innerHTML = "";
-                imagesList.forEach(imageNode => {
-                    if (imageNode.type === imageType) {
-                        imageNode.images.forEach(filename => {
-                            const image = { filename: filename, inputId: inputId };
-                            displayUploadedImage(image, uploadedImagesContainer);
-                        });
-                    }
-                });
-            } else {
-                alert("Upload failed: " + response.message);
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("Request failed with status: " + xhr.status + ", Error: " + error);
-            alert("An error occurred during the upload.");
-        }
-    });
-}
-
-    // Function to delete an image via AJAX
-function deleteImage(filename, imageElement, inputId) {
-    const formData = new FormData();
-    formData.append("action", "delete_image");
-    formData.append("mode", "image");
-    formData.append("filename", filename);
-    formData.append("imageType", inputId);
-    formData.append("ticketId", ticketId);
-    formData.append("userId", userId);
-    formData.append("storeId", storeId);
-    formData.append("socId", socId);
-
-    $.ajax({
-        url: "'.DOL_MAIN_URL_ROOT.'/tecform.php",
-        type: "POST",
-        data: formData,
-            processData: false, // Prevent jQuery from processing the data
-            contentType: false, // Prevent jQuery from setting the content type
-        success: function(response) {
-            console.log("Delete Image Response:", response);
-            if (response.status === \'success\') {
-                    // Remove the image element from the UI
-                imageElement.remove();
-
-                    // Update the global uploadedImagesData array
-                window.uploadedImagesData = window.uploadedImagesData.filter(node => {
-                    if (node.type === inputId) {
-                        node.images = node.images.filter(img => img !== filename);
-                        return node.images.length > 0;
-                    }
-                    return true;
-                });
-            } else {
-                    // Display an error message if deletion failed
-                alert("Deletion failed: " + response.message);
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("AJAX Error - Status:", status, "Error:", error);
-            alert("An error occurred during deletion.");
-        }
-    });
-}
 </script>
 ';
 
@@ -810,113 +1135,217 @@ canvas {
     width: 600px;   /* Desired display width */
     height: 200px;  /* Desired display height */
 }
+
+.collapsed-row { display:none; }
+.collapse-toggle {
+    cursor:pointer;   /* makes it obvious it’s tappable   */
+    user-select:none; /* avoid accidental text selection   */
+    font-weight:600;
+    margin:0.25rem 0;
+    color: #007bff;   /* tweak to match your palette       */
+}
 </style>';
 }
+
 if(!$existingReportRes && $action !== "mail"){
-
-echo '<script>
-    const form = document.getElementById("report-form");
-    const submitButton = document.createElement("button");
-    submitButton.innerHTML = "Speichern und verlassen";
-    submitButton.id = "save-form-button-wrapper";
-    submitButton.classList.add("btn", "btn-primary");
-    const saveStayButton = document.createElement("button");
-    saveStayButton.innerHTML = "Speichern";
-    saveStayButton.classList.add("btn", "btn-primary");
-    saveStayButton.id = "save-form-button";
-    form.appendChild(saveStayButton);
-    form.appendChild(submitButton);
-    setupSaveButtons();
-    
-    // Switch to handle the dynamically generated content
-    
-    let dynamicDisplays = document.querySelectorAll([\'[data-content-type]\']);
-    dynamicDisplays.forEach((element) => {
-        var text = element.innerHTML.toLowerCase();
-        var index = text.indexOf(" ") !== -1 ? text.indexOf(" ") : text.length;
-        var result = text.substring(0, index);
-        if(element.dataset.contentType === "dynamic"){
-            console.log(result);
-            switch(result){
-                case "filiale":
-                    element.innerHTML = "Filiale: '.$store->b_number.'";
-                    break;
-                case "tickettyp":
-                case "ticketart":
-                    element.innerHTML = "Ticketart: '.$object->type_label.'";
-                    break;
-                case "termin":
-                    element.innerHTML = "Termindatum: '.date('d.m.y', $object->array_options["options_dateofuse"]).'";
-                    break;
-                case "Themengruppe":
-                    element.innerHTML = "Themengruppe: '.$object->category_code.'";
-                    break;
-                case "ticketnummer":
-                    element.innerHTML = "Ticketnummer: '.$object->ref.'";
-                    break;
-                case "kundennummer":
-                    element.innerHTML = "Kundennummer: '.$company->id.'";
-                    break;
-                case "kundenname":
-                    element.innerHTML = "Kundenname: '.$store->customer_name.'";
-                    break;
-                case "name":
-                    element.innerHTML = "'.$project->title.'";
-                    break;
-                case "stop":
-                case "stopp":
-                    element.innerHTML = "Stopp: '.$object->array_options["options_stopnummer"].'";
-                    break;
-                case "datum":
-                    element.innerHTML = "Datum: '.date("d.m.y H:i", $object->datec).'";
-                    break;
-                case "uhrzeit":
-                    element.innerHTML = "Uhrzeit: '.dol_print_date($object->date_creation, 'hour').'";
-                    break;
-                case "priorität":
-                    break;
-                case "dringlichkeit":
-                    element.innerHTML = "Dringlichkeit: '.$object->severity_code.'";
-                    break;
-                case "kategorie":
-                    element.innerHTML = "Kategorie: '.$object->category_label.'";
-                    break;
-                case "auftrag":
-                    element.innerHTML = "Auftrag: '.$object->message.'";
-                    break;
-                case "strasse":
-                case "straße":
-                    element.innerHTML = "Straße: '.$store->street.', '.$store->house_number.'";
-                    break;
-                case "hausnummer":
-                    element.innerHTML = "Hnr: '.$store->house_number.'";
-                    break;
-                case "stadt":
-                case "ort":
-                    element.innerHTML = "Ort: '.$store->city.', '.$store->zip_code.'";
-                    break;
-                case "plz":
-                    element.innerHTML = "Plz: '.$store->zip_code.'";
-                    break;
-                case "ext.ticketnummer":
-                    element.innerHTML = "Ext. Ticketnummer: '.$object->array_options["options_externalticketnumber"].'";
-                    break;
-                case "telefonnummer":
-                case "tel":
-                    element.innerHTML = "Tel.Nummer: '.$store->phone.'";
-                    break;
-                default:
-                    element.innerHTML = "nothing";
-                    break;
+    $dateofuse = $object->array_options["options_dateofuse"];
+    if($dateofuse == ""){
+        $dateofuse = 0;
+    }
+    echo '
+    <script>
+        // Script to handle autofill components
+        
+        // Switch to handle the dynamically generated content
+        
+        let dynamicDisplays = document.querySelectorAll([\'[data-content-type]\']);
+        dynamicDisplays.forEach((element) => {
+            var text = element.innerHTML.toLowerCase();
+            var index = text.indexOf(" ") !== -1 ? text.indexOf(" ") : text.length;
+            var result = text.substring(0, index);
+            if(element.dataset.contentType === "dynamic"){
+                console.log(result);
+                switch(result){
+                    case "filiale":
+                        element.innerHTML = "Filiale: " + '.json_encode($store->b_number).' ;
+                        break;
+                    case "tickettyp":
+                    case "ticketart":
+                        element.innerHTML = "Ticketart: " + '.json_encode($object->type_label).' ;
+                        break;
+                    case "termin":
+                        let dateofuse = '.$dateofuse.';
+                        // Format dateofuse to dd.mm.yyyy hh:ii
+                        let date = 0;
+                        if(dateofuse !== 0){
+                            date = new Date(dateofuse * 1000);
+                            date = date.toLocaleString("de-DE");
+                        }else{
+                            date = "Kein Termin festgelegt";
+                        }
+                        element.innerHTML = "Termindatum: " + date;
+                        break;
+                    case "Themengruppe":
+                        element.innerHTML = "Themengruppe: " + '.json_encode($object->category_code).' ;
+                        break;
+                    case "ticketnummer":
+                        element.innerHTML = "Ticketnummer: " + '.json_encode($object->ref).' ;
+                        break;
+                    case "kundennummer":
+                        element.innerHTML = "Kundennummer: " + '.json_encode($company->id).' ;
+                        break;
+                    case "kundenname":
+                        element.innerHTML = "Kundenname: " + '.json_encode($store->customer_name).' ;
+                        break;
+                    case "name":
+                        element.innerHTML = '.json_encode($project->title).' ;
+                        break;
+                    case "stop":
+                    case "stopp":
+                        element.innerHTML = "Stopp: " + '.json_encode($object->array_options["options_stopnummer"]).' ;
+                        break;
+                    case "datum":
+                        break;
+                    case "uhrzeit":
+                        break;
+                    case "priorität":
+                        break;
+                    case "dringlichkeit":
+                        element.innerHTML = "Dringlichkeit: " + '.json_encode($object->severity_code).' ;
+                        break;
+                    case "kategorie":
+                        element.innerHTML = "Kategorie: " + '.json_encode($object->category_label).' ;
+                        break;
+                    case "auftrag":
+                        element.innerHTML = "Auftrag: " + '.json_encode($object->message).' ;
+                        break;
+                    case "lösungsvorschlag":
+                        element.innerHTML = "Lösung: " + '.json_encode($object->array_options["options_losung"]).' ;
+                        break;
+                    case "strasse":
+                    case "straße":
+                        element.innerHTML = "Straße: " + '.json_encode($store->street).' + ", " + '.json_encode($store->house_number).' ;
+                        break;
+                    case "hausnummer":
+                        element.innerHTML = "Hnr: " + '.json_encode($store->house_number).' ;
+                        break;
+                    case "stadt":
+                    case "ort":
+                        element.innerHTML = "Ort: " + '.json_encode($store->city).' + ", " + '.json_encode($store->zip_code).' ;
+                        break;
+                    case "plz":
+                        element.innerHTML = "Plz: " + '.json_encode($store->zip_code).' ;
+                        break;
+                    case "ext.ticketnummer":
+                        element.innerHTML = "Ext. Ticketnummer: " + '.json_encode($object->array_options["options_externalticketnumber"]).' ;
+                        break;
+                    case "telefonnummer":
+                    case "tel":
+                        element.innerHTML = "Tel.Nummer: " + '.json_encode($store->phone).' ;
+                        break;
+                    default:
+                        element.innerHTML = "nothing";
+                        break;
+                }
             }
+        });    
+
+        /* ---------------------------------------------------------------
+        0 · find the material-list table
+        ---------------------------------------------------------------- */
+        const table = document.querySelector(\'[data-type="materialList"]\');
+        if (!table) throw new Error(\'materialList table not found\');
+
+        /* ---------------------------------------------------------------
+        1 · map header texts → column indexes
+        ---------------------------------------------------------------- */
+        const headerCells = table.querySelectorAll(
+            \'thead th, tr:first-child th, tr:first-child td\'
+        );
+
+        let modellCol  = -1;
+        let snCol      = -1;
+        let anzahlCol  = -1;
+        let checkboxCol = -1;
+
+        headerCells.forEach((th, idx) => {
+            const txt = th.textContent.trim().toLowerCase();
+            if (txt === \'modell\')  modellCol   = idx;
+            if (txt === \'sn\')      snCol       = idx;
+            if (txt === \'anzahl\')  anzahlCol   = idx;
+            if (txt === \'\')        checkboxCol = idx;        // header over ✓ is blank
+        });
+
+        if (modellCol === -1 || snCol === -1 || anzahlCol === -1 || checkboxCol === -1) {
+            throw new Error(\'Header row must contain “Modell”, “SN”, “Anzahl” and a blank checkbox column.\');
         }
-});
 
-    
+        /* ---------------------------------------------------------------
+        2 · grab tbody (or fallback to table) and its existing rows
+        ---------------------------------------------------------------- */
+        const tbody = table.tBodies[0] || table;
 
-    
+        if (tbody.rows.length) tbody.deleteRow(0);                
+
+        /* helper: does a row look completely empty? */
+        const rowIsEmpty = (tr) => [...tr.cells].every(cell =>
+            !cell.textContent.trim() && !cell.querySelector(\'input, textarea, select\')
+        );
+
+        /* the first data row is already there – keep it if it’s empty    */
+        let currentRowIndex = 0;
+
+        /* ---------------------------------------------------------------
+        3 · the PHP variable:  [ [modell, qty], … ]
+        ---------------------------------------------------------------- */
+        const assignedProducts = '.json_encode($assignedProducts).';
+        // example: [ ["Cisco C9200-24", 2], ["U6-LR", 5] ]
+
+        if (!Array.isArray(assignedProducts) || assignedProducts.length === 0) {
+            console.warn(\'No assigned products found for this ticket.\');
+        }
+
+        /* ---------------------------------------------------------------
+        4 · fill / append rows
+        ---------------------------------------------------------------- */
+        assignedProducts.forEach(([modell, qty], idx) => {
+
+            /* decide which <tr> to use */
+            let row;
+            if (idx === 0 && tbody.rows.length && rowIsEmpty(tbody.rows[0])) {
+                /* use the existing, blank first data row */
+                row = tbody.rows[0];
+            } else {
+                /* create a brand-new row with 4 cells */
+                row = tbody.insertRow();
+                for (let i = 0; i < 4; i++) row.insertCell();
+            }
+
+            /* --- fill cells ------------------------------------------- */
+            /* Modell */
+            row.cells[modellCol].textContent = modell;
+
+            /* SN  (empty <input>) */
+            row.cells[snCol].innerHTML = \'\';                       // clear old content
+            const snInput = document.createElement(\'input\');
+            snInput.type  = \'text\';
+            snInput.className = \'form-control\';
+            row.cells[snCol].appendChild(snInput);
+
+            /* Anzahl */
+            row.cells[anzahlCol].textContent = qty;
+
+            /* Checkbox */
+            const cb = document.createElement(\'input\');
+            cb.type = \'checkbox\';
+            //cb.className = \'form-check-input\';
+            row.cells[3].appendChild(cb);
+        });
+
+
     </script>';
 }else if($existingReportRes){
+    
 echo 
     '<script>
         const form = document.getElementById("report-form");
@@ -940,14 +1369,9 @@ echo
                         let canvas = document.getElementById(param.id);
                         const img = new Image();
                         img.onload = function() {
-                            console.log("Image loaded successfully for canvas with id:", param.id);
-                            console.log("Canvas width:", element.width, "Canvas height:", element.height);
-                            console.log("Image width:", img.width, "Image height:", img.height);
-                            console.log("Device Pixel Ratio:", window.devicePixelRatio || 1);
-                            console.log("Canvas width / DPR:", element.width / (window.devicePixelRatio || 1));
-                            // Draw the image at the correct size without additional scaling
+                            // Draw image without additional scaling
                             context.clearRect(0, 0, canvas.width, canvas.height); 
-                            context.drawImage(img, 0, 0);
+                            context.drawImage(img, 0, 0, canvas.width, canvas.height);
                         };
                         img.onerror = function() {
                             console.error("Failed to load image for canvas with id:", param.id);
