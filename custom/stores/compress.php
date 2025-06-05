@@ -15,9 +15,9 @@ class Compress {
     private $predefinedList = [];
 
     public function compress_image($tempPath, $originalPath, $imageQuality){
+        
         //echo json_encode(['status' => 'debug', 'params' => [$tempPath, $originalPath, $imageQuality]]);
         // Get image info 
-        
         $imgInfo = getimagesize($tempPath); 
         $mime = $imgInfo['mime']; 
         
@@ -344,26 +344,16 @@ class Compress {
         }
     
         function updateModalContent() {
-            var group = imagesList[currentGroupKey];
-            var images = group["images"];
-            var keys = imageKeys[currentGroupKey];
-            var currentKey = keys[currentIndex];
-    
-            var imageData = images[currentKey].split("|");
-            var imageSrc;
-            if(currentGroupKey == 0){
-                imageSrc = "./img/" + imageData[0];
-            }else{
-                imageSrc = "../../formsImages/" + imageData[0];
-            }
-            var imageDesc = imageData.length > 1 ? imageData.slice(1).join("|") : "";
-            console.log(imageData);
-            console.log(group["directoryUrl"]);
-            var modalImage = document.getElementById("modalImage");
-            var modalDescription = document.getElementById("modalDescription");
-            modalImage.src = imageSrc;
-            modalDescription.innerText = imageDesc;
-            modalImage.style.transform = "rotate(" + rotation + "deg)";
+            const group    = imagesList[currentGroupKey];
+            const images   = group["images"];
+            const keys     = imageKeys[currentGroupKey];
+            const currentKey = keys[currentIndex];
+
+            const imageData = images[currentKey].split("|");
+            const imageSrc = (group["directoryUrl"] ? group["directoryUrl"] : "./img/") + imageData[0];
+
+            document.getElementById("modalImage").src = imageSrc;
+            document.getElementById("modalDescription").innerText = imageData.length > 1 ? imageData.slice(1).join("|") : "";
         }
     
         function prevImage() {
