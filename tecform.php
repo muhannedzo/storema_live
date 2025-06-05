@@ -59,6 +59,8 @@ $storeId = GETPOST('storeId', 'int');
 $store = new Branch($db);
 $store->fetch($storeId);
 
+// Flag for file input with multiple pic upload
+$mult = GETPOST('mult', 'alpha');
 
 
 $socId = GETPOST('socId', 'int');
@@ -101,6 +103,12 @@ function fetchImages($ticketId, $db) {
 
 
 function updateImageList($ticketId, $imagesList, $db) {
+    foreach ($imagesList as &$node) {
+        if (isset($node['images']) && is_array($node['images'])) {
+            $node['images'] = array_values($node['images']);  // ensures 0-based, dense arrays
+        }
+    }
+    unset($node);
     $encodedList = base64_encode(json_encode($imagesList));
     // Check if record exists
     // $sqlCheck = 'SELECT COUNT(*) as count FROM llx_tec_forms WHERE fk_ticket = '.(int)$ticketId.' AND fk_user = '.(int)$userId.' AND fk_store = '.(int)$storeId.' AND fk_soc = '.(int)$socId;
@@ -134,6 +142,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
             $imageType = GETPOST('imageType', 'none');
             $imageQuality = 20;
 
+            $imagesList = fetchImages($ticketId, $db);
+
+            $maxIndex = 0;
+            foreach ($imagesList as $n) {
+                if ($n['type'] === $imageType) {
+                    foreach ($n['images'] as $fn) {
+                        if (preg_match('/_(\d+)\.\w+$/', $fn, $m)) {
+                            $maxIndex = max($maxIndex, (int) $m[1]);
+                        }
+                    }
+                    break;
+                }
+            }
+
+            $counter = $maxIndex + 1;
+
             if (!empty(array_filter($_FILES['files']['name']))) {
                 foreach ($_FILES['files']['tmp_name'] as $key => $tmpName) {
                     $file_tmpname = $_FILES['files']['tmp_name'][$key];
@@ -147,6 +171,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
                         $file_name = "VKST_".explode("-", $store->b_number)[2]."_".explode(" ", $imageType)[0]."_".$ticketId.".".$file_ext;
                     } else {
                         $file_name = "VKST_".explode("-", $store->b_number)[2]."_".$imageType."_".$ticketId.".".$file_ext;
+                    }
+
+                    if ($mult) {                          // add “ 1 ”, “ 2 ”, … just before extension
+                        $file_name = preg_replace(
+                            '/(\.\w+)$/',
+                            '_' . $counter++ . '$1',      // appends a space-number sequence
+                            $file_name
+                        );
                     }
 
                     $filepath = $dir.$file_name;
@@ -191,17 +223,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mode === 'image') {
                 dol_htmloutput_errors("No files selected.");
             }
 
-            // Update images list
-            $imagesList = fetchImages($ticketId, $db);
+            
             // Check if the imageType exists in imagesList
             $found = false;
             foreach ($imagesList as &$node) {
                 if ($node['type'] === $imageType) {
-                    // Replace images
-                    $node['images'] = $images;
+                    if ($mult) {
+                        // Append new images to existing list
+                        $node['images'] = array_unique(
+                            array_merge($node['images'], $images)
+                        );
+                    } else {
+                        // Replace existing images (single-upload mode)
+                        $node['images'] = $images;
+                    }
                     $found = true;
                     break;
                 }
+
             }
             unset($node);
 

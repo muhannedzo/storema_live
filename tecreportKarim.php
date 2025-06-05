@@ -81,6 +81,16 @@ dol_include_once('/stores/compress.php');
  
  $object = new Ticket($db);
  $object->fetch($ticketId);
+
+ $assignedProductsSQL = "SELECT
+    p.label        AS product_label,
+    pt.qty
+    FROM llx_product_ticket AS pt
+    JOIN llx_product  AS p ON p.rowid  = pt.fk_product
+    WHERE pt.fk_ticket = ".$ticketId;
+
+ $assignedProducts = $db->query($assignedProductsSQL)->fetch_all();
+
  $socid = $object->socid;
  $storeid = $object->array_options["options_fk_store"];
  $company = new Societe($db);
@@ -172,11 +182,12 @@ echo '<script>
 // Define global variables for identifiers
 var ticketId ='.$ticketId.';
 var userId ='.$user->id.';
-var storeId ='.$storeid.';
-var socId = '.$object->fk_soc.';
+var storeId ='.($storeid || " ").';
+var socId = '.($object->fk_soc || " ").';
 
     fetchUploadedImages();
     setupCanvasEvents();
+    setupFileInputs();
     setupSaveButtons();
     fillDynamicContent();
 
@@ -278,6 +289,100 @@ var socId = '.$object->fk_soc.';
 
             }
         });
+
+
+        /* ---------------------------------------------------------------
+        0 · find the material-list table
+        ---------------------------------------------------------------- */
+        const table = document.querySelector(\'[data-type="materialList"]\');
+        if (!table) throw new Error(\'materialList table not found\');
+
+        /* ---------------------------------------------------------------
+        1 · map header texts → column indexes
+        ---------------------------------------------------------------- */
+        const headerCells = table.querySelectorAll(
+            \'thead th, tr:first-child th, tr:first-child td\'
+        );
+
+        let modellCol  = -1;
+        let snCol      = -1;
+        let anzahlCol  = -1;
+        let checkboxCol = -1;
+
+        headerCells.forEach((th, idx) => {
+            const txt = th.textContent.trim().toLowerCase();
+            if (txt === \'modell\')  modellCol   = idx;
+            if (txt === \'sn\')      snCol       = idx;
+            if (txt === \'anzahl\')  anzahlCol   = idx;
+            if (txt === \'\')        checkboxCol = idx;        // header over ✓ is blank
+        });
+
+        if (modellCol === -1 || snCol === -1 || anzahlCol === -1 || checkboxCol === -1) {
+            throw new Error(\'Header row must contain “Modell”, “SN”, “Anzahl” and a blank checkbox column.\');
+        }
+
+        /* ---------------------------------------------------------------
+        2 · grab tbody (or fallback to table) and its existing rows
+        ---------------------------------------------------------------- */
+        const tbody = table.tBodies[0] || table;
+
+        if (tbody.rows.length) tbody.deleteRow(0);                
+
+        /* helper: does a row look completely empty? */
+        const rowIsEmpty = (tr) => [...tr.cells].every(cell =>
+            !cell.textContent.trim() && !cell.querySelector(\'input, textarea, select\')
+        );
+
+        /* the first data row is already there – keep it if it’s empty    */
+        let currentRowIndex = 0;
+
+        /* ---------------------------------------------------------------
+        3 · the PHP variable:  [ [modell, qty], … ]
+        ---------------------------------------------------------------- */
+        const assignedProducts = '.json_encode($assignedProducts).';
+        // example: [ ["Cisco C9200-24", 2], ["U6-LR", 5] ]
+
+        if (!Array.isArray(assignedProducts) || assignedProducts.length === 0) {
+            console.warn(\'No assigned products found for this ticket.\');
+        }
+
+        /* ---------------------------------------------------------------
+        4 · fill / append rows
+        ---------------------------------------------------------------- */
+        assignedProducts.forEach(([modell, qty], idx) => {
+
+            /* decide which <tr> to use */
+            let row;
+            if (idx === 0 && tbody.rows.length && rowIsEmpty(tbody.rows[0])) {
+                /* use the existing, blank first data row */
+                row = tbody.rows[0];
+            } else {
+                /* create a brand-new row with 4 cells */
+                row = tbody.insertRow();
+                for (let i = 0; i < 4; i++) row.insertCell();
+            }
+
+            /* --- fill cells ------------------------------------------- */
+            /* Modell */
+            row.cells[modellCol].textContent = modell;
+
+            /* SN  (empty <input>) */
+            row.cells[snCol].innerHTML = \'\';                       // clear old content
+            const snInput = document.createElement(\'input\');
+            snInput.type  = \'text\';
+            snInput.className = \'form-control\';
+            row.cells[snCol].appendChild(snInput);
+
+            /* Anzahl */
+            row.cells[anzahlCol].textContent = qty;
+
+            /* Checkbox */
+            const cb = document.createElement(\'input\');
+            cb.type = \'checkbox\';
+            //cb.className = \'form-check-input\';
+            row.cells[3].appendChild(cb);
+        });
+
         // Search for all textareas with attr data-locked = true
         let lockedTextareas = document.querySelectorAll(\'textarea[data-locked="true"]\');
         lockedTextareas.forEach((textarea) => {
@@ -295,7 +400,7 @@ var socId = '.$object->fk_soc.';
         fileInputs.forEach(function(input) {
             input.accept = ".jpg, .png";
             input.disabled = false;
-
+            const isMulti = input.multiple;
             let uploadedImagesContainer = input.parentElement.querySelector(\'.uploaded-images-container\');
             if (!uploadedImagesContainer) {
                 uploadedImagesContainer = document.createElement("div");
@@ -306,12 +411,12 @@ var socId = '.$object->fk_soc.';
             // Attach change event listener to this file input
             input.addEventListener("change", function() {
                 const files = input.files;
-                if (files.length > 1) {
-                    alert("Bitte nur eine Datei auswählen."); // "Please select only one file."
-                    input.value = ""; // Reset the input
+                if (!isMulti && files.length > 1) {     // single-upload field
+                    alert("Bitte nur eine Datei auswählen.");
+                    input.value = "";
                     return;
                 }
-                if (files.length === 1) {
+                if (files.length > 0) {                 // single or multi
                     uploadFiles(files, input, uploadedImagesContainer);
                 }
             });
@@ -699,6 +804,7 @@ var socId = '.$object->fk_soc.';
                 // No action needed for file inputs
             } else if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
                 value = element.value;
+                console.log(element.type);
                 parameters.push({ id: id, value: value });
                 //console.log("Element:", element, "Value:", value);
             } else if (element.tagName === "CANVAS") {
@@ -785,10 +891,15 @@ var socId = '.$object->fk_soc.';
                                 uploadedImagesContainer.classList.add(\'uploaded-images-container\', \'row\');
                                 fileInput.parentElement.appendChild(uploadedImagesContainer);
                             }
-                            imageNode.images.forEach(filename => {
-                                const image = { filename: filename, inputId: inputId };
+                            const fileList = Array.isArray(imageNode.images)
+                                ? imageNode.images                 // already an array
+                                : Object.values(imageNode.images); // turn object → ["…_1.png", "…_2.png", "…_4.png"]
+
+                            fileList.forEach(filename => {
+                                const image = { filename, inputId };
                                 displayUploadedImage(image, uploadedImagesContainer);
                             });
+
                         }
                     });
                 } else {
@@ -875,6 +986,14 @@ var socId = '.$object->fk_soc.';
         formData.append("storeId", storeId);
         formData.append("socId", socId);
 
+        // flag for the server
+        if (fileInput.multiple) {
+            formData.append(\'mult\', \'1\');
+        }else{
+            formData.append(\'mult\', \'0\');
+        }
+
+
         $.ajax({
             url: "tecform.php",
             type: "POST",
@@ -892,10 +1011,15 @@ var socId = '.$object->fk_soc.';
                     uploadedImagesContainer.innerHTML = "";
                     imagesList.forEach(imageNode => {
                         if (imageNode.type === imageType) {
-                            imageNode.images.forEach(filename => {
-                                const image = { filename: filename, inputId: inputId };
+                            const fileList = Array.isArray(imageNode.images)
+                                ? imageNode.images                 // already an array
+                                : Object.values(imageNode.images); // turn object → ["…_1.png", "…_2.png", "…_4.png"]
+
+                            fileList.forEach(filename => {
+                                const image = { filename, inputId };
                                 displayUploadedImage(image, uploadedImagesContainer);
                             });
+
                         }
                     });
                 } else {
@@ -952,6 +1076,45 @@ var socId = '.$object->fk_soc.';
             }
         });
     }
+
+
+    function makeTablesCollapsible() {
+        /** Find every table inside the report markup */
+        document.querySelectorAll(\'table\').forEach(table => {
+            const rows = table.querySelectorAll(\'tbody tr\');
+            if (rows.length <= 4) return;               // nothing to do
+
+            /* Hide rows 6 … n and tag them */
+            rows.forEach((row, idx) => {
+            if (idx >= 4) row.classList.add(\'collapsed-row\');
+            });
+
+            /* Build a toggle element */
+            const toggle = document.createElement(\'div\');
+            toggle.className = \'collapse-toggle\';
+            toggle.textContent = `Zeige ${rows.length - 4} mehr…`;
+
+            /* Insert toggle *after* the table */
+            table.after(toggle);
+
+            /* Attach behaviour */
+            let expanded = false;
+            toggle.addEventListener(\'click\', () => {
+            expanded = !expanded;
+            rows.forEach((row, idx) => {
+                if (idx >= 4) row.classList.toggle(\'collapsed-row\', !expanded);
+            });
+            toggle.textContent = expanded ? \'Verstecke extra Zeilen\' :
+                `Zeige ${rows.length - 4} mehr…`;
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", (event) => {
+        makeTablesCollapsible();
+    });
+
+    
 </script>
 ';
 
@@ -964,6 +1127,16 @@ canvas {
     outline: none;
     box-sizing: content-box; /* ensures width=rect.width = drawing area */
 }
+
+.collapsed-row { display:none; }
+.collapse-toggle {
+    cursor:pointer;   /* makes it obvious it’s tappable   */
+    user-select:none; /* avoid accidental text selection   */
+    font-weight:600;
+    margin:0.25rem 0;
+    color: #007bff;   /* tweak to match your palette       */
+}
+
 
 
 </style>';
@@ -1005,5 +1178,9 @@ echo
                 }
             }
         });
+        document.addEventListener("DOMContentLoaded", (event) => {
+        makeTablesCollapsible();
+    });
     </script>';
 }
+
