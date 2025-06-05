@@ -50,7 +50,51 @@ $storeId = GETPOST('storeId', 'int'); // id of thirdparty
 top_httphead();
 
 
-if (!empty($thirdId)) {
+
+if (!empty($_GET['projectid'])) {
+    $projectId = intval($_GET['projectid']);
+    $sql = "SELECT rowid, description FROM llx_entrepot WHERE fk_project = " . $projectId;
+    $resql = $db->query($sql);
+
+    $warehouses = [];
+    if ($resql) {
+        while ($obj = $db->fetch_object($resql)) {
+            $warehouses[] = [
+                'rowid' => $obj->rowid,
+                'description' => $obj->description,
+            ];
+        }
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode($warehouses);
+    exit;
+}else if (!empty($_GET['warehouseid'])) {
+	
+		$warehouseId = intval($_GET['warehouseid']);
+		$sql = "SELECT p.rowid, p.label, p.description, ps.reel AS stock
+				FROM llx_product_stock ps
+				INNER JOIN llx_product p ON ps.fk_product = p.rowid
+				WHERE ps.fk_entrepot = " . $warehouseId;
+		$resql = $db->query($sql);
+	
+		$products = [];
+		if ($resql) {
+			while ($obj = $db->fetch_object($resql)) {
+				$products[] = [
+					'rowid' => $obj->rowid,
+					'label' => $obj->label,
+					'description' => $obj->description,
+					'stock' => $obj->stock,
+				];
+			}
+		}
+	
+		header('Content-Type: application/json');
+		echo json_encode($products);
+		exit;
+	
+}else if (!empty($thirdId)) {
 	$form = new FormProjets($db);
 
 	$return = array();
@@ -59,4 +103,8 @@ if (!empty($thirdId)) {
 	// $return['success'] = $form->num;
 	// $return['error']	= $form->error;
 	echo json_encode($return);
+	exit;
+}else{
+	echo "Not found";
+	exit;
 }
